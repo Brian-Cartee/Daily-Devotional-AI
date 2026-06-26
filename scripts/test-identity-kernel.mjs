@@ -28,9 +28,12 @@ console.log("Identity kernel — assembly");
 assert("enabled by default", isIdentityKernelEnabled());
 
 const kernel = buildPhilipIdentityKernel();
-assert("kernel includes mission", kernel.includes("MISSION"));
-assert("kernel includes boundaries", kernel.includes("BOUNDARIES"));
+assert("kernel includes mission anchor", kernel.includes("Mission anchor"));
+assert("kernel includes boundaries anchor", kernel.includes("Boundaries anchor"));
 assert("kernel includes crisis protocol", kernel.includes("CRISIS PROTOCOL"));
+assert("kernel includes character constitution", kernel.includes("RECOGNITION BEFORE INSTRUCTION"));
+assert("kernel includes one-question rule", kernel.includes("ONE QUESTION"));
+assert("kernel v2", kernel.includes("IMMUTABLE KERNEL (v2)"));
 
 const followUp = buildPhilipTurnLayer({
   turnKind: "follow_up",

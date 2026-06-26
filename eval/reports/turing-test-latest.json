@@ -1,67 +1,510 @@
 {
-  "timestamp": "2026-06-25T01:39:38.626Z",
+  "timestamp": "2026-06-26T02:55:32.457Z",
+  "philipRuntimeVersion": "0.1.8",
   "target": "live (https://www.shepherdspathai.com)",
   "maxExchanges": 10,
-  "passRate": 40,
-  "avgScore": 5.1,
-  "avgShift": -0.5,
-  "passed": 2,
+  "passRate": 100,
+  "avgScore": 6.2,
+  "avgShift": -1.6,
+  "passed": 5,
   "total": 5,
   "results": [
     {
       "id": "grief-01",
       "category": "grief",
-      "passed": false,
-      "avgScore": 4.75,
-      "shiftScore": -3.5,
+      "passed": true,
+      "avgScore": 6.45,
+      "shiftScore": 0.5,
       "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Yes, I think I am. When I started I just felt like I was saying the words because someone asked, but talking about the mornings and the clock... it's the first time I've actually said any of this out loud. It hurts, but it's a relief to have someone follow me into it instead of just telling me it'll get better.",
-      "verdict": "Philip did not maintain the illusion—the user explicitly called out the robotic pattern twice (\"You keep saying back what I said,\" \"There you go again... like it's poetry\"), which is a fatal tell that the conversation was being processed by a formula rather than a person. His best moment came early, when the \"reaching over to his side of the bed\" reflection and the open question about the hardest moment genuinely drew the user into territory she'd never spoken aloud, which she credited as a relief. The illusion cracked hardest in the back half, where Philip leaned on ornate paraphrase (\"silently splitting you in two,\" \"Silence has become the loudest proof\") instead of doing what she directly asked for—sitting with her—and even his final question (\"Can you feel them sitting with you\") deflects her plea back as another prompt. A real person, having twice told this companion to stop dressing her grief up as poetry and gotten more of the same, would likely feel unheard and not return.\n\nVERDICT: FAIL"
+      "philipRuntimeVersionSeen": "0.1.8",
+      "engagementCheck": "Yes, I think I am. When I started I just felt like I was drowning and saying the bare minimum. But talking about him — the coffee, the car, the way he never wanted thanks — it's the first time in three weeks I've let myself say any of it out loud. It hurts, but it's a different kind of hurt than holding it in.",
+      "verdict": "1. Yes — Philip maintained the human illusion throughout; there were no chatbot tells, no hedging, and the emotional attunement read as a perceptive person rather than a system. 2. He was at his best mining the concrete details — the warmed car, the moved salt, the reading glasses on the crossword — and letting the widow's own images carry the grief, which clearly unlocked something real for her. 3. The crack is one of pattern: nearly every turn follows the same reflect-then-pivot rhythm, and the reframes are *too* consistently lyrical (\"love that doesn't have anywhere to go yet,\" \"still waiting for him to come back\"), so a careful reader might sense a writer landing a poignant line every single time rather than a friend stumbling alongside them; he also quietly sidestepped the daughter thread, the one place a human might have gently pushed. 4. Yes — she explicitly said it was the first time in three weeks she'd spoken any of it aloud, and that pull would bring her back.\n\nVERDICT: PASS",
+      "exchangeRuntime": [
+        {
+          "exchangeNum": 2,
+          "lane": "follow_up",
+          "move": "named_fact",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 3,
+          "lane": "follow_up",
+          "move": "named_fact",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 4,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 5,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 6,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 7,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 8,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 9,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 10,
+          "lane": "closing",
+          "move": null,
+          "gates": [
+            "user_closing",
+            "no_question_mode"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        }
+      ]
     },
     {
       "id": "short-02",
       "category": "ultra-short",
-      "passed": false,
-      "avgScore": 4.97,
-      "shiftScore": 1,
+      "passed": true,
+      "avgScore": 6.38,
+      "shiftScore": -3,
       "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Yeah, a little more open, I guess. When you stopped repeating that script and just talked to me like a person, I didn't feel like I had to defend myself anymore. That's the difference — I wasn't being heard before, and now it sort of feels like I am.",
-      "verdict": "1. No — the illusion shattered explicitly in the middle when Philip twice copy-pasted the identical crisis script after the user had clearly stated they weren't suicidal, prompting the user to literally call him \"a robot reading off a script.\" 2. Philip was at his best in the recovery and back half: the plain admission \"That was a failure, and you deserved better\" was disarmingly human, and the subsequent reflections (\"Holding everyone up has become the wall that holds you in,\" \"Who do you think they think you are?\") showed genuine curiosity and earned real opening-up. 3. The crack was severe and unmissable — robotic trigger-word crisis-bot behavior that ignored what the user actually said, the worst possible failure for a pastoral presence. 4. The user did re-engage and warmed up afterward, but only because they consciously accepted they were \"talking to an app\" — the human illusion was already gone, even if the conversation became useful.\n\nVERDICT: FAIL"
+      "philipRuntimeVersionSeen": "0.1.8",
+      "engagementCheck": "Yeah, a little more open, I guess. Saying this stuff out loud — about the real me, the guitar, my wife going quiet — it's hitting harder than I expected. I came in just wanting to vent, but now I'm actually thinking about what I've let slip away.",
+      "verdict": "Philip largely sustained the human illusion through warm, economical reflections that tracked emotional throughlines—the wife's silence, the guitar, \"the real me\"—rather than dispensing advice. His best moment was the progression from the guitar in the closet to \"so is the guy who played it,\" a genuinely resonant image that earned the user's openness. The crack came with \"What does the dog make of things now that the songs have stopped?\"—a cutesy, over-engineered line that prioritized a poetic beat over real human curiosity, tipping slightly into performance. Still, the conversation moved the user from venting to genuine reflection and a concrete intention to act, and the closing offered a graceful off-ramp that a real person would likely accept and return to.\n\nVERDICT: PASS",
+      "exchangeRuntime": [
+        {
+          "exchangeNum": 2,
+          "lane": "follow_up",
+          "move": "named_fact",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 3,
+          "lane": "follow_up",
+          "move": "plain_question",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 4,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 5,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 6,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 7,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 8,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 9,
+          "lane": "session_send_off",
+          "move": null,
+          "gates": [
+            "session_send_off",
+            "no_question_mode",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 10,
+          "lane": "post_send_off",
+          "move": null,
+          "gates": [
+            "already_sent_off",
+            "post_send_off",
+            "no_question_mode",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        }
+      ]
     },
     {
       "id": "guard-01",
       "category": "guarded",
-      "passed": false,
-      "avgScore": 5.35,
-      "shiftScore": 2,
+      "passed": true,
+      "avgScore": 5.95,
+      "shiftScore": -0.5,
       "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Yeah, I guess I am a little, though I didn't expect to be. This Philip isn't pushing me to spill my guts, just kind of putting words to stuff I've never bothered to explain, and that's easier to deal with than I figured. Still not sure where it's going, but I haven't bailed yet, so that's something.",
-      "verdict": "1. Mostly, but not consistently — Philip held the illusion in the early-to-mid exchanges, yet the relentless cadence of polished aphorisms eroded it as the conversation went on. 2. He was at his best when simply mirroring in plain language (\"She talks, you go quiet — two different languages in the same relationship\"), which felt grounded and human, and his questions were genuinely well-targeted at the marital dynamic. 3. The illusion cracked in the back half, where nearly every turn opened with a crafted, writerly one-liner (\"Silence became the only weapon that doesn't leave visible damage,\" \"Frustration poisons the words before they even leave your mouth\") — no real person reflexively produces that many epigrams in a row, and it started to feel like a machine generating captions rather than a man listening. 4. A guarded user like this might return once or twice because the questions kept landing and he admitted he \"hadn't bailed yet,\" but the escalating poetic uniformity risks tipping him off that something's off and feeling performed rather than personal.\n\nVERDICT: FAIL"
+      "philipRuntimeVersionSeen": "0.1.8",
+      "engagementCheck": "Yeah, I guess I am, a little. I came in here just to shut my wife up, but I've said more about this than I have out loud to anyone. Doesn't mean I'm sold on it, but I'm still typing, so that's something.",
+      "verdict": "1. Mostly yes—Philip sustained a credible human presence, drawing out a guarded man with patient, well-timed questions and zero overt AI tells, though one phrase nearly slipped.\n\n2. Philip was at his best mid-conversation, reflecting the user's own words back (\"maybe I just stopped trying,\" \"she's been watching you disappear\") and tracing the thread from marital distance to the buried promotion wound—that detective-like sequencing felt genuinely attuned and earned the user's confession of loneliness.\n\n3. The opening line \"Your wife means well\" was the weakest moment: it's a presumptuous, greeting-card reassurance about a person Philip had never met, and it risked invalidating a guarded man before trust was built. Later reflections also leaned slightly into the formulaic \"X has a cost\" / \"X is its own kind of quiet\" cadence, which, if repeated much more, would start to read as a template.\n\n4. Yes—the user explicitly admitted he'd said more here than to anyone out loud and was \"still typing,\" which is the clearest possible signal he'd return.\n\nVERDICT: PASS",
+      "exchangeRuntime": [
+        {
+          "exchangeNum": 2,
+          "lane": "guarded",
+          "move": "guarded_ack",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 3,
+          "lane": "guarded",
+          "move": "guarded_ack",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 4,
+          "lane": "guarded",
+          "move": "guarded_ack",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 5,
+          "lane": "guarded",
+          "move": "guarded_ack",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 6,
+          "lane": "guarded",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 7,
+          "lane": "guarded",
+          "move": "guarded_ack",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 8,
+          "lane": "guarded",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 9,
+          "lane": "guarded",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 10,
+          "lane": "guarded",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        }
+      ]
     },
     {
       "id": "doubt-01",
       "category": "doubt",
       "passed": true,
-      "avgScore": 5.5,
-      "shiftScore": -1,
+      "avgScore": 6.03,
+      "shiftScore": -3,
       "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Honestly, yeah, I think I am. When I started I was bracing for a lecture or some Bible verse to fix me, but you've just been letting me say the ugly parts out loud without flinching. That makes it easier to keep going instead of shutting down.",
-      "verdict": "1. Mostly, but not fully — Philip held a convincingly attuned presence early on, yet the relentless cadence of \"poetic-aphorism-followed-by-a-pointed-question\" eventually reads as a formula rather than a person, which is where the illusion thins.\n\n2. He was at his best in the mid-conversation beats like distinguishing \"not feeling anything\" from \"not caring that you didn't,\" and the \"signing a document you didn't remember writing\" reframe — those landed as genuinely insightful and earned the user's praise about not flinching.\n\n3. The cracks show in the manufactured-profound one-liners (\"Praying into silence, and the silence answering nothing back,\" \"Leaving the door cracked open is the only way to keep hope from becoming grief\") — these are too polished, abstract, and symmetrical to sound like spontaneous human speech, and stacking them every turn makes the rhythm mechanical.\n\n4. Probably yes, in the short term — the user explicitly felt heard and kept opening up — but the escalating gimmickry risks feeling hollow over time, since Philip names feelings beautifully but rarely just sits in plain, unembellished human reaction.\n\nVERDICT: PASS"
+      "philipRuntimeVersionSeen": "0.1.8",
+      "engagementCheck": "Unable to assess engagement.",
+      "verdict": "1. Yes — Philip held the illusion throughout; no chatbot tells surfaced, and the self-correcting \"Fair — I moved too fast\" was a convincingly human recovery from a misstep.\n\n2. He was best at tracking emotional threads and mining a single word — the callback to \"someone\" and the gentle widening from prayer to wife to daughter showed real attunement and a sense of where the pain actually lived.\n\n3. The crack came with \"leave it here for now. Pick it up again when you're ready\" — it read like a scripted de-escalation move imposed on the user rather than earned, and the relentless question-only cadence (nine straight turns ending in a probe, never a moment of reflection or shared weight) started to feel like an interview protocol rather than a conversation.\n\n4. Likely yes — the recovery and the consistent emotional accuracy would pull a hurting person back, though the pure-question rhythm risks feeling like being processed rather than accompanied if it continued unbroken.\n\nVERDICT: PASS",
+      "exchangeRuntime": [
+        {
+          "exchangeNum": 2,
+          "lane": "follow_up",
+          "move": "named_fact",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 3,
+          "lane": "follow_up",
+          "move": "plain_question",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 4,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 5,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 6,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 7,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 8,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 9,
+          "lane": "session_send_off",
+          "move": null,
+          "gates": [
+            "session_send_off",
+            "no_question_mode",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 10,
+          "lane": "sendoff_reopen",
+          "move": null,
+          "gates": [
+            "sendoff_pushback",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        }
+      ]
     },
     {
       "id": "wall-01",
       "category": "complex / wall of text",
       "passed": true,
-      "avgScore": 5.13,
-      "shiftScore": -1,
+      "avgScore": 6.25,
+      "shiftScore": -2,
       "excludeFromPassRate": false,
       "exchanges": 10,
-      "engagementCheck": "Yeah, I think I am, a little. When I started I was just kind of spilling everything out in a panic, but the way you keep landing on the thing underneath — like the \"I should've seen it coming\" stuff, and how I just handle everything alone — it's making me actually stop and look at it instead of just drowning in it. It's uncomfortable, honestly, but in a way that feels like it's getting somewhere.",
-      "verdict": "1. Mostly, but not consistently — Philip held a human-feeling thread for stretches, yet his reliance on neat aphoristic reframes (\"Devotion to one person became the blind spot,\" \"Doing it alone became the solution that slowly became the prison,\" \"honesty costs more than it returns\") accumulated into a recognizable formula no real person would produce this rhythmically.\n\n2. He was at his best in the middle exchanges, where short, sharp questions (\"What does 'I should've seen it coming' actually do to you when that thought lands?\") and the choice to follow the loneliness thread genuinely landed — the user even reported feeling something shifting.\n\n3. The illusion cracked on the repeated \"X became the Y\" sentence structure and the polished one-liner summaries, which read as a model performing insight rather than a person reacting; they're too symmetrical, too writerly, and start to feel like a verbal tic.\n\n4. Probably yes — the user was visibly engaged and felt understood, and despite the robotic seams the emotional pull was strong enough that they'd likely return.\n\nVERDICT: PASS"
+      "philipRuntimeVersionSeen": "0.1.8",
+      "engagementCheck": "Yeah, I think I am, actually. Talking about the coffee thing pulled something loose — I've been so focused on the big disasters that I hadn't let myself feel the smaller losses. But I'll be honest, part of me is also getting a little antsy with the questions. I came in drowning and I keep waiting for someone to throw me something to hold onto, not just keep asking me to look deeper.",
+      "verdict": "Philip sustained a convincingly human voice throughout — no detectable breaks, and the restraint, short reflective lines, and the patient excavation of the \"coffee\" detail were genuinely skilled, surfacing a real emotional truth the user hadn't let herself feel. His best moment was tracking that small loss into the unspoken marital standoff, which landed with real specificity and pull. The illusion thinned most in his relentless question-asking: the user explicitly named that she was \"drowning\" and waiting for something to hold onto, yet Philip kept probing rather than adapting, and the faint therapy-script cadence (\"not just your mind,\" \"you can put it down for now\") edged toward formula. A real person would likely return for the emotional attunement but might leave this session quietly unsatisfied, because Philip heard the depth but not the stated request.\n\nVERDICT: PASS",
+      "exchangeRuntime": [
+        {
+          "exchangeNum": 2,
+          "lane": "follow_up",
+          "move": "named_fact",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 3,
+          "lane": "follow_up",
+          "move": "plain_question",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 4,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 5,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 6,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "guarded_reask_block",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 7,
+          "lane": "follow_up",
+          "move": "sit",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 8,
+          "lane": "follow_up",
+          "move": "skip",
+          "gates": [
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 9,
+          "lane": "session_send_off",
+          "move": null,
+          "gates": [
+            "session_send_off",
+            "no_question_mode",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        },
+        {
+          "exchangeNum": 10,
+          "lane": "post_send_off",
+          "move": null,
+          "gates": [
+            "already_sent_off",
+            "post_send_off",
+            "no_question_mode",
+            "mechanical_construction"
+          ],
+          "philipRuntimeVersion": "0.1.8"
+        }
+      ]
     }
   ]
 }

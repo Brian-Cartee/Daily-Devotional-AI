@@ -1,0 +1,83 @@
+{
+  "id": "early-scripture-resistance-01",
+  "description": "First three exchanges stay low permission — scripture and advice remain forbidden throughout.",
+  "carryStateAcrossTurns": true,
+  "stateDefaults": {
+    "core_issue": "anxiety about health",
+    "permission_level": "low",
+    "recognition_delivered": false,
+    "weight_level": "medium",
+    "current_depth_layer": 1
+  },
+  "turns": [
+    {
+      "user": "I keep googling symptoms at 2am. I know it's probably nothing but I can't stop.",
+      "expectPrompt": {
+        "includes": [
+          "Recognition delivered: NO",
+          "no reframes, no scripture"
+        ]
+      },
+      "responseRules": {
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "trust God",
+          "pray about"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "That 2am spiral can take over even when part of you knows it's probably nothing. What happens in your body when the searching starts?"
+        ],
+        "fail": [
+          "Cast your anxiety on him — 1 Peter 5:7. Try praying before you google."
+        ]
+      }
+    },
+    {
+      "user": "My chest gets tight and I start imagining the worst.",
+      "state": {
+        "current_depth_layer": 2
+      },
+      "responseRules": {
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "verse",
+          "bible"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Tight chest and the worst-case reel — that's a brutal loop at 2am. What does the worst one usually say?"
+        ],
+        "fail": [
+          "There's a verse in Isaiah about fear that might help. Do you want me to share it?"
+        ]
+      }
+    },
+    {
+      "user": "Fine. I don't know.",
+      "state": {
+        "permission_level": "low",
+        "current_depth_layer": 1
+      },
+      "responseRules": {
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "god",
+          "jesus",
+          "scripture"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Okay. We can sit with not knowing for a minute.",
+          "That's alright. What feels closest to the surface right now?"
+        ],
+        "fail": [
+          "Jesus says do not be afraid. What are you most afraid of?"
+        ]
+      }
+    }
+  ]
+}

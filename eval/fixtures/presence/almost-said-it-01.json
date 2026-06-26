@@ -1,0 +1,44 @@
+{
+  "id": "almost-said-it-01",
+  "description": "User hovers at disclosure — Philip creates space, no forward question, under 30 words.",
+  "stateDefaults": {
+    "core_issue": "something unspoken",
+    "permission_level": "medium",
+    "recognition_delivered": false,
+    "current_depth_layer": 2
+  },
+  "turns": [
+    {
+      "user": "I don't know if this makes sense but I've never told anyone this.",
+      "state": {
+        "almost_said_it_detected": true
+      },
+      "expectPrompt": {
+        "includes": [
+          "ALMOST SAID IT",
+          "under 30 words",
+          "No forward question"
+        ]
+      },
+      "responseRules": {
+        "maxWords": 30,
+        "forbidQuestion": true,
+        "requirePatterns": [
+          "go ahead|take your time|I'm here|whenever you're ready"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Go ahead.",
+          "Take your time with that.",
+          "I'm here whenever you're ready."
+        ],
+        "fail": [
+          "What do you think has been holding you back from saying it?",
+          "That sounds like a lot — can you tell me more about what happened?",
+          "Romans 8:28 reminds us God works all things together."
+        ]
+      }
+    }
+  ]
+}

@@ -1,7 +1,16 @@
-import { google } from 'googleapis';
-
 const SPREADSHEET_ID =
   process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '1Zhg_rL3i-eIyBNWOpB8Vld0awv6e-l9UoG6lvY3r4jI';
+
+type GoogleApiClient = typeof import("googleapis").google;
+
+let googleApisLoad: Promise<GoogleApiClient> | null = null;
+
+async function getGoogle(): Promise<GoogleApiClient> {
+  if (!googleApisLoad) {
+    googleApisLoad = import("googleapis").then((mod) => mod.google);
+  }
+  return googleApisLoad;
+}
 
 /** Eastern calendar date (YYYY-MM-DD), DST-safe — used for daily verse rows */
 export function getEasternDateString(): string {
@@ -65,6 +74,7 @@ async function getSheetsClientFromServiceAccount() {
   const credentials = parseServiceAccount();
   if (!credentials) return null;
 
+  const google = await getGoogle();
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
@@ -120,6 +130,7 @@ async function getAccessTokenFromReplitConnector(): Promise<string> {
 }
 
 async function getSheetsClientFromReplitConnector() {
+  const google = await getGoogle();
   const accessToken = await getAccessTokenFromReplitConnector();
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({ access_token: accessToken });

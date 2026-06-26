@@ -11,7 +11,16 @@ import {
   enforceDependencyRedirect,
   needsDependencyRedirect,
 } from "../../guidanceSafety";
+import {
+  buildPresenceShortCircuitResponse,
+  enforcePresenceResponse,
+  resolvePresenceLane,
+  tryPresenceShortCircuit,
+} from "../../lib/presenceEnforcement";
+import type { ConversationState } from "../../conversationState";
 import type { PhilipGate, PhilipLane, PreTurnGateResult } from "./types";
+
+export { tryPresenceShortCircuit };
 
 export function evaluatePreTurnGates(input: {
   isFollowUp: boolean;
@@ -121,11 +130,13 @@ export function resolveNoQuestionMode(input: {
   isFollowUp: boolean;
   conversationStateBlock: string;
   conversationHistory: Array<{ role: string; content: string }>;
+  conversationState?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null;
 }): boolean {
-  if (!input.isFollowUp) return false;
-  const philipMsgs = input.conversationHistory.filter(m => m.role === "assistant");
   const userMsgs = input.conversationHistory.filter(m => m.role === "user").map(m => m.content);
   const lastUser = userMsgs[userMsgs.length - 1] ?? "";
+  if (resolvePresenceLane(lastUser, input.conversationState)) return true;
+  if (!input.isFollowUp) return false;
+  const philipMsgs = input.conversationHistory.filter(m => m.role === "assistant");
   const exchangeNum = Math.floor(input.conversationHistory.length / 2);
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
   const willSendOff = !alreadySentOff
@@ -141,10 +152,24 @@ export function applyPostTurnGates(input: {
   noQuestionMode: boolean;
   conversationHistory: Array<{ role: string; content: string }>;
   exchangeNum: number;
+  conversationState?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null;
 }): { text: string; gates: PhilipGate[]; lane: PhilipLane | null } {
   const gates: PhilipGate[] = [];
   let text = input.text;
   let lane: PhilipLane | null = null;
+
+  const userMsgs = input.conversationHistory.filter(m => m.role === "user").map(m => m.content);
+  const lastUserMsg = userMsgs[userMsgs.length - 1] ?? "";
+
+  const presenceLane = resolvePresenceLane(lastUserMsg, input.conversationState);
+  if (presenceLane) {
+    const beforePresence = text;
+    text = enforcePresenceResponse(text, presenceLane);
+    gates.push(presenceLane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause");
+    if (text !== beforePresence || lane === null) {
+      lane = "presence_hold";
+    }
+  }
 
   if (!input.isFollowUp || input.noQuestionMode) {
     return { text, gates, lane };
@@ -152,10 +177,6 @@ export function applyPostTurnGates(input: {
 
   const claudeHistory = input.conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
   const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
-  const userMsgs = claudeHistory.filter(m => m.role === "user").map(m => m.content);
-  const lastUserMsg = userMsgs[userMsgs.length - 1] ?? "";
-
-  const beforeRisk = text;
   text = enforceAmbiguousRiskCheck(text, lastUserMsg, philipMsgs, input.exchangeNum);
   if (text !== beforeRisk) {
     gates.push("ambiguous_risk");

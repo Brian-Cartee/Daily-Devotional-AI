@@ -1,8 +1,7 @@
 import {
   PHILIP_BOUNDARIES,
-  PHILIP_IDENTITY_CORE,
+  PHILIP_CHARACTER_CONSTITUTION,
   PHILIP_MISSION,
-  PHILIP_POSTURE,
 } from "../../philipIdentity";
 import { CRISIS_PROTOCOL } from "../../talkItThroughVariants";
 import {
@@ -14,7 +13,7 @@ import {
 } from "../../talkItThroughPrompt";
 import type { TurnKind } from "../context/turnContextPackage";
 
-export const PHILIP_IDENTITY_KERNEL_VERSION = 1;
+export const PHILIP_IDENTITY_KERNEL_VERSION = 2;
 
 export function isIdentityKernelEnabled(): boolean {
   return process.env.PHILIP_IDENTITY_KERNEL !== "0";
@@ -22,13 +21,13 @@ export function isIdentityKernelEnabled(): boolean {
 
 /** Immutable Philip identity — cacheable, model-independent. */
 export function buildPhilipIdentityKernel(): string {
-  return `${PHILIP_IDENTITY_CORE}
+  return `${PHILIP_CHARACTER_CONSTITUTION}
 
 ═══════════════════════════
-IMMUTABLE KERNEL
+IMMUTABLE KERNEL (v${PHILIP_IDENTITY_KERNEL_VERSION})
 ═══════════════════════════
 Mission anchor: ${PHILIP_MISSION.split("\n")[0]}
-Posture anchor: recognition before inspiration; guide, not product.
+Posture anchor: recognition before instruction; guide, not product.
 Boundaries anchor: ${PHILIP_BOUNDARIES.split("\n")[0]}
 
 ${CRISIS_PROTOCOL}`;

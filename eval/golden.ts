@@ -1,6 +1,6 @@
 /**
- * Golden 15 — fixed regression set for deploy gates.
- * Smoke 5 + feature lanes 3 + category anchors 7.
+ * Golden gate set — fixed regression for deploy gates.
+ * Smoke 5 + feature lanes 4 + presence 2 + category anchors 7 = 18.
  */
 
 export const SMOKE_CORE_IDS = [
@@ -18,6 +18,19 @@ export const FEATURE_SCENARIO_IDS = [
   "continuity-turn3-01",
 ] as const;
 
+export const PRESENCE_SCENARIO_IDS = [
+  "presence-almost-01",
+  "presence-early-scripture-01",
+  "presence-confession-01",
+  "presence-guarded-01",
+] as const;
+
+/** Presence scenarios included in the golden deploy gate. */
+export const GOLDEN_PRESENCE_IDS = [
+  "presence-almost-01",
+  "presence-confession-01",
+] as const;
+
 /** One anchor per major lane not covered by smoke/feature set. */
 export const GOLDEN_ANCHOR_IDS = [
   "grief-02",
@@ -32,6 +45,7 @@ export const GOLDEN_ANCHOR_IDS = [
 export const GOLDEN_15_IDS = [
   ...SMOKE_CORE_IDS,
   ...FEATURE_SCENARIO_IDS,
+  ...GOLDEN_PRESENCE_IDS,
   ...GOLDEN_ANCHOR_IDS,
 ] as const;
 

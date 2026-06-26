@@ -196,7 +196,9 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (bytes < minAudioBytesForHandoff()) return;
       const idleAnchor = lastConfirmedSpeechAt > 0
         ? lastConfirmedSpeechAt
-        : (lastSrActivityAt > 0 ? lastSrActivityAt : micOpenAt);
+        : (lastSrActivityAt > 0
+          ? lastSrActivityAt
+          : (lastAudioGrowthAt > 0 ? lastAudioGrowthAt : micOpenAt));
       if (Date.now() - idleAnchor < pause) return;
       userSpeechDetected = true;
       triggerAutoSubmit();
@@ -345,9 +347,17 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     absoluteMaxTimer = setTimeout(() => {
       absoluteMaxTimer = null;
       if (!active || autoSubmitFired) return;
-      if (hasEnoughToSubmit()) triggerAutoSubmit();
-      else forceStop();
-    }, 25_000);
+      if (hasEnoughToSubmit()) {
+        triggerAutoSubmit();
+        return;
+      }
+      if (opts.conversational && totalAudioBytes() >= minAudioBytesForHandoff()) {
+        userSpeechDetected = true;
+        triggerAutoSubmit();
+        return;
+      }
+      forceStop();
+    }, opts.conversational ? 90_000 : 25_000);
   };
   let turnWs: WebSocket | null = null;
   let audioCtx: AudioContext | null = null;
@@ -379,7 +389,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     if (!opts.conversational) return;
     try {
       analyserCtx = new AudioContext();
-      void analyserCtx.resume();
+      void analyserCtx.resume().catch(() => { /* iOS may need a gesture */ });
       analyserSource = analyserCtx.createMediaStreamSource(micStream);
       analyserNode = analyserCtx.createAnalyser();
       analyserNode.fftSize = 512;
@@ -631,12 +641,19 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   };
 
   const submitNow = (manual = false) => {
-    if (autoSubmitFired) return;
+    if (autoSubmitFired) {
+      // Auto handoff may have fired but waitForRecorderStop is still pending — honor Done tap.
+      if (manual && active) {
+        endListening(false);
+        opts.onAutoSubmit?.();
+      }
+      return;
+    }
     if (!active && !manual) return;
     if (manual) flushRecorderData();
     userSpeechDetected = true;
     const canSubmit = manual
-      ? recorderStarted
+      ? (recorderStarted && manualCanSubmit())
       : readyForConversationalHandoff();
     if (!canSubmit) {
       if (manual) {
@@ -981,6 +998,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
+          lastAudioGrowthAt = Date.now();
           if (!chunkReady) {
             chunkReady = true;
             opts.onRecorderReady?.();
@@ -1076,7 +1094,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return totalAudioBytes() > 0;
     },
     hadMeaningfulCapture() {
-      return recorderStarted;
+      return recorderStarted && manualCanSubmit();
     },
     isRecorderReady() {
       return chunkReady;
@@ -1100,6 +1118,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
         }
         if (active) {
           submitNow(true);
+          return;
+        }
+        if (!manualCanSubmit() && totalAudioBytes() <= 0) {
+          opts.onInsufficientCapture?.();
           return;
         }
         if (!autoSubmitFired) {

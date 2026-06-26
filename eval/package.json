@@ -12,7 +12,10 @@
     "turing:mind-gate": "npx tsx mind-gate.ts",
     "turing:golden": "npx tsx philip-turing-test.ts --golden",
     "turing:single": "npx tsx philip-turing-test.ts --count 1",
-    "turing:category": "npx tsx philip-turing-test.ts --category"
+    "turing:category": "npx tsx philip-turing-test.ts --category",
+    "presence": "npx tsx run-presence-fixtures.ts",
+    "presence:live": "npx tsx run-presence-fixtures.ts --local",
+    "turing:presence": "npx tsx philip-turing-test.ts --presence"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

@@ -106,25 +106,6 @@ const ALL_BANNED = [
   ...HYPE_PATTERNS,
 ];
 
-// ── Scripture detection ───────────────────────────────────────────────────────
-
-const SCRIPTURE_SIGNALS = [
-  /\b(psalm|proverbs|matthew|mark|luke|john|romans|corinthians|galatians|ephesians|philippians|colossians|hebrews|james|peter|genesis|isaiah|jeremiah|ezekiel|daniel)\b/i,
-  /\bscripture\b/i,
-  /\bjesus says\b/i,
-  /\bjesus said\b/i,
-  /\bpaul writes\b/i,
-  /\bpaul said\b/i,
-  /\bthe bible\b/i,
-  /\bthere'?s a (line|place|verse|moment|word|passage|promise|reminder) in\b/i,
-  /\b\d+:\d+\b/,                   // e.g. John 3:16
-  /\b(god|jesus|paul|david) (says?|said|wrote?|speaks?|spoke)\b/i,
-];
-
-function hasScriptureReference(text: string): boolean {
-  return SCRIPTURE_SIGNALS.some(pattern => pattern.test(text));
-}
-
 // ── Sentence + paragraph utilities ───────────────────────────────────────────
 
 function countSentences(text: string): number {
@@ -188,17 +169,6 @@ function hasAcknowledgment(text: string): boolean {
     /\b(tends to|has a way of|builds|settles|lingers|sticks)\b/i,
   ];
   return ackPatterns.some(p => p.test(firstParagraph));
-}
-
-function hasTruthReframe(text: string): boolean {
-  const reframePatterns = [
-    /\b(but|yet|however|still|even so)\b/i,
-    /\bthat doesn'?t mean\b/i,
-    /\bnot the same (as|thing)\b/i,
-    /\byou (don'?t have to|are allowed to|can)\b/i,
-    /\b(what changes|what matters|what'?s real)\b/i,
-  ];
-  return reframePatterns.some(p => p.test(text));
 }
 
 function hasGentleInvitation(text: string): boolean {
@@ -277,18 +247,6 @@ export function validateResponse(responseText: string): ValidationResult {
   if (!hasAcknowledgment(responseText)) {
     issues.push("Structure: no acknowledgment of the person's reality in the opening");
     score -= 1;
-  }
-
-  // 9. Structure: scripture reference
-  if (!hasScriptureReference(responseText)) {
-    issues.push("Structure: no scripture reference or natural anchor found");
-    score -= 1;
-  }
-
-  // 10. Structure: truth reframe
-  if (!hasTruthReframe(responseText)) {
-    issues.push("Structure: no truth-based reframe detected");
-    score -= 0.5;
   }
 
   // 11. Structure: gentle invitation (optional but scored)

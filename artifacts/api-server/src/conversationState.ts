@@ -34,6 +34,10 @@ export type PhilipMove =
 
 export type AckRegister = "plain" | "literary" | null;
 
+export type WeightLevel = "low" | "medium" | "high";
+export type PermissionLevel = "low" | "medium" | "high";
+export type DepthLayer = 1 | 2 | 3 | 4 | 5;
+
 export interface ConversationState {
   core_issue: string;
   facts_learned: string[];
@@ -48,6 +52,89 @@ export interface ConversationState {
   literary_cooldown_remaining?: number;
   moves_used?: string[];
   philip_openers_used?: string[];
+  recognition_delivered: boolean;
+  weight_level: WeightLevel;
+  permission_level: PermissionLevel;
+  current_depth_layer: DepthLayer;
+  almost_said_it_detected: boolean;
+  sacred_pause_warranted: boolean;
+  delight_expressed_this_session: boolean;
+  humor_attempted_this_session: boolean;
+  ecosystem_recommendation_given: boolean;
+}
+
+export function detectAlmostSaidIt(userMessage: string): boolean {
+  const text = userMessage.trim();
+  const qualifierPatterns = [
+    /I don'?t know if this makes sense[,\s]/i,
+    /this might sound (strange|stupid|silly|weird)/i,
+    /I'?ve never (said|told) (this|anyone)/i,
+    /actually[,\s]+never mind/i,
+    /it'?s probably not a big deal/i,
+    /there'?s something I'?ve been (wanting|meaning) to say/i,
+    /\bthe truth is\b/i,
+    /\bhonestly[,\s]/i,
+    /^actually[,\s]/i,
+  ];
+  return qualifierPatterns.some(p => p.test(text));
+}
+
+const SACRED_PAUSE_USER_PATTERNS = [
+  /\bnever said (this|it) out loud\b/i,
+  /\b(don'?t|do not) think god could forgive\b/i,
+  /\bcan god forgive\b/i,
+];
+
+export function detectSacredPauseUserMessage(userMessage: string): boolean {
+  const text = userMessage.trim();
+  return SACRED_PAUSE_USER_PATTERNS.some((p) => p.test(text));
+}
+
+function defaultPresenceFields(existingState?: ConversationState): Pick<
+  ConversationState,
+  | "recognition_delivered"
+  | "weight_level"
+  | "permission_level"
+  | "current_depth_layer"
+  | "almost_said_it_detected"
+  | "sacred_pause_warranted"
+  | "delight_expressed_this_session"
+  | "humor_attempted_this_session"
+  | "ecosystem_recommendation_given"
+> {
+  return {
+    recognition_delivered: existingState?.recognition_delivered ?? false,
+    weight_level: existingState?.weight_level ?? "low",
+    permission_level: existingState?.permission_level ?? "low",
+    current_depth_layer: existingState?.current_depth_layer ?? 1,
+    almost_said_it_detected: false,
+    sacred_pause_warranted: existingState?.sacred_pause_warranted ?? false,
+    delight_expressed_this_session: existingState?.delight_expressed_this_session ?? false,
+    humor_attempted_this_session: existingState?.humor_attempted_this_session ?? false,
+    ecosystem_recommendation_given: existingState?.ecosystem_recommendation_given ?? false,
+  };
+}
+
+function normalizePresenceFields(
+  parsed: Partial<ConversationState>,
+  lastUserMessage: string,
+  existingState?: ConversationState,
+): void {
+  const defaults = defaultPresenceFields(existingState);
+  parsed.recognition_delivered = parsed.recognition_delivered ?? defaults.recognition_delivered;
+  parsed.weight_level = parsed.weight_level ?? defaults.weight_level;
+  parsed.permission_level = parsed.permission_level ?? defaults.permission_level;
+  parsed.current_depth_layer = parsed.current_depth_layer ?? defaults.current_depth_layer;
+  parsed.almost_said_it_detected =
+    detectAlmostSaidIt(lastUserMessage) || (parsed.almost_said_it_detected ?? false);
+  parsed.sacred_pause_warranted =
+    detectSacredPauseUserMessage(lastUserMessage) || (parsed.sacred_pause_warranted ?? defaults.sacred_pause_warranted);
+  parsed.delight_expressed_this_session =
+    parsed.delight_expressed_this_session ?? defaults.delight_expressed_this_session;
+  parsed.humor_attempted_this_session =
+    parsed.humor_attempted_this_session ?? defaults.humor_attempted_this_session;
+  parsed.ecosystem_recommendation_given =
+    parsed.ecosystem_recommendation_given ?? defaults.ecosystem_recommendation_given;
 }
 
 const LITERARY_ACK_PATTERNS = [
@@ -1249,6 +1336,17 @@ PHILIP MOVE TRACKING: From Philip's most recent response, extract:
   - last_move: one of plain_question, named_fact, tension, sit, reflect_back, guarded_ack, reciprocal_answer, skip — the structural move he used
 - ack_register: "literary" if his preamble used aphoristic reframe ("X became Y", "X is its own kind of Y", "X where Y used to be", universal grief poetry without a specific fact) — otherwise "plain". If his response was question-only with no preamble, use "plain".
 
+PRESENCE LAYER: Track whether Philip has earned the right to guide, reframe, or cite scripture.
+- recognition_delivered: true when Philip has named something specific about what this person is carrying — not just topic acknowledgment
+- weight_level: high = loss, grief, confession, crisis; medium = frustration, struggle, doubt; low = general question
+- permission_level: low = first 2 exchanges or person is guarded; medium = person has opened somewhat; high = person said something they haven't said to anyone, or has asked Philip directly for perspective
+- current_depth_layer: 1=situation, 2=internal response, 3=underlying belief, 4=fear, 5=desire
+- almost_said_it_detected: true when person uses qualifiers like "I don't know if this makes sense but...", abandons a sentence, or minimizes something significant
+- sacred_pause_warranted: true after major disclosure, grief, or first-time statement
+
+SESSION FLAGS (carry forward unless this turn changes them):
+- delight_expressed_this_session, humor_attempted_this_session, ecosystem_recommendation_given
+
 Return ONLY valid JSON, no markdown, no extra text.`;
 
 export async function generateConversationState(
@@ -1284,7 +1382,16 @@ Extract the current conversation state:
   "user_exact_words": ["vivid or specific phrases the USER chose — not Philip's words, theirs"],
   "conversation_closing": false,
   "last_move": "plain_question | named_fact | tension | sit | reflect_back | guarded_ack | reciprocal_answer | skip — from Philip's last response",
-  "ack_register": "plain | literary | null — was Philip's last preamble aphoristic or grounded?"
+  "ack_register": "plain | literary | null — was Philip's last preamble aphoristic or grounded?",
+  "recognition_delivered": false,
+  "weight_level": "low|medium|high",
+  "permission_level": "low|medium|high",
+  "current_depth_layer": 1,
+  "almost_said_it_detected": false,
+  "sacred_pause_warranted": false,
+  "delight_expressed_this_session": false,
+  "humor_attempted_this_session": false,
+  "ecosystem_recommendation_given": false
 }
 
 For conversation_closing: set true if the most recent user message indicates they are ending the conversation (goodbye, I'm done, thanks, you're not listening, etc.).`;
@@ -1326,6 +1433,8 @@ For conversation_closing: set true if the most recent user message indicates the
       parsed.conversation_closing = true;
     }
 
+    normalizePresenceFields(parsed, lastUserMessage, existingState);
+
     return parsed;
   } catch {
     // Fallback: return minimal state derived from closing detection only
@@ -1338,6 +1447,8 @@ For conversation_closing: set true if the most recent user message indicates the
       metaphors_used: [],
       user_exact_words: [],
       conversation_closing: detectConversationClosing(lastUserMessage),
+      ...defaultPresenceFields(existingState),
+      almost_said_it_detected: detectAlmostSaidIt(lastUserMessage),
     };
   }
 }
@@ -1396,5 +1507,14 @@ NEVER reference how many days they've visited, "coming back here," or prior sess
 
 DEPTH BEFORE BREADTH: If the user just made a raw confession, disclosed something vulnerable, or asked Philip a direct question — go DEEPER into that before moving to new territory.
 Otherwise: explore something from "NOT YET EXPLORED."
-Your question must not be in "QUESTIONS ALREADY ASKED." Use none of the banned metaphors or openers.`;
+Your question must not be in "QUESTIONS ALREADY ASKED." Use none of the banned metaphors or openers.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRESENCE LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Recognition delivered: ${state.recognition_delivered ? "YES" : "NO — do not offer guidance, scripture, or reframe until the person has felt specifically understood"}
+Permission level: ${state.permission_level} — ${state.permission_level === "low" ? "recognition and questions only; no reframes, no scripture" : state.permission_level === "medium" ? "gentle observations, tentative meaning questions, scripture only as invitation" : "reframes, gentle challenges, theological perspective earned"}
+Current depth layer: ${state.current_depth_layer}/5 — ${state.current_depth_layer === 1 ? "still at surface (situation). Move to layer 2: ask what this was like for them." : state.current_depth_layer === 2 ? "internal response. Consider: \"what do you find yourself believing when you feel that?\"" : state.current_depth_layer >= 3 ? "approaching the real conversation. One layer at a time." : ""}
+${state.almost_said_it_detected ? "ALMOST SAID IT — respond under 30 words. No forward question. Create space. \"Go ahead.\" or \"Take your time with that.\"" : ""}
+${state.sacred_pause_warranted ? "SACRED PAUSE — respond in one sentence only. Do not advance the conversation. Receive what was just said." : ""}`;
 }

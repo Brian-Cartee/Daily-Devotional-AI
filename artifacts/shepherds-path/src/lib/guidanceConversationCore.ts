@@ -1,3 +1,5 @@
+import { randomId } from "./randomId";
+
 export type GuidanceMessage = {
   role: "user" | "assistant";
   content: string;
@@ -102,9 +104,7 @@ export function buildUserTurnEvent(content: string, clientTurnId?: string): Guid
   return {
     role: "user",
     content: content.trim(),
-    clientTurnId: clientTurnId ?? (typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `turn-${Date.now()}`),
+    clientTurnId: clientTurnId ?? randomId(),
   };
 }
 

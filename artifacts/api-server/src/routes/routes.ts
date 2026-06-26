@@ -73,6 +73,7 @@ import {
   detectPhilipDependence,
   DEPENDENCY_SYSTEM_NOTE,
 } from "../guidanceSafety";
+import { tryPresenceShortCircuit } from "../lib/presenceEnforcement";
 import {
   resolveDailyArtDir,
   writeDailyArtImageFile,
@@ -3913,6 +3914,24 @@ Write 2–3 sentences to be SPOKEN aloud. Rules:
 
     try {
       const isGuardedEntry = detectGuardedEntry(situation.trim());
+
+      if (!isSoloMode) {
+        const presenceHold = tryPresenceShortCircuit(situation.trim());
+        if (presenceHold) {
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.setHeader("Cache-Control", "no-cache");
+          res.write(presenceHold.text);
+          res.end();
+          if (sessionId) {
+            const { variant: p1Variant } = buildVariantSystemPrompt(sessionId, "phase1");
+            const p1MsgCount = incrementMessageCount(sessionId);
+            const crisisTriggered = detectCrisisSignal(situation ?? "");
+            void logAbInteraction({ sessionId, variant: p1Variant, phase: "phase1", messageCount: p1MsgCount, crisisTriggered });
+          }
+          return;
+        }
+      }
+
       const systemPrompt = isSoloMode
         ? `${soloSystemPrompt}${nameNote}${phase1SafetyNote}${phase1DependencyNote}`
         : isGuardedEntry

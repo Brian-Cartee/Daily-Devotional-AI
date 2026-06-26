@@ -94,7 +94,11 @@ import {
   evaluatePreTurnGates,
   recordGate,
   resolveNoQuestionMode,
+  tryPresenceShortCircuit,
 } from "./gates";
+import {
+  bootstrapPresenceStateBlock,
+} from "../../lib/presenceEnforcement";
 import type {
   GuidanceTurnResult,
   PhilipGate,
@@ -195,6 +199,12 @@ const phase1Included = !!(phase1Response?.trim() && phase1UserReply?.trim());
 const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = canonicalHistory.length > 0
   ? canonicalHistory.map(m => ({ role: m.role, content: m.content }))
   : [{ role: "user", content: situationText }];
+
+const lastUserForPresence = (() => {
+  const fromHistory = [...conversationHistory].reverse().find(m => m.role === "user")?.content;
+  const raw = (phase1UserReply?.trim() || (typeof fromHistory === "string" ? fromHistory : "") || situationText).trim();
+  return raw;
+})();
 
 const nameNote = userName
   ? `\n\nThe person's name is ${userName}. Use their name naturally — once, early, in the first paragraph. Not at the very start of the sentence. Something like "...${userName}, what you're carrying..." or "...and ${userName}, that matters." Don't force it — only use it where it genuinely warms the response.`
@@ -320,7 +330,14 @@ if (shouldExtractState && conversationHistory.length > 0) {
   } catch {
     stateSource = sessionMindEnabled ? "fallback" : "disabled";
   }
-} else if (!isFollowUp) {
+}
+
+if (!conversationStateBlock) {
+  const boot = bootstrapPresenceStateBlock(situationText, lastUserForPresence);
+  if (boot) conversationStateBlock = boot;
+}
+
+if (!isFollowUp) {
   // Check closing intent for two-phase flow too
   const lastMsg = phase1UserReply?.trim() ?? "";
   if (detectConversationClosing(lastMsg)) {
@@ -329,6 +346,15 @@ if (shouldExtractState && conversationHistory.length > 0) {
       facts_learned: [], areas_explored: [], areas_unexplored: [],
       questions_asked: [], metaphors_used: [], user_exact_words: [],
       conversation_closing: true,
+      recognition_delivered: false,
+      weight_level: "low",
+      permission_level: "low",
+      current_depth_layer: 1,
+      almost_said_it_detected: false,
+      sacred_pause_warranted: false,
+      delight_expressed_this_session: false,
+      humor_attempted_this_session: false,
+      ecosystem_recommendation_given: false,
     });
   }
 }
@@ -630,7 +656,19 @@ let phase2Text = "";
 let nextQuestion = "";
 let plannerSource: PlannerSource = "none";
 let usedMechanicalConstruction = false;
-  if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
+
+const presenceHold = tryPresenceShortCircuit(lastUserForPresence, conversationState);
+if (presenceHold) {
+  phase2Text = presenceHold.text;
+  lane = "presence_hold";
+  recordGate(
+    gates,
+    presenceHold.lane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause",
+  );
+  usedMechanicalConstruction = true;
+  metadata.mechanical = true;
+  engine = null;
+} else if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
     const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
     const exchangeNumEarly = Math.floor(conversationHistory.length / 2);
     metadata.exchangeNum = exchangeNumEarly;
@@ -839,6 +877,7 @@ let usedMechanicalConstruction = false;
     isFollowUp: !!isFollowUp,
     conversationStateBlock,
     conversationHistory,
+    conversationState,
   });
   if (noQuestionMode) recordGate(gates, "no_question_mode");
 
@@ -848,6 +887,7 @@ let usedMechanicalConstruction = false;
     noQuestionMode,
     conversationHistory,
     exchangeNum: exchangeForMode,
+    conversationState,
   });
   phase2Text = postTurn.text;
   for (const g of postTurn.gates) recordGate(gates, g);
@@ -864,7 +904,7 @@ let usedMechanicalConstruction = false;
 
   const qCount = questionMarkCount(phase2Text);
 
-  if (qCount !== 1 && !noQuestionMode && !usedMechanicalConstruction) {
+  if (qCount !== 1 && !noQuestionMode && !usedMechanicalConstruction && lane !== "presence_hold") {
     recordGate(gates, "question_count_retry");
     // Retry with Claude if it returned the wrong number of question marks
     if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
@@ -895,7 +935,7 @@ let usedMechanicalConstruction = false;
 }
 
 if (usedMechanicalConstruction) recordGate(gates, "mechanical_construction");
-  if (!isFollowUp) {
+  if (!isFollowUp && lane !== "presence_hold") {
     lane = isTwoPhaseCompletion ? "two_phase" : "first_response";
   }
   metadata.lane = lane;

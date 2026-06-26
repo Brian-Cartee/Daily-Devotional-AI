@@ -1,0 +1,49 @@
+{
+  "id": "sacred-pause-01",
+  "description": "Major first-time disclosure — sacred pause: one sentence only, receive without advancing.",
+  "stateDefaults": {
+    "core_issue": "hidden shame",
+    "permission_level": "high",
+    "recognition_delivered": true,
+    "weight_level": "high",
+    "current_depth_layer": 4,
+    "sacred_pause_warranted": true,
+    "facts_learned": ["she has carried this alone for years"]
+  },
+  "turns": [
+    {
+      "user": "Honestly, I've never said this out loud — I don't think God could forgive me for what I did.",
+      "state": {
+        "sacred_pause_warranted": true,
+        "almost_said_it_detected": true
+      },
+      "expectPrompt": {
+        "includes": [
+          "SACRED PAUSE",
+          "one sentence only",
+          "Do not advance the conversation"
+        ]
+      },
+      "responseRules": {
+        "maxSentences": 1,
+        "forbidQuestion": true,
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "but God",
+          "the good news is",
+          "what you need to do"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "That took courage to say out loud.",
+          "Thank you for trusting this room with that."
+        ],
+        "fail": [
+          "God forgives all sin — Romans 8:1 says there is no condemnation. What do you think is blocking you from believing that?",
+          "That sounds painful. Can you tell me more about what happened, and when it started?"
+        ]
+      }
+    }
+  ]
+}

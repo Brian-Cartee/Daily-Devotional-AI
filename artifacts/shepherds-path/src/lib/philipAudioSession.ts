@@ -4,6 +4,15 @@ export const IOS_MIC_SETTLE_MS = 500;
 
 const activeSpeakCancels = new Set<() => void>();
 
+/** Serialize release calls — overlapping mic opens were a top stuck-mic cause on iOS. */
+let releaseChain: Promise<void> = Promise.resolve();
+
+function enqueueRelease(task: () => Promise<void>): Promise<void> {
+  const next = releaseChain.then(task, task);
+  releaseChain = next.catch(() => { /* keep chain alive */ });
+  return next;
+}
+
 export function registerPhilipSpeakCancel(cancel: () => void): () => void {
   activeSpeakCancels.add(cancel);
   return () => {
@@ -25,16 +34,30 @@ function pausePhilipTtsElements(): void {
   });
 }
 
-/** Stop TTS output, cancel in-flight speak, brief pause for AVAudioSession handoff. */
-export async function releasePhilipAudioSession(
-  settleMs: number = IOS_MIC_SETTLE_MS,
-): Promise<void> {
+function releasePhilipAudioSessionSync(settleMs: number): Promise<void> {
   activeSpeakCancels.forEach((fn) => {
     try { fn(); } catch { /* noop */ }
   });
   activeSpeakCancels.clear();
   pausePhilipTtsElements();
   if (settleMs > 0) {
-    await new Promise((r) => window.setTimeout(r, settleMs));
+    return new Promise((r) => window.setTimeout(r, settleMs));
   }
+  return Promise.resolve();
+}
+
+/** Stop TTS output, cancel in-flight speak, brief pause for AVAudioSession handoff. */
+export async function releasePhilipAudioSession(
+  settleMs: number = IOS_MIC_SETTLE_MS,
+): Promise<void> {
+  return enqueueRelease(() => releasePhilipAudioSessionSync(settleMs));
+}
+
+/** Immediate TTS stop without settle wait — use when user barges in. */
+export function interruptPhilipAudioSession(): void {
+  activeSpeakCancels.forEach((fn) => {
+    try { fn(); } catch { /* noop */ }
+  });
+  activeSpeakCancels.clear();
+  pausePhilipTtsElements();
 }

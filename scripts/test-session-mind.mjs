@@ -53,6 +53,15 @@ function emptyState() {
     metaphors_used: [],
     user_exact_words: [],
     conversation_closing: false,
+    recognition_delivered: false,
+    weight_level: "low",
+    permission_level: "low",
+    current_depth_layer: 1,
+    almost_said_it_detected: false,
+    sacred_pause_warranted: false,
+    delight_expressed_this_session: false,
+    humor_attempted_this_session: false,
+    ecosystem_recommendation_given: false,
   };
 }
 

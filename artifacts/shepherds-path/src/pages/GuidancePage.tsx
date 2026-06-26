@@ -18,11 +18,12 @@ import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHe
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
-import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS, releasePhilipAudioSession } from "@/lib/shepherdVoice";
+import { randomId } from "@/lib/randomId";
+import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
-import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
-import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
+import { isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { nativeDiag } from "@/lib/nativeDiag";
+import { voiceTurnDiag, createVoiceTurnController, buildEntryOpenCaptureParams, buildPhase1OpenCaptureParams, buildFollowUpOpenCaptureParams } from "@/lib/voiceTurn";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
 import { resolveGuidanceSituation, readGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
 import {
@@ -505,7 +506,7 @@ export default function GuidancePage() {
   const [showListenUpgrade, setShowListenUpgrade] = useState(false);
   const [showAiPause, setShowAiPause] = useState(false);
   const [isReflecting, setIsReflecting] = useState(() => !!situation.trim());
-  const hasSpeechSupport = typeof window !== "undefined" && (
+  const hasSpeechSupport = typeof window !== "undefined" && window.isSecureContext && (
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
     || (typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined")
   );
@@ -701,14 +702,39 @@ export default function GuidancePage() {
   const setFollowUpSpeaking = (_v: boolean) => {};
   const setFollowUpListening = (_v: boolean) => {};
 
-  const philipStream = usePhilipVoiceStream();
+  // Voice turn controller — single authority for speak→release→capture (all slots).
+  const voiceTurnControllerRef = useRef(createVoiceTurnController());
 
+  useEffect(() => {
+    voiceTurnControllerRef.current.syncConvoPhase(convo.phase);
+    voiceTurnDiag("convo_phase", convo.phase);
+  }, [convo.phase]);
 
   useEffect(() => {
     if (phase1Speaking || phase2Speaking || followUpSpeaking) {
       setVoiceHandoffPending(false);
     }
   }, [phase1Speaking, phase2Speaking, followUpSpeaking]);
+
+  // Stuck capture recovery — mic live too long without handoff (iOS SR/VAD stall).
+  useEffect(() => {
+    if (!isPhilipMode() || !hasSpeechSupport) return;
+    const micOpen = entryMicLive || phase1MicLive || followUpMicLive;
+    if (!micOpen) return;
+    const STUCK_CAPTURE_MS = 45_000;
+    const t = window.setTimeout(() => {
+      const listener =
+        voiceTurnControllerRef.current.getListener()
+        ?? heartVoiceRef.current
+        ?? phase1VoiceRef.current
+        ?? followUpVoiceRef.current;
+      if (!listener?.isActive()) return;
+      voiceTurnDiag("stuck_capture_recovery", convoRef.current.phase);
+      nativeDiag("stuck_capture_recovery", convoRef.current.phase);
+      listener.finishSpeaking();
+    }, STUCK_CAPTURE_MS);
+    return () => window.clearTimeout(t);
+  }, [entryMicLive, phase1MicLive, followUpMicLive, hasSpeechSupport]);
 
   useEffect(() => {
     if (!situation.trim()) {
@@ -1228,7 +1254,7 @@ export default function GuidancePage() {
     recapFetchedRef.current = false;
     convo.dispatch({ type: "RESET" });
     convo.dispatch({ type: "ENTRY_SUBMIT" }); // drives straight to processing
-    conversationIdRef.current = crypto.randomUUID();
+    conversationIdRef.current = randomId();
     phase2SpokenRef.current = null;
     phase1SpokenRef.current = null;
     followUpSpokenRef.current = null;
@@ -1267,6 +1293,7 @@ export default function GuidancePage() {
     );
     if (!lastInputWasVoiceRef.current) {
       setPhase1SpeechDone(true);
+      setShowPhase1TypeFallback(true);
     }
     setIsReflecting(false);
     if (flowGen !== guidanceFlowGenRef.current) return;
@@ -1582,7 +1609,12 @@ export default function GuidancePage() {
   const destroyHeartVoice = useCallback(() => {
     heartTakeYourTimeRef.current?.();
     heartTakeYourTimeRef.current = null;
-    heartVoiceRef.current?.destroy();
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "entry") {
+      ctrl.destroyCapture();
+    } else {
+      heartVoiceRef.current?.destroy();
+    }
     heartVoiceRef.current = null;
     setHeartListening(false);
     setHeartListenPhase("listening");
@@ -1594,7 +1626,12 @@ export default function GuidancePage() {
   const destroyPhase1Voice = useCallback(() => {
     phase1TakeYourTimeRef.current?.();
     phase1TakeYourTimeRef.current = null;
-    phase1VoiceRef.current?.destroy();
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "p1") {
+      ctrl.destroyCapture();
+    } else {
+      phase1VoiceRef.current?.destroy();
+    }
     phase1VoiceRef.current = null;
     setPhase1Listening(false);
     setPhase1ListenPhase("listening");
@@ -1617,25 +1654,23 @@ export default function GuidancePage() {
 
   const startHeartListening = useCallback((fromWelcome = false) => {
     if (isPhilipMode() && !fromWelcome && convo.phase !== "entry") return;
-    if (heartVoiceRef.current?.isActive()) return;
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "entry" && ctrl.getListener()?.isActive()) return;
     if (heartVoiceRef.current) {
-      heartVoiceRef.current.destroy();
-      heartVoiceRef.current = null;
+      destroyHeartVoice();
     }
     if (!fromWelcome) greetingEngagedRef.current = true;
     cancelGreetingSpeakRef.current?.();
     cancelGreetingSpeakRef.current = null;
+    ctrl.interruptSpeak();
     setGreetingSpeaking(false);
     setHeartShowContinue(false);
     setHeartListenPhase("listening");
     setMicArming(true);
     setEntryMicLive(false);
     setEntryRecorderReady(false);
+    voiceTurnDiag("entry_mic_open", `fromWelcome=${fromWelcome ? 1 : 0}`);
 
-    void releasePhilipAudioSession().then(() => {
-      if (heartVoiceRef.current?.isActive()) return;
-
-    // Consume pre-acquired stream if still live — iOS may end tracks during Philip's TTS.
     let preStream = preAcquiredMicRef.current;
     if (preStream && !isLiveMediaStream(preStream)) {
       preStream.getTracks().forEach(t => t.stop());
@@ -1645,10 +1680,8 @@ export default function GuidancePage() {
       preAcquiredMicRef.current = null;
     }
 
-    const listener = createPatientVoiceListener({
-      conversational: true,
-      spokenPatienceBridge: false,
-      autoSubmitSilenceMs: VOICE_SILENCE_ENTRY_MS,
+    const captureParams = buildEntryOpenCaptureParams({
+      silenceMs: VOICE_SILENCE_ENTRY_MS,
       preAcquiredStream: preStream ?? undefined,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
@@ -1658,6 +1691,7 @@ export default function GuidancePage() {
       onPhaseChange: setHeartListenPhase,
       onMicLive: (live) => {
         setEntryMicLive(live);
+        voiceTurnDiag(live ? "entry_mic_live" : "entry_mic_off");
         if (live) {
           heartMicWasLiveRef.current = true;
           setMicArming(false);
@@ -1730,26 +1764,41 @@ export default function GuidancePage() {
         }, 400);
       },
       onAutoSubmit: () => {
-        if (heartSubmittingRef.current || processingBridgeRef.current) return;
+        if (processingBridgeRef.current) return;
         const listener = heartVoiceRef.current;
         const preview = (listener?.getPreview() ?? heartInputRef.current).trim();
+        voiceTurnDiag("entry_auto_submit", preview.slice(0, 80));
+        if (heartSubmittingRef.current) {
+          listener?.destroy();
+          heartVoiceRef.current = null;
+          ctrl.destroyCapture();
+          setEntryMicLive(false);
+          setMicArming(false);
+          setVoiceHandoffPending(false);
+          return;
+        }
         setMicArming(false);
         setEntryMicLive(false);
         setVoiceHandoffPending(true);
         submitHeartEntryRef.current(preview, true);
       },
     });
-    if (!listener) {
-      setMicArming(false);
-      return;
-    }
-    heartVoiceRef.current = listener;
-    listener.start();
-    setHeartHasRecording(true);
-    if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
-    convo.dispatch({ type: "ENTRY_OPEN" });
+
+    void ctrl.openCapture({
+      ...captureParams,
+      onStarted: (listener) => {
+        heartVoiceRef.current = listener;
+        setHeartHasRecording(true);
+        if (convo.phase === "greeting") convo.dispatch({ type: "GREETING_END" });
+        convo.dispatch({ type: "ENTRY_OPEN" });
+      },
+    }).then((epoch) => {
+      if (!ctrl.isEpochCurrent(epoch)) return;
+      if (!ctrl.getListener()) {
+        setMicArming(false);
+      }
     });
-  }, [convo, convo.phase]);
+  }, [convo, convo.phase, destroyHeartVoice]);
 
   const startHeartListeningRef = useRef(startHeartListening);
   startHeartListeningRef.current = startHeartListening;
@@ -1792,23 +1841,21 @@ export default function GuidancePage() {
   }, [phase1UserReply]);
 
   const startPhase1Listening = useCallback(() => {
-    if (phase1VoiceRef.current?.isActive()) return;
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "p1" && ctrl.getListener()?.isActive()) return;
     if (phase1VoiceRef.current) {
-      phase1VoiceRef.current.destroy();
-      phase1VoiceRef.current = null;
+      destroyPhase1Voice();
     }
     setPhase1ShowContinue(false);
     setPhase1ListenPhase("listening");
     setPhase1MicArming(true);
     setPhase1MicLive(false);
     setPhase1RecorderReady(false);
+    ctrl.interruptSpeak();
+    voiceTurnDiag("p1_mic_open");
 
-    void releasePhilipAudioSession().then(() => {
-      if (phase1VoiceRef.current?.isActive()) return;
-
-    const listener = createPatientVoiceListener({
-      conversational: true,
-      autoSubmitSilenceMs: VOICE_SILENCE_PHASE1_MS,
+    const captureParams = buildPhase1OpenCaptureParams({
+      silenceMs: VOICE_SILENCE_PHASE1_MS,
       onTranscript: (final, interim) => {
         if (final) setPhase1UserReply(final);
         setPhase1Interim(interim);
@@ -1816,6 +1863,7 @@ export default function GuidancePage() {
       onPhaseChange: setPhase1ListenPhase,
       onMicLive: (live) => {
         setPhase1MicLive(live);
+        voiceTurnDiag(live ? "p1_mic_live" : "p1_mic_off");
         if (live) {
           phase1MicWasLiveRef.current = true;
           setPhase1MicArming(false);
@@ -1883,23 +1931,41 @@ export default function GuidancePage() {
         phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
       },
       onAutoSubmit: () => {
-        if (phase1SubmittingRef.current || phase2LoadingRef.current || !phase1ResponseRef.current) return;
+        if (phase2LoadingRef.current || !phase1ResponseRef.current) return;
+        const listener = phase1VoiceRef.current;
+        const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
+        voiceTurnDiag("p1_auto_submit", preview.slice(0, 80));
+        if (phase1SubmittingRef.current) {
+          listener?.destroy();
+          phase1VoiceRef.current = null;
+          ctrl.destroyCapture();
+          setPhase1MicLive(false);
+          setPhase1MicArming(false);
+          setVoiceHandoffPending(false);
+          return;
+        }
         nativeDiag("p1_auto_submit");
         setPhase1MicLive(false);
         setPhase1MicArming(false);
         setVoiceHandoffPending(true);
-        const listener = phase1VoiceRef.current;
-        const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
         handlePhase1ContinueRef.current(preview, true);
       },
     });
-    if (!listener) return;
-    phase1VoiceRef.current = listener;
-    listener.start();
-    setPhase1Listening(true);
-    convo.dispatch({ type: "P1_REPLY_OPEN" });
+
+    void ctrl.openCapture({
+      ...captureParams,
+      onStarted: (listener) => {
+        phase1VoiceRef.current = listener;
+        setPhase1Listening(true);
+        convo.dispatch({ type: "P1_REPLY_OPEN" });
+      },
+    }).then((epoch) => {
+      if (!ctrl.isEpochCurrent(epoch)) return;
+      if (!ctrl.getListener()) {
+        setPhase1MicArming(false);
+      }
     });
-  }, []);
+  }, [destroyPhase1Voice, convo]);
 
   const startPhase1ListeningRef = useRef(startPhase1Listening);
   startPhase1ListeningRef.current = startPhase1Listening;
@@ -1958,7 +2024,12 @@ export default function GuidancePage() {
   const destroyFollowUpVoice = useCallback(() => {
     followUpTakeYourTimeRef.current?.();
     followUpTakeYourTimeRef.current = null;
-    followUpVoiceRef.current?.destroy();
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "followup") {
+      ctrl.destroyCapture();
+    } else {
+      followUpVoiceRef.current?.destroy();
+    }
     followUpVoiceRef.current = null;
     setFollowUpListening(false);
     setFollowUpListenPhase("listening");
@@ -1973,23 +2044,21 @@ export default function GuidancePage() {
   }, [destroyHeartVoice, destroyPhase1Voice, destroyFollowUpVoice]);
 
   const startFollowUpListening = useCallback(() => {
-    if (followUpVoiceRef.current?.isActive()) return;
     if (followUpSubmittingRef.current || isSending || processingBridge) return;
+    const ctrl = voiceTurnControllerRef.current;
+    if (ctrl.getActiveSlot() === "followup" && ctrl.getListener()?.isActive()) return;
     if (followUpVoiceRef.current) {
-      followUpVoiceRef.current.destroy();
-      followUpVoiceRef.current = null;
+      destroyFollowUpVoice();
     }
     setFollowUpListenPhase("listening");
     setFollowUpMicArming(true);
     setFollowUpMicLive(false);
     setFollowUpRecorderReady(false);
+    ctrl.interruptSpeak();
+    voiceTurnDiag("fu_mic_open");
 
-    void releasePhilipAudioSession().then(() => {
-      if (followUpVoiceRef.current?.isActive()) return;
-
-    const listener = createPatientVoiceListener({
-      conversational: true,
-      autoSubmitSilenceMs: VOICE_SILENCE_FOLLOWUP_MS,
+    const captureParams = buildFollowUpOpenCaptureParams({
+      silenceMs: VOICE_SILENCE_FOLLOWUP_MS,
       onTranscript: (final, interim) => {
         const display = (final + (interim ? ` ${interim}` : "")).trim();
         if (display) setFollowUp(display);
@@ -1997,6 +2066,7 @@ export default function GuidancePage() {
       onPhaseChange: setFollowUpListenPhase,
       onMicLive: (live) => {
         setFollowUpMicLive(live);
+        voiceTurnDiag(live ? "fu_mic_live" : "fu_mic_off");
         if (live) {
           setFollowUpMicArming(false);
           followUpMicRetryRef.current = 0;
@@ -2061,17 +2131,35 @@ export default function GuidancePage() {
         followUpTakeYourTimeRef.current = speakTakeYourTimeBridge();
       },
       onAutoSubmit: () => {
-        if (followUpSubmittingRef.current || isSendingRef.current || processingBridgeRef.current) return;
+        if (isSendingRef.current || processingBridgeRef.current) return;
+        const listener = followUpVoiceRef.current;
+        voiceTurnDiag("fu_auto_submit");
+        if (followUpSubmittingRef.current) {
+          listener?.destroy();
+          followUpVoiceRef.current = null;
+          ctrl.destroyCapture();
+          setFollowUpMicLive(false);
+          setFollowUpMicArming(false);
+          return;
+        }
         submitFollowUpRef.current(true);
       },
     });
-    if (!listener) return;
-    followUpVoiceRef.current = listener;
-    listener.start();
-    setFollowUpListening(true);
-    convo.dispatch({ type: "FU_REPLY_OPEN" });
+
+    void ctrl.openCapture({
+      ...captureParams,
+      onStarted: (listener) => {
+        followUpVoiceRef.current = listener;
+        setFollowUpListening(true);
+        convo.dispatch({ type: "FU_REPLY_OPEN" });
+      },
+    }).then((epoch) => {
+      if (!ctrl.isEpochCurrent(epoch)) return;
+      if (!ctrl.getListener()) {
+        setFollowUpMicArming(false);
+      }
     });
-  }, [isSending, processingBridge]);
+  }, [isSending, processingBridge, destroyFollowUpVoice, convo]);
 
   const startFollowUpListeningRef = useRef(startFollowUpListening);
   startFollowUpListeningRef.current = startFollowUpListening;
@@ -2651,6 +2739,11 @@ export default function GuidancePage() {
     nativeDiag("orb_tap", phase);
 
     const finishPhase1 = () => {
+      const ctrl = voiceTurnControllerRef.current;
+      if (ctrl.getActiveSlot() === "p1" && (ctrl.getListener() || phase1MicLive || phase1MicArming)) {
+        ctrl.manualDone();
+        return;
+      }
       const listener = phase1VoiceRef.current;
       if (listener?.isActive()) {
         listener.finishSpeaking();
@@ -2674,6 +2767,11 @@ export default function GuidancePage() {
     };
 
     const finishEntry = () => {
+      const ctrl = voiceTurnControllerRef.current;
+      if (ctrl.getActiveSlot() === "entry" && (ctrl.getListener() || entryMicLive || micArming)) {
+        ctrl.manualDone();
+        return;
+      }
       const listener = heartVoiceRef.current;
       if (listener?.isActive()) {
         listener.finishSpeaking();
@@ -2694,6 +2792,27 @@ export default function GuidancePage() {
       }
       submitHeartEntryRef.current((listener?.getPreview() ?? heartInputRef.current).trim(), true);
     };
+
+    const finishFollowUp = () => {
+      const ctrl = voiceTurnControllerRef.current;
+      if (ctrl.getActiveSlot() === "followup" && (ctrl.getListener() || followUpMicLive || followUpMicArming)) {
+        ctrl.manualDone();
+        return;
+      }
+      const listener = followUpVoiceRef.current;
+      if (listener?.isActive()) {
+        listener.finishSpeaking();
+        return;
+      }
+      submitFollowUpRef.current(true, followUp);
+    };
+
+    if (followUpVoiceRef.current?.isActive() || followUpMicLive || followUpMicArming) {
+      if (phase === "fu-reply") {
+        finishFollowUp();
+        return;
+      }
+    }
 
     if (phase1VoiceRef.current?.isActive() || phase1MicLive || phase1MicArming) {
       if (phase1ResponseRef.current && !phase2StartedRef.current) {
@@ -2724,11 +2843,9 @@ export default function GuidancePage() {
     }
 
     if (phase === "fu-reply") {
-      const listener = followUpVoiceRef.current;
-      if (listener?.isActive()) listener.finishSpeaking();
-      else submitFollowUpRef.current(true, followUp);
+      finishFollowUp();
     }
-  }, [hasSpeechSupport, followUp, phase1MicLive, phase1MicArming, entryMicLive, micArming]);
+  }, [hasSpeechSupport, followUp, phase1MicLive, phase1MicArming, entryMicLive, micArming, followUpMicLive, followUpMicArming]);
   handlePhilipOrbTapRef.current = handlePhilipOrbTap;
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -3161,7 +3278,7 @@ export default function GuidancePage() {
         {/* Voice handoff — portal to body so iOS WebView receives taps above scroll content */}
         <PhilipVoiceHandoffLayer
           visible={!!philipOrbMode && (!showThresholdOverlay || philipMicCaptureOpen)}
-          micCaptureOpen={philipMicCaptureReady}
+          micCaptureOpen={philipMicCaptureOpen}
           mode={philipOrbMode ?? "idle"}
           onDone={() => handlePhilipOrbTapRef.current()}
           quietHintVisible={voiceQuietHintVisible}
@@ -3329,8 +3446,9 @@ export default function GuidancePage() {
                       </button>
                     )}
 
-                    {showHeartTypeFallback && !philipHandsFreeVoice && (
+                    {(showHeartTypeFallback || !hasSpeechSupport) && !philipHandsFreeVoice && (
                       <>
+                        {showHeartTypeFallback && (
                         <motion.p
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -3347,40 +3465,7 @@ export default function GuidancePage() {
                         >
                           Some souls find their words more clearly with a pen than a voice. What you write here, Philip holds with the same attention.
                         </motion.p>
-                        <label className="sr-only" htmlFor="input-guidance-heart">
-                          What&apos;s on your heart
-                        </label>
-                        <textarea
-                          id="input-guidance-heart"
-                          value={heartInput}
-                          onChange={(e) => setHeartInput(e.target.value.slice(0, GUIDANCE_INPUT_MAX))}
-                          onKeyDown={handleHeartKeyDown}
-                          spellCheck
-                          autoCapitalize="sentences"
-                          autoCorrect="on"
-                          maxLength={GUIDANCE_INPUT_MAX}
-                          placeholder={GUIDANCE_PLACEHOLDERS[placeholderIdx]}
-                          rows={3}
-                          data-testid="input-guidance-heart"
-                          className="w-full resize-none rounded-xl border border-white/12 bg-white/[0.06] px-3.5 sm:px-4 py-3 text-[16px] text-white placeholder:text-white/40 outline-none leading-relaxed focus:ring-2 focus:ring-violet-400/45 focus:border-violet-400/30"
-                        />
-                        <p className="mt-1 text-[11px] text-white/35 text-right">
-                          {heartInput.length}/{GUIDANCE_INPUT_MAX}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleHeartSubmit}
-                          disabled={!isGuidanceInputValid(heartInput) || processingBridge}
-                          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[16px] font-semibold text-white bg-gradient-to-r from-primary via-violet-600 to-violet-700 shadow-lg shadow-primary/30 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
-                        >
-                          Continue
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-
-                    {!hasSpeechSupport && (
-                      <>
+                        )}
                         <label className="sr-only" htmlFor="input-guidance-heart">
                           What&apos;s on your heart
                         </label>
@@ -3566,44 +3651,7 @@ export default function GuidancePage() {
                     </div>
                   )}
 
-                  {showPhase1TypeFallback && (
-                    <>
-                      <textarea
-                        value={phase1UserReply}
-                        onChange={(e) => setPhase1UserReply(e.target.value.slice(0, GUIDANCE_INPUT_MAX))}
-                        onKeyDown={handlePhase1KeyDown}
-                        placeholder="Keep going... there's no right answer."
-                        rows={3}
-                        maxLength={GUIDANCE_INPUT_MAX}
-                        disabled={isSending || phase2Loading}
-                        data-testid="input-guidance-phase1-reply"
-                        className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-4 py-3 text-[16px] text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 leading-relaxed disabled:opacity-50"
-                      />
-                      {/* Character counter removed — implies a ceiling on what someone can share */}
-                      <div className="flex items-center justify-between">
-                        <button
-                          type="button"
-                          onClick={() => void handlePhase1Skip()}
-                          disabled={phase2Loading}
-                          data-testid="button-guidance-phase1-skip"
-                          className="text-[12px] text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors disabled:opacity-40"
-                        >
-                          Just walk with me →
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handlePhase1TypedSubmit}
-                          disabled={!isGuidanceInputValid(phase1UserReply) || phase2Loading || processingBridge}
-                          data-testid="button-guidance-phase1-continue"
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-muted/40 hover:bg-muted/60 px-4 py-2.5 text-[14px] font-semibold text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {phase2Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue →"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {!hasSpeechSupport && (
+                  {(showPhase1TypeFallback || !hasSpeechSupport) && (
                     <>
                       <textarea
                         value={phase1UserReply}

@@ -1,41 +1,32 @@
 {
-  "timestamp": "2026-06-23T16:31:08.531Z",
-  "phase": "response",
-  "target": "local (http://localhost:8080)",
-  "passRate": 61,
-  "avgScore": 7.9,
-  "passed": 35,
-  "total": 57,
+  "timestamp": "2026-06-26T02:56:09.851Z",
+  "phase": "phase1",
+  "target": "live (https://www.shepherdspathai.com)",
+  "passRate": 92,
+  "avgScore": 8.8,
+  "passed": 55,
+  "total": 60,
   "results": [
     {
       "id": "grief-01",
       "category": "grief",
-      "pass": false,
+      "pass": true,
       "score": 9,
-      "issues": [
-        "Rule 7: Expected exactly 1 question mark, found 2"
-      ]
+      "issues": []
     },
     {
       "id": "grief-02",
       "category": "grief",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "grief-03",
       "category": "grief",
-      "pass": false,
-      "score": 6,
-      "issues": [
-        "8",
-        "10"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "grief-04",
@@ -54,9 +45,11 @@
     {
       "id": "anxiety-01",
       "category": "anxiety",
-      "pass": true,
+      "pass": false,
       "score": 9,
-      "issues": []
+      "issues": [
+        "Rule 6: Expected exactly 1 question mark, found 2"
+      ]
     },
     {
       "id": "anxiety-02",
@@ -131,11 +124,9 @@
     {
       "id": "anger-03",
       "category": "anger",
-      "pass": false,
+      "pass": true,
       "score": 9,
-      "issues": [
-        "Rule 7: Expected exactly 1 question mark, found 2"
-      ]
+      "issues": []
     },
     {
       "id": "lonely-01",
@@ -168,21 +159,16 @@
     {
       "id": "marriage-02",
       "category": "marriage",
-      "pass": false,
-      "score": 6,
-      "issues": [
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "marriage-03",
       "category": "marriage",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "depression-01",
@@ -195,34 +181,28 @@
       "id": "depression-02",
       "category": "depression",
       "pass": false,
-      "score": 6,
+      "score": 5,
       "issues": [
-        "10",
-        "11"
+        "4",
+        "7"
       ]
     },
     {
       "id": "depression-03",
       "category": "depression",
       "pass": false,
-      "score": 2,
+      "score": 4,
       "issues": [
-        "Rule 4: Contains a written prayer — prayer is generated separately",
-        "Rule 5: Contains bullet list or numbered steps",
-        "Rule 7: Expected exactly 1 question mark, found 0",
-        "10",
-        "11"
+        "Rule 5: 140 words — over the 90-word limit",
+        "7"
       ]
     },
     {
       "id": "identity-01",
       "category": "identity",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "identity-02",
@@ -234,33 +214,23 @@
     {
       "id": "identity-03",
       "category": "identity",
-      "pass": false,
-      "score": 6,
-      "issues": [
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "forgive-01",
       "category": "forgiveness",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "forgive-02",
       "category": "forgiveness",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "finance-01",
@@ -272,11 +242,9 @@
     {
       "id": "finance-02",
       "category": "financial stress",
-      "pass": false,
+      "pass": true,
       "score": 9,
-      "issues": [
-        "Rule 7: Expected exactly 1 question mark, found 2"
-      ]
+      "issues": []
     },
     {
       "id": "prodigal-01",
@@ -309,9 +277,11 @@
     {
       "id": "health-02",
       "category": "health",
-      "pass": true,
+      "pass": false,
       "score": 9,
-      "issues": []
+      "issues": [
+        "Rule 6: Expected exactly 1 question mark, found 2"
+      ]
     },
     {
       "id": "joy-01",
@@ -323,32 +293,23 @@
     {
       "id": "joy-02",
       "category": "joy",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "wall-01",
       "category": "complex / wall of text",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "wall-02",
       "category": "complex / wall of text",
-      "pass": false,
-      "score": 6,
-      "issues": [
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "short-01",
@@ -360,12 +321,9 @@
     {
       "id": "short-02",
       "category": "ultra-short",
-      "pass": false,
-      "score": 6,
-      "issues": [
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "short-03",
@@ -384,12 +342,9 @@
     {
       "id": "guard-01",
       "category": "guarded",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "10",
-        "11"
-      ]
+      "pass": true,
+      "score": 8,
+      "issues": []
     },
     {
       "id": "guard-02",
@@ -401,30 +356,23 @@
     {
       "id": "parent-01",
       "category": "parenting",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "11"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "parent-02",
       "category": "parenting",
-      "pass": false,
+      "pass": true,
       "score": 9,
-      "issues": [
-        "Rule 7: Expected exactly 1 question mark, found 2"
-      ]
+      "issues": []
     },
     {
       "id": "addiction-01",
       "category": "addiction",
-      "pass": false,
-      "score": 5,
-      "issues": [
-        "8",
-        "10"
-      ]
+      "pass": true,
+      "score": 9,
+      "issues": []
     },
     {
       "id": "addiction-02",
@@ -443,11 +391,9 @@
     {
       "id": "waiting-02",
       "category": "waiting",
-      "pass": false,
+      "pass": true,
       "score": 9,
-      "issues": [
-        "Rule 7: Expected exactly 1 question mark, found 2"
-      ]
+      "issues": []
     },
     {
       "id": "edge-01",
@@ -466,6 +412,29 @@
     {
       "id": "edge-03",
       "category": "edge",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "dependency-01",
+      "category": "dependency",
+      "pass": false,
+      "score": 9,
+      "issues": [
+        "Rule 6: Expected exactly 1 question mark, found 2"
+      ]
+    },
+    {
+      "id": "sendoff-01",
+      "category": "sendoff",
+      "pass": true,
+      "score": 9,
+      "issues": []
+    },
+    {
+      "id": "continuity-01",
+      "category": "memory",
       "pass": true,
       "score": 9,
       "issues": []

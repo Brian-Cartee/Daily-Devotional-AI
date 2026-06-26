@@ -1,0 +1,48 @@
+{
+  "id": "recognition-before-reframe-01",
+  "description": "Early exchange, low permission — prompt forbids reframe/scripture; responses must not verse-drop or advise.",
+  "stateDefaults": {
+    "core_issue": "marriage feels distant",
+    "permission_level": "low",
+    "recognition_delivered": false,
+    "weight_level": "medium",
+    "current_depth_layer": 1,
+    "areas_unexplored": ["what the distance feels like day to day", "what she has tried"]
+  },
+  "turns": [
+    {
+      "user": "My husband and I have been distant for months. I don't know what to do.",
+      "expectPrompt": {
+        "includes": [
+          "Recognition delivered: NO",
+          "no reframes, no scripture",
+          "still at surface (situation)"
+        ],
+        "excludes": [
+          "theological perspective earned"
+        ]
+      },
+      "responseRules": {
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "god has a plan",
+          "everything happens for a reason",
+          "what if you tried",
+          "you should",
+          "have you considered"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "That kind of distance can sit heavy for months. What part of it lands hardest when the day ends?",
+          "Months of distance is a long stretch to carry quietly. What's it been like inside you lately?"
+        ],
+        "fail": [
+          "God has a plan for your marriage — trust that he is working even when you cannot see it.",
+          "Romans 8:28 says all things work together for good. What if you tried a date night?",
+          "You should tell him exactly how you feel and set better boundaries this week."
+        ]
+      }
+    }
+  ]
+}

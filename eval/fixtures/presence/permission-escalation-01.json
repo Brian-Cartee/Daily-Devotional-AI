@@ -1,0 +1,100 @@
+{
+  "id": "permission-escalation-01",
+  "description": "Permission rises low → medium → high as the person opens; prompt and response rules tighten then relax.",
+  "carryStateAcrossTurns": true,
+  "stateDefaults": {
+    "core_issue": "work disappointment shaking faith",
+    "recognition_delivered": false,
+    "weight_level": "medium"
+  },
+  "turns": [
+    {
+      "user": "Things have been hard at work lately. I don't really want advice.",
+      "state": {
+        "permission_level": "low",
+        "current_depth_layer": 1
+      },
+      "expectPrompt": {
+        "includes": [
+          "Permission level: low",
+          "no reframes, no scripture"
+        ]
+      },
+      "responseRules": {
+        "forbidScripture": true,
+        "forbidPatterns": [
+          "god has a plan",
+          "you should"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "That kind of stretch at work can wear on you quietly. What part of it sits heaviest right now?"
+        ],
+        "fail": [
+          "Romans 8:28 reminds us God works all things together. You should talk to your manager."
+        ]
+      }
+    },
+    {
+      "user": "I got passed over for promotion again and I'm furious. It feels unfair.",
+      "state": {
+        "permission_level": "medium",
+        "recognition_delivered": true,
+        "current_depth_layer": 2
+      },
+      "expectPrompt": {
+        "includes": [
+          "Permission level: medium",
+          "scripture only as invitation"
+        ],
+        "excludes": [
+          "no reframes, no scripture"
+        ]
+      },
+      "responseRules": {
+        "forbidPatterns": [
+          "you should",
+          "have you tried"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Passed over again after carrying that anger — that lands as more than unfair. What has it been like inside you since you heard?"
+        ],
+        "fail": [
+          "You should apply elsewhere and trust God's timing."
+        ]
+      }
+    },
+    {
+      "user": "Honestly I've never told anyone how much this shook what I believe about God being good.",
+      "state": {
+        "permission_level": "high",
+        "current_depth_layer": 4,
+        "sacred_pause_warranted": true,
+        "weight_level": "high"
+      },
+      "expectPrompt": {
+        "includes": [
+          "SACRED PAUSE",
+          "theological perspective earned"
+        ]
+      },
+      "responseRules": {
+        "maxSentences": 2,
+        "forbidQuestion": true,
+        "forbidScripture": true
+      },
+      "samples": {
+        "pass": [
+          "That took courage to name out loud.",
+          "Saying that aloud matters — thank you for trusting this room with it."
+        ],
+        "fail": [
+          "God is still good even when promotions fail. What verse helps you most?"
+        ]
+      }
+    }
+  ]
+}

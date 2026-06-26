@@ -61,7 +61,7 @@ export type ConvoAction =
 // Reducer
 // ─────────────────────────────────────────────────────────────────────────────
 
-function reducer(phase: ConvoPhase, action: ConvoAction): ConvoPhase {
+export function convoReducer(phase: ConvoPhase, action: ConvoAction): ConvoPhase {
   switch (action.type) {
     case "GREETING_START":
       return phase === "idle" ? "greeting" : phase;
@@ -183,7 +183,7 @@ const AFTER_P2_SPEECH: ConvoPhase[] = [
 ];
 
 export function useConvoMachine(): ConvoMachine {
-  const [phase, dispatch] = useReducer(reducer, "idle");
+  const [phase, dispatch] = useReducer(convoReducer, "idle");
 
   return {
     phase,

@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSessionId } from "@/lib/session";
+import { randomId } from "@/lib/randomId";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { getUserName } from "@/lib/userName";
 import {
@@ -192,7 +193,7 @@ export function FloatingAskAI() {
     setPhase1UserReplySubmitted(null);
     setPhase1Loading(false);
     setUsingTwoPhase(false);
-    conversationIdRef.current = crypto.randomUUID();
+    conversationIdRef.current = randomId();
   };
 
   const streamGuidanceResponse = async (

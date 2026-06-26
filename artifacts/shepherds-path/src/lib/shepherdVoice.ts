@@ -2,7 +2,7 @@ import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { registerPhilipSpeakCancel } from "@/lib/philipAudioSession";
 
-export { releasePhilipAudioSession, IOS_MIC_SETTLE_MS } from "@/lib/philipAudioSession";
+export { releasePhilipAudioSession, interruptPhilipAudioSession, IOS_MIC_SETTLE_MS } from "@/lib/philipAudioSession";
 
 /** Philip — default Talk It Through voice (internal; never shown to users). */
 export const SHEPHERD_VOICE = "onyx";

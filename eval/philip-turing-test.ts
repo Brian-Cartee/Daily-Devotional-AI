@@ -13,6 +13,7 @@
  *   cd eval && npx tsx philip-turing-test.ts --count 20              # smoke + 15 random
  *   cd eval && npx tsx philip-turing-test.ts --exchanges 12          # longer conversations
  *   cd eval && npx tsx philip-turing-test.ts --features            # dependency, send-off, memory lanes
+ *   cd eval && npx tsx philip-turing-test.ts --presence            # presence-layer scenarios
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -24,6 +25,7 @@ import {
   GOLDEN_15_IDS,
   SMOKE_CORE_IDS,
   FEATURE_SCENARIO_IDS,
+  PRESENCE_SCENARIO_IDS,
   GATE_MIN_PASS_RATE,
   MIND_GATE_MIN_EXCHANGE,
   MIND_GATE_MIN_VERSION,
@@ -31,6 +33,7 @@ import {
 import { findPostSendOffViolation, questionInventsRelationship, inventsUnsupportedDetail } from "../artifacts/api-server/src/conversationState.ts";
 import { PHILIP_RUNTIME_VERSION } from "../artifacts/api-server/src/philip-runtime/version.ts";
 import { parseTurnHeaders } from "../artifacts/api-server/src/philip-runtime/runtime/headers.ts";
+import { collectPresenceGateFailures } from "./presenceGate.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +47,7 @@ const MAX_EXCHANGES   = args.includes("--exchanges") ? parseInt(args[args.indexO
 const USE_LOCAL       = args.includes("--local");
 const USE_SMOKE       = args.includes("--smoke");
 const USE_FEATURES    = args.includes("--features");
+const USE_PRESENCE    = args.includes("--presence");
 const USE_GOLDEN      = args.includes("--golden");
 const USE_GATE        = args.includes("--gate");
 
@@ -85,6 +89,10 @@ interface ExchangeScore {
   patternBreak: number;     // 0-10: Did Philip avoid the same move as last time?
   illusionHold: boolean;    // Does this still feel like a human?
   pullScore: number;        // 0-10: Do you want to keep talking?
+  recognitionScore: number | null;  // 0-10: Did Philip name what they're carrying before guiding?
+  permissionRespect: boolean;       // Did Philip honor permission level (no early scripture/reframe)?
+  thresholdHandling: boolean | null; // On almost-said-it, did Philip create space?
+  presenceViolation: string | null;
   chatbotPhrase: string | null;
   notes: string;
   philipRuntime?: PhilipRuntimeMeta | null;
@@ -102,6 +110,7 @@ interface ConversationResult {
   excludeFromPassRate: boolean;
   durationMs: number;
   sendOffViolation?: string | null;
+  presenceViolations?: string[];
   philipRuntimeVersionExpected?: string;
   philipRuntimeVersionSeen?: string | null;
   error?: string;
@@ -383,6 +392,12 @@ Feature lane expectations (when scenario flags include them):
 - memory-continuity / no-invented-history: Philip must NOT invent visit counts, days they've come back, or prior sessions beyond what the user said.
 - turn3-continuity / named-person: If the user named a specific person (spouse, child, friend), Philip must track them on exchanges 3+ — no re-asking who they mean or "who is he/she" when already established.
 
+Presence layer expectations (all conversations; especially when flags include presence-*):
+- Recognition before guidance: Philip must name what the person is carrying before scripture, reframe, advice, or challenge.
+- Permission respect: Exchanges 1-3 — no scripture, no "God has a plan," no advice, no "you should." On almost-said-it user messages — under 30 words, no forward question; create space.
+- Sacred pause: After major confession, grief, or first-time shame — one sentence receive only; do not advance the conversation.
+- Early scripture is a primary violation — verse-dropping before trust is earned fails permissionRespect.
+
 Respond in JSON only — no extra text.`;
 
 interface JudgeExchangeResult {
@@ -391,6 +406,10 @@ interface JudgeExchangeResult {
   patternBreak: number;
   illusionHold: boolean;
   pullScore: number;
+  recognitionScore: number | null;
+  permissionRespect: boolean;
+  thresholdHandling: boolean | null;
+  presenceViolation: string | null;
   chatbotPhrase: string | null;
   notes: string;
 }
@@ -436,6 +455,10 @@ Score this response:
   "patternBreak": <0-10, did Philip do something structurally different from his previous moves? (10 if first exchange)>,
   "illusionHold": <true/false, does this still feel like a human could have said it?>,
   "pullScore": <0-10, after reading this, do you want to keep talking?>,
+  "recognitionScore": <0-10 or null on exchange 1 — did Philip name what they're carrying before guiding/reframing?>,
+  "permissionRespect": <true/false — did Philip avoid scripture, advice, and reframe before earned?>,
+  "thresholdHandling": <true/false/null — if user hovered at disclosure, did Philip create space instead of probing? null if not applicable>,
+  "presenceViolation": <"brief description of presence-layer failure" or null>,
   "chatbotPhrase": <"exact phrase that broke the spell" or null>,
   "notes": <one sentence on the most important thing Philip did right or wrong>
 }`;
@@ -467,6 +490,10 @@ Score this response:
     return {
       curiosity: 0, specificity: 0, patternBreak: 0,
       illusionHold: false, pullScore: 0,
+      recognitionScore: null,
+      permissionRespect: false,
+      thresholdHandling: null,
+      presenceViolation: "JUDGE_PARSE_ERROR",
       chatbotPhrase: "JUDGE_PARSE_ERROR",
       notes: `Parse error — scored 0s: ${raw.slice(0, 120)}`,
     };
@@ -624,10 +651,26 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
     const philipLines = transcript.filter(t => t.role === "philip").map(t => t.text);
     const userLines = transcript.filter(t => t.role === "user").map(t => t.text);
     const sendOffViolation = findPostSendOffViolation(philipLines, userLines);
-    const passedTuringTest = passed && !sendOffViolation;
+    const presenceViolations = collectPresenceGateFailures(
+      { id: scenario.id, flags: scenario.flags },
+      exchanges.map(e => ({
+        exchangeNum: e.exchangeNum,
+        userMessage: e.userMessage,
+        philipResponse: e.philipResponse,
+      })),
+    );
+    const passedTuringTest = passed && !sendOffViolation && presenceViolations.length === 0;
 
     if (sendOffViolation) {
       process.stdout.write(`\n  ${red("✗ Send-off rule:")} ${sendOffViolation}\n`);
+    }
+    if (presenceViolations.length > 0) {
+      for (const v of presenceViolations.slice(0, 3)) {
+        process.stdout.write(`\n  ${red("✗ Presence:")} ${v}\n`);
+      }
+      if (presenceViolations.length > 3) {
+        process.stdout.write(`\n  ${red("✗ Presence:")} +${presenceViolations.length - 3} more\n`);
+      }
     }
 
     // avgScore: all 4 numeric dimensions equally weighted
@@ -657,6 +700,7 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
       excludeFromPassRate: scenario.excludeFromPassRate ?? false,
       durationMs: Date.now() - start,
       sendOffViolation,
+      presenceViolations,
       philipRuntimeVersionExpected: PHILIP_RUNTIME_VERSION,
       philipRuntimeVersionSeen,
     };
@@ -682,11 +726,17 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
 
 // ── Scenario Selection ────────────────────────────────────────────────────────
 
-function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean, useGolden: boolean): Scenario[] {
+function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean, usePresence: boolean, useGolden: boolean): Scenario[] {
   const byId = new Map(pool.map(s => [s.id, s]));
 
   if (useGolden) {
     return (GOLDEN_15_IDS as readonly string[])
+      .map(id => byId.get(id))
+      .filter((s): s is Scenario => !!s);
+  }
+
+  if (usePresence) {
+    return (PRESENCE_SCENARIO_IDS as readonly string[])
       .map(id => byId.get(id))
       .filter((s): s is Scenario => !!s);
   }
@@ -740,6 +790,9 @@ function buildHtmlReport(results: ConversationResult[]): string {
       const avg = ((e.curiosity + e.specificity + e.patternBreak + e.pullScore) / 4).toFixed(1);
       const illusion = e.illusionHold ? "✓" : `<span style="color:#f87171">✗ BROKE</span>`;
       const chatbot = e.chatbotPhrase ? `<span style="color:#f87171">"${e.chatbotPhrase}"</span>` : "none";
+      const presence = e.presenceViolation
+        ? `<span style="color:#fb923c">${e.presenceViolation}</span>`
+        : (e.permissionRespect ? "ok" : `<span style="color:#f87171">permission</span>`);
       const osMeta = e.philipRuntime
         ? `<span style="font-size:10px;color:#64748b">${e.philipRuntime.lane}${e.philipRuntime.gates.length ? ` · ${e.philipRuntime.gates.join(",")}` : ""}${e.philipRuntime.mindVersion != null ? ` · mind v${e.philipRuntime.mindVersion}` : ""}${e.philipRuntime.stateSource ? ` · ${e.philipRuntime.stateSource}` : ""}${e.philipRuntime.contextMode ? ` · ${e.philipRuntime.contextMode}` : ""}</span>`
         : "";
@@ -755,6 +808,7 @@ function buildHtmlReport(results: ConversationResult[]): string {
           <td>${avg}</td>
           <td>${illusion}</td>
           <td style="font-size:11px">${chatbot}</td>
+          <td style="font-size:11px">${presence}</td>
           <td style="font-size:11px;color:#999">${e.notes}</td>
         </tr>`;
     }).join("\n");
@@ -793,7 +847,7 @@ function buildHtmlReport(results: ConversationResult[]): string {
           <tr style="color:#666">
             <th>#</th><th>User</th><th>Philip</th>
             <th>Curiosity</th><th>Specificity</th><th>Pattern</th><th>Pull</th><th>Avg</th>
-            <th>Illusion</th><th>Chatbot Phrase</th><th>Notes</th>
+            <th>Illusion</th><th>Chatbot Phrase</th><th>Presence</th><th>Notes</th>
           </tr>
           ${exchangeRows}
         </table>
@@ -889,13 +943,15 @@ async function main() {
   else if (FILTER_CATEGORY) pool = pool.filter(s => s.category.includes(FILTER_CATEGORY));
 
   // Default (no filter flags) always uses the smoke set for comparable runs
-  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES && !USE_GOLDEN);
-  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES, USE_GOLDEN);
+  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES && !USE_PRESENCE && !USE_GOLDEN);
+  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES, USE_PRESENCE, USE_GOLDEN);
 
   const target = USE_LOCAL ? `local (${BASE_URL})` : `live (${BASE_URL})`;
   const modeNote = USE_GOLDEN
-    ? " [golden 15]"
-    : USE_FEATURES
+    ? " [golden gate]"
+    : USE_PRESENCE
+      ? " [presence layer]"
+      : USE_FEATURES
       ? " [feature lanes]"
       : (useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "");
   console.log("\n" + bold("Philip Turing Test"));
@@ -936,10 +992,13 @@ async function main() {
         const avg4 = ((ex.curiosity + ex.specificity + ex.patternBreak + ex.pullScore) / 4).toFixed(1);
         const illusion = ex.illusionHold ? "" : red(" [BROKE]");
         const chatbot  = ex.chatbotPhrase ? yel(` [!${ex.chatbotPhrase}]`) : "";
+        const presence = ex.presenceViolation
+          ? red(` [presence: ${ex.presenceViolation}]`)
+          : (!ex.permissionRespect ? yel(" [permission]") : "");
         const mindNote = ex.philipRuntime?.mindVersion != null
           ? dim(` mind=v${ex.philipRuntime.mindVersion}${ex.philipRuntime.stateSource ? `/${ex.philipRuntime.stateSource}` : ""}${ex.philipRuntime.plannerSource ? `/p:${ex.philipRuntime.plannerSource}` : ""}`)
           : "";
-        console.log(dim(`  #${ex.exchangeNum} avg=${avg4}${illusion}${chatbot}${mindNote} — ${ex.notes.slice(0, 70)}`));
+        console.log(dim(`  #${ex.exchangeNum} avg=${avg4}${illusion}${chatbot}${presence}${mindNote} — ${ex.notes.slice(0, 70)}`));
       }
     }
   }
@@ -991,6 +1050,8 @@ async function main() {
       excludeFromPassRate: r.excludeFromPassRate,
       exchanges: r.exchanges.length,
       philipRuntimeVersionSeen: r.philipRuntimeVersionSeen ?? null,
+      sendOffViolation: r.sendOffViolation ?? null,
+      presenceViolations: r.presenceViolations ?? [],
       engagementCheck: r.engagementCheck,
       verdict: r.finalVerdict,
       exchangeRuntime: r.exchanges
@@ -1043,6 +1104,9 @@ async function main() {
         }
       }
       gateFailures.push(...collectMindGateFailures(r));
+      if (r.presenceViolations?.length) {
+        gateFailures.push(...r.presenceViolations);
+      }
     }
     if (gateFailures.length > 0) {
       console.log("\n" + red(bold("GATE FAILED")));

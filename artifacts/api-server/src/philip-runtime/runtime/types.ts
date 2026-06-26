@@ -17,7 +17,8 @@ export type PhilipLane =
   | "repetition_recovery"
   | "guarded"
   | "standard"
-  | "sendoff_reopen";
+  | "sendoff_reopen"
+  | "presence_hold";
 
 export type PhilipGate =
   | "already_sent_off"
@@ -35,7 +36,9 @@ export type PhilipGate =
   | "invented_session_history"
   | "invented_unsupported_detail"
   | "sendoff_pushback"
-  | "guarded_reask_block";
+  | "guarded_reask_block"
+  | "presence_almost_said_it"
+  | "presence_sacred_pause";
 
 export interface PhilipTurnMetadata {
   philipRuntimeVersion: string;

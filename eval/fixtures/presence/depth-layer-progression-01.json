@@ -1,0 +1,91 @@
+{
+  "id": "depth-layer-progression-01",
+  "description": "Depth layer advances 1 → 2 → 3 as Philip earns the real conversation.",
+  "carryStateAcrossTurns": true,
+  "stateDefaults": {
+    "core_issue": "distance from adult daughter",
+    "permission_level": "low",
+    "recognition_delivered": false,
+    "weight_level": "medium"
+  },
+  "turns": [
+    {
+      "user": "My daughter and I haven't spoken in six months.",
+      "state": {
+        "current_depth_layer": 1
+      },
+      "expectPrompt": {
+        "includes": [
+          "still at surface (situation)",
+          "Move to layer 2"
+        ]
+      },
+      "responseRules": {
+        "forbidScripture": true
+      },
+      "samples": {
+        "pass": [
+          "Six months without speaking is a long silence to carry. What has that time been like for you?"
+        ],
+        "fail": [
+          "Romans 8:28 says God can restore what was lost. Have you prayed about forgiveness?"
+        ]
+      }
+    },
+    {
+      "user": "Mostly I feel this dull ache every time I see her name on my phone.",
+      "state": {
+        "current_depth_layer": 2,
+        "recognition_delivered": true,
+        "permission_level": "medium",
+        "user_exact_words": ["dull ache", "her name on my phone"]
+      },
+      "expectPrompt": {
+        "includes": [
+          "internal response",
+          "what do you find yourself believing"
+        ]
+      },
+      "responseRules": {
+        "forbidPatterns": [
+          "god has a plan"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "That dull ache when her name shows up — something in you still reaches. What do you find yourself believing about yourself when that happens?"
+        ],
+        "fail": [
+          "God has a plan for this distance — maybe he is teaching you detachment through this season."
+        ]
+      }
+    },
+    {
+      "user": "I think I believe I'm the reason she left. That I failed as her mom.",
+      "state": {
+        "current_depth_layer": 3,
+        "permission_level": "high",
+        "weight_level": "high"
+      },
+      "expectPrompt": {
+        "includes": [
+          "approaching the real conversation"
+        ]
+      },
+      "responseRules": {
+        "forbidPatterns": [
+          "don't blame yourself",
+          "everything happens for a reason"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Carrying the whole reason she left on your shoulders — that's a heavy verdict to live inside. Where did that story first take root?"
+        ],
+        "fail": [
+          "Don't blame yourself — God doesn't see you as a failure. Philippians 4:13."
+        ]
+      }
+    }
+  ]
+}

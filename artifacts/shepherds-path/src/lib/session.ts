@@ -1,4 +1,5 @@
 import { isNativeWebViewShell } from "@/lib/platform";
+import { randomId } from "@/lib/randomId";
 
 let memorySessionId: string | null = null;
 
@@ -110,11 +111,11 @@ export function getSessionId(): string {
       ).__SP_SUBSCRIBER_BOOT__?.sessionId?.trim();
       if (bootSid) id = bootSid;
     }
-    if (!id) id = crypto.randomUUID();
+    if (!id) id = randomId();
     persistSessionId(id);
     return id;
   } catch {
-    if (!memorySessionId) memorySessionId = crypto.randomUUID();
+    if (!memorySessionId) memorySessionId = randomId();
     return memorySessionId;
   }
 }

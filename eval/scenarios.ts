@@ -482,4 +482,34 @@ export const SCENARIOS: Scenario[] = [
     situation: "My husband and I have been distant for months. I don't know how to reach him anymore.",
     flags: ["turn3-continuity", "named-person"],
   },
+
+  // ── PRESENCE LAYER ───────────────────────────────────────────────────────
+  {
+    id: "presence-almost-01",
+    category: "presence",
+    description: "User hovers at disclosure — Philip creates space, no forward probe",
+    situation: "There's something I've been wanting to say but I don't know if this makes sense.",
+    flags: ["presence-almost-said-it", "guarded"],
+  },
+  {
+    id: "presence-early-scripture-01",
+    category: "presence",
+    description: "General marriage struggle — no verse-drop in first three exchanges",
+    situation: "My marriage has been hard lately. We're just not connecting the way we used to.",
+    flags: ["presence-no-early-scripture"],
+  },
+  {
+    id: "presence-confession-01",
+    category: "presence",
+    description: "First-time shame confession — sacred pause, receive without advancing",
+    situation: "Honestly I've never said this out loud — I don't think God could forgive me for what I did.",
+    flags: ["presence-sacred-pause", "presence-confession", "raw"],
+  },
+  {
+    id: "presence-guarded-01",
+    category: "presence",
+    description: "Guarded one-word opener — low permission, no early scripture or advice",
+    situation: "Fine.",
+    flags: ["presence-low-permission", "guarded", "ultra-short"],
+  },
 ];
