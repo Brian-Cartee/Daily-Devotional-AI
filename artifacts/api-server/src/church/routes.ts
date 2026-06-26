@@ -2,8 +2,15 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { CHURCH_PLANS, CHURCH_ROLES } from "@workspace/db";
 import { adminAuth } from "../adminAuth";
+import { storage } from "../storage";
 import { churchStorage } from "./storage";
 import { resolveAccessContext } from "./resolveAccessContext";
+import { canAccessChurchFeature } from "./permissions";
+import {
+  isChurchJoinable,
+  toChurchInvitePreview,
+  toPublicChurchProfile,
+} from "./publicProfile";
 
 const createChurchBodySchema = z.object({
   name: z.string().min(1).max(120),
@@ -36,12 +43,165 @@ const resolveContextQuerySchema = z.object({
   churchSlug: z.string().min(1).max(64).optional(),
 });
 
+const joinChurchBodySchema = z
+  .object({
+    sessionId: z.string().min(1).max(128),
+    slug: z.string().min(2).max(64).optional(),
+    inviteCode: z.string().min(6).max(32).optional(),
+  })
+  .refine((data) => Boolean(data.slug?.trim() || data.inviteCode?.trim()), {
+    message: "slug or inviteCode required",
+  });
+
+const leaveChurchBodySchema = z.object({
+  sessionId: z.string().min(1).max(128),
+});
+
+const sessionIdQuerySchema = z.object({
+  sessionId: z.string().min(1).max(128),
+});
+
 function requireAdmin(req: Request, res: Response): boolean {
   return adminAuth(req, res);
 }
 
 export function registerChurchRoutes(app: Express): void {
-  // ── Shepherd-admin: church bootstrap (no public/member UI in PR1) ─────────
+  // ── Public church lookup (no auth, no Pro required) ───────────────────────
+
+  app.get("/api/churches/by-slug/:slug", async (req, res) => {
+    const slug = String(req.params.slug ?? "").trim().toLowerCase();
+    if (!slug) return res.status(400).json({ message: "slug required" });
+    try {
+      const church = await churchStorage.getChurchBySlug(slug);
+      if (!church || !isChurchJoinable(church.status)) {
+        return res.status(404).json({ message: "Church not found" });
+      }
+      if (!canAccessChurchFeature(church.plan, "profile")) {
+        return res.status(404).json({ message: "Church not found" });
+      }
+      res.json({ church: toPublicChurchProfile(church) });
+    } catch (err) {
+      console.error("[church] public profile error:", err);
+      res.status(500).json({ message: "Failed to load church" });
+    }
+  });
+
+  app.get("/api/churches/invite/:code", async (req, res) => {
+    const code = String(req.params.code ?? "").trim();
+    if (!code) return res.status(400).json({ message: "invite code required" });
+    try {
+      const church = await churchStorage.getChurchByInviteCode(code);
+      if (!church || !isChurchJoinable(church.status)) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+      if (!canAccessChurchFeature(church.plan, "invite_join")) {
+        return res.status(404).json({ message: "Invite not found" });
+      }
+      res.json({ church: toChurchInvitePreview(church) });
+    } catch (err) {
+      console.error("[church] invite lookup error:", err);
+      res.status(500).json({ message: "Failed to resolve invite" });
+    }
+  });
+
+  // ── Member routes (sessionId only — never checks Pro) ─────────────────────
+
+  app.get("/api/churches/mine", async (req, res) => {
+    const parsed = sessionIdQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "sessionId required" });
+    }
+    try {
+      const rows = await churchStorage.listActiveMembershipsWithChurches(parsed.data.sessionId);
+      res.json({
+        churches: rows.map(({ membership, church }) => ({
+          membership: {
+            id: membership.id,
+            role: membership.role,
+            status: membership.status,
+            joinedAt: membership.joinedAt.toISOString(),
+          },
+          church: toPublicChurchProfile(church),
+        })),
+      });
+    } catch (err) {
+      console.error("[church] mine error:", err);
+      res.status(500).json({ message: "Failed to load your churches" });
+    }
+  });
+
+  app.post("/api/churches/join", async (req, res) => {
+    const parsed = joinChurchBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.issues[0]?.message ?? "Invalid join request",
+      });
+    }
+    const { sessionId, slug, inviteCode } = parsed.data;
+    try {
+      const church = slug?.trim()
+        ? await churchStorage.getChurchBySlug(slug.trim().toLowerCase())
+        : await churchStorage.getChurchByInviteCode(inviteCode!.trim());
+
+      if (!church || !isChurchJoinable(church.status)) {
+        return res.status(404).json({ message: "Church not found" });
+      }
+      if (!canAccessChurchFeature(church.plan, "invite_join")) {
+        return res.status(403).json({ message: "This church is not accepting members yet" });
+      }
+
+      const subscriber = await storage.getActiveSubscriberBySession(sessionId);
+      const membership = await churchStorage.joinAsMember(
+        church.id,
+        sessionId,
+        subscriber?.email ?? null,
+      );
+
+      res.status(201).json({
+        membership: {
+          id: membership.id,
+          role: membership.role,
+          status: membership.status,
+          joinedAt: membership.joinedAt.toISOString(),
+        },
+        church: toPublicChurchProfile(church),
+      });
+    } catch (err) {
+      console.error("[church] join error:", err);
+      res.status(500).json({ message: "Failed to join church" });
+    }
+  });
+
+  app.post("/api/churches/:churchId/leave", async (req, res) => {
+    const churchId = String(req.params.churchId ?? "").trim();
+    const parsed = leaveChurchBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "sessionId required" });
+    }
+    try {
+      const church = await churchStorage.getChurchById(churchId);
+      if (!church) return res.status(404).json({ message: "Church not found" });
+
+      const membership = await churchStorage.leaveMembership(churchId, parsed.data.sessionId);
+      if (!membership) {
+        return res.status(404).json({ message: "Active membership not found" });
+      }
+
+      res.json({
+        membership: {
+          id: membership.id,
+          role: membership.role,
+          status: membership.status,
+          joinedAt: membership.joinedAt.toISOString(),
+        },
+      });
+    } catch (err) {
+      console.error("[church] leave error:", err);
+      res.status(500).json({ message: "Failed to leave church" });
+    }
+  });
+
+  // ── Shepherd-admin: church bootstrap ──────────────────────────────────────
 
   app.get("/api/admin/churches", async (req, res) => {
     if (!requireAdmin(req, res)) return;

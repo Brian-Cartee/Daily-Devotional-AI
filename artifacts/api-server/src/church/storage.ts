@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, and, desc, asc } from "drizzle-orm";
 import type { ChurchMembershipView, ChurchView } from "./types";
+import { isChurchJoinable } from "./publicProfile";
 
 function slugifyName(name: string): string {
   const base = name
@@ -186,5 +187,69 @@ export const churchStorage = {
       })
       .returning();
     return toMembershipView(row);
+  },
+
+  /** Member join — always assigns `member` role; never trusts client role. */
+  async joinAsMember(
+    churchId: string,
+    sessionId: string,
+    email?: string | null,
+  ): Promise<ChurchMembershipView> {
+    const existing = await this.getMembership(churchId, sessionId);
+    if (existing?.status === "active") {
+      return existing;
+    }
+
+    if (existing) {
+      const [row] = await db
+        .update(churchMemberships)
+        .set({
+          role: "member",
+          status: "active",
+          email: email ?? existing.email,
+          updatedAt: new Date(),
+        })
+        .where(eq(churchMemberships.id, existing.id))
+        .returning();
+      return toMembershipView(row);
+    }
+
+    const [row] = await db
+      .insert(churchMemberships)
+      .values({
+        churchId,
+        sessionId,
+        role: "member",
+        email: email ?? null,
+        status: "active",
+      })
+      .returning();
+    return toMembershipView(row);
+  },
+
+  async leaveMembership(churchId: string, sessionId: string): Promise<ChurchMembershipView | null> {
+    const existing = await this.getMembership(churchId, sessionId);
+    if (!existing || existing.status !== "active") return null;
+
+    const [row] = await db
+      .update(churchMemberships)
+      .set({ status: "left", updatedAt: new Date() })
+      .where(eq(churchMemberships.id, existing.id))
+      .returning();
+    return toMembershipView(row);
+  },
+
+  async listActiveMembershipsWithChurches(
+    sessionId: string,
+  ): Promise<Array<{ membership: ChurchMembershipView; church: ChurchView }>> {
+    const memberships = await this.listMembershipsForSession(sessionId);
+    const results: Array<{ membership: ChurchMembershipView; church: ChurchView }> = [];
+    for (const membership of memberships) {
+      const church = await this.getChurchById(membership.churchId);
+      if (church && isChurchJoinable(church.status)) {
+        results.push({ membership, church });
+      }
+    }
+    return results;
   },
 };
