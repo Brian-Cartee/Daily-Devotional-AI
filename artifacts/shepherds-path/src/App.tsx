@@ -43,6 +43,8 @@ import { ConvictionPanel } from "@/components/ConvictionPanel";
 import { NavBar } from "@/components/NavBar";
 import PrayerPortraitPage from "@/pages/PrayerPortraitPage";
 import PrayerClosetPage from "@/pages/PrayerClosetPage";
+import SpeakLifePage from "@/pages/SpeakLifePage";
+import SpeakLifeArchivePage from "@/pages/SpeakLifeArchivePage";
 import AdminPage from "@/pages/AdminPage";
 import AdminSermonsPage from "@/pages/AdminSermonsPage";
 import StoriesPage from "@/pages/StoriesPage";
@@ -215,6 +217,9 @@ function Router() {
       <Route path="/alignment" component={ScripturalAlignment} />
       <Route path="/prayer-portrait" component={PrayerPortraitPage} />
       <Route path="/prayer-closet" component={PrayerClosetPage} />
+      <Route path="/speak-life/archive/:id" component={SpeakLifeArchivePage} />
+      <Route path="/speak-life/archive" component={SpeakLifeArchivePage} />
+      <Route path="/speak-life" component={SpeakLifePage} />
       <Route path="/screenshot-gen">
         <Suspense fallback={<div className="min-h-screen bg-[#0d0a1a]" />}>
           <ScreenshotGenerator />

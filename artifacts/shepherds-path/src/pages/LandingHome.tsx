@@ -95,6 +95,7 @@ import { shouldShowHeartCheck, markHeartCheckShown, getCurrentHeartState } from 
 import { WEATHER_EMOJI } from "@/lib/heartCheckEmoji";
 import { ShortcutPathIcon } from "@/components/ShortcutPathIcon";
 import { PrayerClosetHomeCard } from "@/components/PrayerClosetHomeCard";
+import { SpeakLifeHomeCard } from "@/components/SpeakLifeHomeCard";
 import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
 import { HomeHeartLink } from "@/components/HomeHeartLink";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -1248,6 +1249,7 @@ function LandingHomeInner() {
           )}
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
+          <SpeakLifeHomeCard />
           {/* Talk It Through card removed — toolbar mic is the single canonical entry point.
               Static feature cards become wallpaper. The mic becomes muscle memory. */}
 

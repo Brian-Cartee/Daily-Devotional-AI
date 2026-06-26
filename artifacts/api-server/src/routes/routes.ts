@@ -98,6 +98,7 @@ import { handleGuidanceTurn } from "../philip-runtime/runtime/pipeline";
 import { logPhilipTurn } from "../philip-runtime/runtime/log";
 import { turnMetadataToHeaders } from "../philip-runtime/runtime/headers";
 import { freeTrialGrants } from "../freeTrialConfig";
+import { registerSpeakLifeRoutes } from "../speakLife";
 import { getServerDaysWithApp, touchSessionFirstSeen, getGuidanceConversationCount, incrementGuidanceConversationCount } from "../sessionFirstSeen";
 import { getTriviaSeed } from "../triviaSeed";
 import type { TriviaQuestion } from "@workspace/db";
@@ -395,6 +396,8 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   registerVoiceStreamWS(httpServer);
+
+  registerSpeakLifeRoutes(app);
 
   await ensureIdentitySchema().catch((err) => {
     console.error("[identity] schema ensure failed:", err);
