@@ -1,5 +1,6 @@
 import type { PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { interruptPhilipAudioSession, releasePhilipAudioSession } from "@/lib/philipAudioSession";
+import { isNativePhilipVoiceBridgeAvailable, postPhilipVoiceCommand } from "@/lib/philipVoiceBridge";
 import { createVoiceEpochGuard } from "./asyncGuard";
 import { voiceTurnDiag, voiceTurnDiagInvariants } from "./diagnostics";
 import { voiceTurnReducer } from "./reducer";
@@ -52,6 +53,10 @@ export function createVoiceTurnController(): VoiceTurnController {
     syncConvoPhase: (phase) => apply({ type: "CONVO", phase }),
     interruptSpeak: () => {
       voiceTurnDiag("interrupt_speak");
+      if (isNativePhilipVoiceBridgeAvailable()) {
+        postPhilipVoiceCommand({ type: "PHILIP_VOICE_CANCEL" });
+        return;
+      }
       interruptPhilipAudioSession();
     },
     isEpochCurrent: (epoch) => !epochGuard.isStale(epoch),
@@ -64,16 +69,20 @@ export function createVoiceTurnController(): VoiceTurnController {
       activeSlot = params.slot;
 
       destroyCapture();
-      interruptPhilipAudioSession();
-      apply({ type: "RELEASE_BEGIN" });
-      apply({ type: "MIC_ARM", slot: params.slot });
+      if (!isNativePhilipVoiceBridgeAvailable()) {
+        interruptPhilipAudioSession();
+        apply({ type: "RELEASE_BEGIN" });
+        apply({ type: "MIC_ARM", slot: params.slot });
 
-      await releasePhilipAudioSession();
-      if (epochGuard.isStale(epoch)) {
-        voiceTurnDiag("open_capture_stale", `slot=${params.slot} after_release`);
-        return epoch;
+        await releasePhilipAudioSession();
+        if (epochGuard.isStale(epoch)) {
+          voiceTurnDiag("open_capture_stale", `slot=${params.slot} after_release`);
+          return epoch;
+        }
+        apply({ type: "RELEASE_END" });
+      } else {
+        apply({ type: "MIC_ARM", slot: params.slot });
       }
-      apply({ type: "RELEASE_END" });
 
       const instance = params.buildListener();
       if (!instance) {

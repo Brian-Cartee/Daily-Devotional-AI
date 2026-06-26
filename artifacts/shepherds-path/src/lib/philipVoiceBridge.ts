@@ -9,26 +9,54 @@ export type PhilipVoiceSlot = "entry" | "p1" | "followup";
 /** Web → Native */
 export type PhilipVoiceWebCommand =
   | { type: "PHILIP_VOICE_START_GREETING" }
-  | { type: "PHILIP_VOICE_PLAY_TTS"; text: string; slot?: PhilipVoiceSlot }
-  | { type: "PHILIP_VOICE_START_RECORDING"; slot: PhilipVoiceSlot }
-  | { type: "PHILIP_VOICE_STOP_RECORDING"; slot: PhilipVoiceSlot }
+  | {
+      type: "PHILIP_VOICE_PLAY_TTS";
+      text: string;
+      slot?: PhilipVoiceSlot;
+      sessionId?: string;
+      isPro?: boolean;
+      autoRecordAfter?: boolean;
+      handoffDelayMs?: number;
+      silenceMs?: number;
+      minCharsForAutoSubmit?: number;
+    }
+  | {
+      type: "PHILIP_VOICE_START_RECORDING";
+      slot: PhilipVoiceSlot;
+      sessionId?: string;
+      isPro?: boolean;
+      silenceMs?: number;
+      minCharsForAutoSubmit?: number;
+      conversational?: boolean;
+    }
+  | { type: "PHILIP_VOICE_STOP_RECORDING"; slot: PhilipVoiceSlot; sessionId?: string; isPro?: boolean }
   | { type: "PHILIP_VOICE_CANCEL"; slot?: PhilipVoiceSlot };
 
 /** Native → Web */
 export type PhilipVoiceNativeEvent =
   | { type: "PHILIP_VOICE_BRIDGE_READY" }
   | { type: "PHILIP_VOICE_GREETING_DONE" }
+  | { type: "PHILIP_VOICE_TTS_STARTED"; slot?: PhilipVoiceSlot }
+  | { type: "PHILIP_VOICE_TTS_DONE"; slot?: PhilipVoiceSlot }
   | { type: "PHILIP_VOICE_RECORDING_STARTED"; slot: PhilipVoiceSlot }
   | { type: "PHILIP_VOICE_RECORDING_DONE"; slot: PhilipVoiceSlot }
   | { type: "PHILIP_VOICE_TRANSCRIPT_READY"; slot: PhilipVoiceSlot; transcript: string }
-  | { type: "PHILIP_VOICE_TTS_DONE"; slot?: PhilipVoiceSlot }
   | { type: "PHILIP_VOICE_ERROR"; code: string; message?: string; slot?: PhilipVoiceSlot };
 
 type WindowWithPhilipVoice = Window & {
   ReactNativeWebView?: { postMessage: (s: string) => void };
   __SP_PHILIP_NATIVE_VOICE__?: boolean;
   __spPhilipVoiceOnEvent?: (event: PhilipVoiceNativeEvent) => void;
+  __spPhilipVoiceQueue?: PhilipVoiceNativeEvent[];
 };
+
+function drainPhilipVoiceQueue(handler: (event: PhilipVoiceNativeEvent) => void): void {
+  const win = window as WindowWithPhilipVoice;
+  const queued = win.__spPhilipVoiceQueue;
+  if (!queued?.length) return;
+  win.__spPhilipVoiceQueue = [];
+  for (const event of queued) handler(event);
+}
 
 export function isNativePhilipVoiceBridgeAvailable(): boolean {
   if (typeof window === "undefined") return false;
@@ -40,7 +68,7 @@ export function isNativePhilipVoiceBridgeAvailable(): boolean {
   return false;
 }
 
-/** Hands-free / native-capture voice — off in the store shell until the bridge is ready. */
+/** Hands-free / native-capture voice — on when native bridge is ready. */
 export function usePhilipNativeVoicePath(): boolean {
   return isNativePhilipVoiceBridgeAvailable();
 }
@@ -75,6 +103,7 @@ export function subscribePhilipVoiceEvents(
     prior?.(event);
     handler(event);
   };
+  drainPhilipVoiceQueue(handler);
   return () => {
     if (win.__spPhilipVoiceOnEvent === handler) {
       win.__spPhilipVoiceOnEvent = prior;

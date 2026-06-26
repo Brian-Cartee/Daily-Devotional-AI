@@ -1,5 +1,6 @@
 import type { OpenCaptureParams } from "./createVoiceTurnController";
 import { createConversationalVoiceListener } from "./conversationalCapture";
+import type { VoiceCaptureSlot } from "./types";
 
 export type FollowUpCaptureDeps = {
   silenceMs: number;
@@ -18,6 +19,7 @@ export function buildFollowUpOpenCaptureParams(deps: FollowUpCaptureDeps): OpenC
     slot: "followup",
     buildListener: () =>
       createConversationalVoiceListener({
+        slot: "followup" as VoiceCaptureSlot,
         silenceMs: deps.silenceMs,
         spokenPatienceBridge: true,
         callbacks: {

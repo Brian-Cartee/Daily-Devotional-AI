@@ -19,6 +19,8 @@ import { hideNativeSplashWhenWebReady } from "@/lib/native-splash";
 import { formatDiagLines, type WebViewDiagEntry } from "@/lib/webview-diag";
 import { injectApplePro, injectAppleMissionPartner, reloadEmbeddedWeb } from "@/lib/inject-pro";
 import { syncMobileProToServer } from "@/lib/sync-mobile-pro";
+import { createPhilipNativeVoiceController } from "@/lib/philipNativeVoice";
+import { injectPhilipVoiceBridgeEnabled, injectPhilipVoiceEvent } from "@/lib/philipVoiceInject";
 import {
   buildNativeProfileSeedJs,
   loadNativeUserProfile,
@@ -37,7 +39,7 @@ import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTyp
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.2.2";
+const APP_VERSION = "2.2.3";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
@@ -240,6 +242,20 @@ export default function MainScreen() {
   const mainJsPathRef = useRef<string | null>(null);
   const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
   const [pullRefreshing, setPullRefreshing] = useState(false);
+  const philipVoiceRef = useRef(
+    createPhilipNativeVoiceController((event) => {
+      injectPhilipVoiceEvent(webviewRef, event);
+    }),
+  );
+
+  const enablePhilipVoiceBridge = useCallback(async () => {
+    if (philipVoiceRef.current.isBridgeReady()) {
+      injectPhilipVoiceBridgeEnabled(webviewRef);
+      return;
+    }
+    await philipVoiceRef.current.initBridge();
+    injectPhilipVoiceBridgeEnabled(webviewRef);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -722,18 +738,11 @@ export default function MainScreen() {
             }
             if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
               pushNativeDiag(`voice_cmd_${data.type}`);
-              const slot = typeof data.slot === "string" ? data.slot : "entry";
-              webviewRef.current?.injectJavaScript(
-                `(function(){try{if(typeof window.__spPhilipVoiceOnEvent==='function'){window.__spPhilipVoiceOnEvent(${JSON.stringify({
-                  type: "PHILIP_VOICE_ERROR",
-                  code: "not_implemented",
-                  message: "Native voice bridge is not enabled in this build yet.",
-                  slot,
-                })})}}catch(e){}}true;)();`,
-              );
+              void philipVoiceRef.current.handleCommand(data as Record<string, unknown>);
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
+              void enablePhilipVoiceBridge();
               hideNativeSplashWhenWebReady();
               setTimeout(() => probeWebReady(), 100);
             }

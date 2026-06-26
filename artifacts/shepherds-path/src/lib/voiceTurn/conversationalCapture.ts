@@ -3,6 +3,9 @@ import {
   type PatientVoiceListener,
   type VoiceListenUiPhase,
 } from "@/lib/patientVoiceListen";
+import { createNativePhilipVoiceListener } from "@/lib/patientVoiceListenNative";
+import { isNativePhilipVoiceBridgeAvailable } from "@/lib/philipVoiceBridge";
+import type { VoiceCaptureSlot } from "./types";
 
 export type ConversationalCaptureCallbacks = {
   onTranscript: (final: string, interim: string) => void;
@@ -16,6 +19,7 @@ export type ConversationalCaptureCallbacks = {
 };
 
 export type ConversationalCaptureOptions = {
+  slot: VoiceCaptureSlot;
   silenceMs: number;
   preAcquiredStream?: MediaStream;
   /** Entry uses false; phase 1 may use spoken patience bridge. */
@@ -27,7 +31,23 @@ export type ConversationalCaptureOptions = {
 export function createConversationalVoiceListener(
   opts: ConversationalCaptureOptions,
 ): PatientVoiceListener | null {
-  const { callbacks, silenceMs, preAcquiredStream, spokenPatienceBridge } = opts;
+  const { callbacks, silenceMs, preAcquiredStream, spokenPatienceBridge, slot } = opts;
+
+  if (isNativePhilipVoiceBridgeAvailable()) {
+    return createNativePhilipVoiceListener({
+      slot,
+      silenceMs,
+      conversational: true,
+      onTranscript: callbacks.onTranscript,
+      onPhaseChange: callbacks.onPhaseChange,
+      onMicLive: callbacks.onMicLive,
+      onRecorderReady: callbacks.onRecorderReady,
+      onListenEnd: callbacks.onListenEnd,
+      onAutoSubmit: callbacks.onAutoSubmit,
+      onInsufficientCapture: callbacks.onInsufficientCapture,
+    });
+  }
+
   return createPatientVoiceListener({
     conversational: true,
     spokenPatienceBridge: spokenPatienceBridge ?? false,

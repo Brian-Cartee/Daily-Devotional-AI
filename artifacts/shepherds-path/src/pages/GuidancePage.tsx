@@ -17,7 +17,9 @@ import { getTodayFramework } from "@/lib/faithFramework";
 import { getGuidanceHeroFallbacks, getGuidanceHeroImage } from "@/lib/guidanceHeroImage";
 import { resolveGuidanceHeroBackground } from "@/lib/resolveHeroBackground";
 import { getUserName, getUserVoice } from "@/lib/userName";
-import { isNativePhilipVoiceBridgeAvailable, usePhilipWebVoiceCapture } from "@/lib/philipVoiceBridge";
+import { isNativePhilipVoiceBridgeAvailable, subscribePhilipVoiceEvents, usePhilipWebVoiceCapture } from "@/lib/philipVoiceBridge";
+import { useVoiceConversationSession } from "@/lib/voiceConversationSession";
+import { VoiceConversationStatus } from "@/components/VoiceConversationStatus";
 import { buildShepherdGreeting, speakShepherdLine, speakShepherdStream, speakShepherdStreamWithMicHandoff, prefetchShepherdTTS, shouldPlayShepherdGreeting, markShepherdGreetingPlayed, postGuidanceMemory, speakTakeYourTimeBridge, waitForSubmitBridge, speakShepherdWithMicHandoff, getPonderingPauseMs, VOICE_GREETING_DWELL_MS, VOICE_SILENCE_ENTRY_MS, VOICE_SILENCE_PHASE1_MS, VOICE_SILENCE_FOLLOWUP_MS, VOICE_MIC_HANDOFF_FOLLOWUP_MS } from "@/lib/shepherdVoice";
 import { useConvoMachine, type ConvoPhase } from "@/lib/useConvoMachine";
 import { isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
@@ -51,7 +53,6 @@ import { VoiceQuietHint } from "@/components/VoiceQuietHint";
 import {
   VOICE_QUIET_HANDOFF_FAIL,
   VOICE_QUIET_THRESHOLD_LINE,
-  VOICE_TAP_WHEN_DONE,
 } from "@/lib/voiceQuietHint";
 import { HoldThisWithMeCard } from "@/components/HoldThisWithMeCard";
 import { PatternPhilipCard } from "@/components/PatternPhilipCard";
@@ -511,7 +512,20 @@ export default function GuidancePage() {
   );
   /** WebView mic — disabled in the store app until native voice bridge ships. */
   const webMicEnabled = usePhilipWebVoiceCapture();
-  const philipNativeVoiceReady = isNativePhilipVoiceBridgeAvailable();
+  const [philipNativeVoiceReady, setPhilipNativeVoiceReady] = useState(() =>
+    isNativePhilipVoiceBridgeAvailable(),
+  );
+  const philipVoiceInputEnabled = webMicEnabled || philipNativeVoiceReady;
+  const voiceSession = useVoiceConversationSession();
+  const voiceSessionRef = useRef(voiceSession);
+  voiceSessionRef.current = voiceSession;
+
+  useEffect(() => {
+    if (philipNativeVoiceReady) return;
+    return subscribePhilipVoiceEvents((ev) => {
+      if (ev.type === "PHILIP_VOICE_BRIDGE_READY") setPhilipNativeVoiceReady(true);
+    });
+  }, [philipNativeVoiceReady]);
   const framework = getTodayFramework();
   const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
@@ -643,9 +657,9 @@ export default function GuidancePage() {
 
   // Acquire the mic stream immediately on mount — still within the user's
   // transient activation window from the Talk It Through tap (~100-300ms into it).
-  // This lets the auto-mic open after Philip's greeting without needing a second gesture.
+  // Skip in native shell — native bridge owns AVAudioSession.
   useEffect(() => {
-    if (!isPhilipMode() || !hasSpeechSupport) return;
+    if (!isPhilipMode() || !hasSpeechSupport || philipNativeVoiceReady) return;
     if (!navigator.mediaDevices?.getUserMedia) return;
     void navigator.mediaDevices.getUserMedia({
       audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
@@ -1671,6 +1685,7 @@ export default function GuidancePage() {
     setMicArming(true);
     setEntryMicLive(false);
     setEntryRecorderReady(false);
+    voiceSessionRef.current.onRequestMic();
     voiceTurnDiag("entry_mic_open", `fromWelcome=${fromWelcome ? 1 : 0}`);
 
     let preStream = preAcquiredMicRef.current;
@@ -1687,7 +1702,10 @@ export default function GuidancePage() {
       preAcquiredStream: preStream ?? undefined,
       onTranscript: (final, interim) => {
         if (final) setHeartInput(final);
-        else if (interim) setHeartInput((prev) => prev || interim);
+        else if (interim) {
+          setHeartInput((prev) => prev || interim);
+          if (interim.trim().length > 2) voiceSessionRef.current.onSpeechDetected();
+        }
         setInterimTranscript(interim);
       },
       onPhaseChange: setHeartListenPhase,
@@ -1698,6 +1716,7 @@ export default function GuidancePage() {
           heartMicWasLiveRef.current = true;
           setMicArming(false);
           entryMicRetryRef.current = 0;
+          voiceSessionRef.current.onListening();
         } else {
           setEntryRecorderReady(false);
         }
@@ -2225,11 +2244,23 @@ export default function GuidancePage() {
     let cancelSpeak: (() => void) | null = null;
 
     cancelSpeak = speakShepherdStreamWithMicHandoff(cleanResponse(text), {
-      onStart: () => { setFollowUpSpeaking(true); convo.dispatch({ type: "FU_SPEAK_START" }); },
-      onSpeakingEnd: () => { setFollowUpSpeaking(false); setFollowUpMicArming(true); convo.dispatch({ type: "FU_SPEAK_END" }); },
+      slot: "followup",
+      silenceMs: VOICE_SILENCE_FOLLOWUP_MS,
       handoffDelayMs: VOICE_MIC_HANDOFF_FOLLOWUP_MS,
+      onStart: () => {
+        setFollowUpSpeaking(true);
+        convo.dispatch({ type: "FU_SPEAK_START" });
+        voiceSessionRef.current.onSpeaking();
+      },
+      onSpeakingEnd: () => {
+        setFollowUpSpeaking(false);
+        setFollowUpMicArming(true);
+        convo.dispatch({ type: "FU_SPEAK_END" });
+        voiceSessionRef.current.onWaitingToResume();
+      },
       onHandoff: () => {
-        if (!hasSpeechSupport || isSending || processingBridge) return;
+        if (!philipVoiceInputEnabled || isSending || processingBridge) return;
+        voiceSessionRef.current.onListening();
         startFollowUpListeningRef.current();
       },
     });
@@ -2293,11 +2324,15 @@ export default function GuidancePage() {
     let autoMicTimer: number | undefined;
 
     const scheduleAutoMic = (withVoice: boolean) => {
-      if (cancelled || autoMicStartedRef.current || !webMicEnabled || philipHandsFreeVoice) return;
+      if (cancelled || autoMicStartedRef.current || !philipVoiceInputEnabled) return;
       autoMicStartedRef.current = true;
+      voiceSessionRef.current.onWaitingToResume();
       setMicArming(true);
       autoMicTimer = window.setTimeout(() => {
-        if (!cancelled) startHeartListeningRef.current(withVoice);
+        if (!cancelled) {
+          voiceSessionRef.current.onListening();
+          startHeartListeningRef.current(withVoice);
+        }
       }, 400);
     };
 
@@ -2316,43 +2351,73 @@ export default function GuidancePage() {
         : buildShepherdGreeting(getUserName(), isFirstVisit, witnessLetterRef.current, null);
       const line = dynamicOpeningRef.current ?? greetingTextRef.current ?? fallback;
 
-      // Warm the iOS audio pipeline so the first syllable isn't swallowed on cold start.
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx() as AudioContext;
-          const buf = ctx.createBuffer(1, 1, 22050);
-          const src = ctx.createBufferSource();
-          src.buffer = buf;
-          src.connect(ctx.destination);
-          src.start(0);
-          void ctx.resume();
-        }
-      } catch { /* noop */ }
+      if (philipNativeVoiceReady) {
+        voiceSessionRef.current.startSession("handsFree");
+      }
+
+      if (!philipNativeVoiceReady) {
+        try {
+          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioCtx) {
+            const ctx = new AudioCtx() as AudioContext;
+            const buf = ctx.createBuffer(1, 1, 22050);
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(ctx.destination);
+            src.start(0);
+            void ctx.resume();
+          }
+        } catch { /* noop */ }
+      }
 
       setPhilipGreetingTtsActive(true);
-      cancelGreetingSpeakRef.current = speakShepherdStream(line, {
+      const greetingCallbacks = {
         isPro: isProVerifiedLocally(),
+        slot: "entry" as const,
+        silenceMs: VOICE_SILENCE_ENTRY_MS,
         onStart: () => {
           greetingEngagedRef.current = true;
           markShepherdGreetingPlayed();
           convo.dispatch({ type: "GREETING_START" });
           setGreetingFallbackText(null);
+          voiceSessionRef.current.onSpeaking();
           try { sessionStorage.removeItem("sp_guidance_siri_listen"); } catch { /* noop */ }
         },
         onFail: () => {
           setPhilipGreetingTtsActive(false);
           convo.dispatch({ type: "ENTRY_OPEN" });
           setGreetingFallbackText(line);
+          voiceSessionRef.current.onError("greeting_tts");
           scheduleAutoMic(false);
         },
-        onEnd: () => {
-          setPhilipGreetingTtsActive(false);
-          convo.dispatch({ type: "GREETING_END" });
-          cancelGreetingSpeakRef.current = null;
-          scheduleAutoMic(true);
-        },
-      });
+      };
+
+      if (philipNativeVoiceReady) {
+        cancelGreetingSpeakRef.current = speakShepherdStreamWithMicHandoff(line, {
+          ...greetingCallbacks,
+          onSpeakingEnd: () => {
+            setPhilipGreetingTtsActive(false);
+            convo.dispatch({ type: "GREETING_END" });
+            cancelGreetingSpeakRef.current = null;
+            voiceSessionRef.current.onWaitingToResume();
+          },
+          onHandoff: () => {
+            autoMicStartedRef.current = true;
+            voiceSessionRef.current.onListening();
+            startHeartListeningRef.current(true);
+          },
+        });
+      } else {
+        cancelGreetingSpeakRef.current = speakShepherdStream(line, {
+          ...greetingCallbacks,
+          onEnd: () => {
+            setPhilipGreetingTtsActive(false);
+            convo.dispatch({ type: "GREETING_END" });
+            cancelGreetingSpeakRef.current = null;
+            scheduleAutoMic(true);
+          },
+        });
+      }
     }, siriListenPending ? 800 : VOICE_GREETING_DWELL_MS);
 
     return () => {
@@ -2364,7 +2429,7 @@ export default function GuidancePage() {
       setPhilipGreetingTtsActive(false);
       setGreetingSpeaking(false);
     };
-  }, [isFirstVisit, situation, witnessReady, hasSpeechSupport, heartListening, processingBridge]);
+  }, [isFirstVisit, situation, witnessReady, philipVoiceInputEnabled, philipNativeVoiceReady, heartListening, processingBridge]);
 
   // Phase 1 — speak first reflection for voice sessions; mic reopens when Philip finishes
   useEffect(() => {
@@ -2389,15 +2454,22 @@ export default function GuidancePage() {
       // homepage Philip. The WebSocket path re-invokes GPT on already-generated text
       // and uses a separate audio pipeline (PCM/Web Audio) that sounds different.
       cancelSpeak = speakShepherdStreamWithMicHandoff(spokenText, {
+        slot: "p1",
+        silenceMs: VOICE_SILENCE_PHASE1_MS,
+        onStart: () => {
+          voiceSessionRef.current.onSpeaking();
+        },
         onSpeakingEnd: () => {
           if (cancelled) return;
           setPhase1Speaking(false);
           setPhase1SpeechDone(true);
           setPhase1MicArming(true);
           convo.dispatch({ type: "P1_SPEAK_END" });
+          voiceSessionRef.current.onWaitingToResume();
         },
         onHandoff: () => {
-          if (!hasSpeechSupport || phase2StartedRef.current || showPhase1TypeFallback) return;
+          if (!philipVoiceInputEnabled || phase2StartedRef.current || showPhase1TypeFallback) return;
+          voiceSessionRef.current.onListening();
           startPhase1Listening();
         },
       });
@@ -2554,6 +2626,8 @@ export default function GuidancePage() {
     heartSubmittingRef.current = true;
     lastInputWasVoiceRef.current = fromVoice;
     if (fromVoice) {
+      voiceSessionRef.current.bumpTurn();
+      voiceSessionRef.current.onTranscribing();
       setVoiceConversation(true);
       setVoiceHandoffPending(true);
     }
@@ -2669,6 +2743,7 @@ export default function GuidancePage() {
     phase1SubmittingRef.current = true;
     lastInputWasVoiceRef.current = fromVoice;
     if (fromVoice) setVoiceConversation(true);
+    voiceSessionRef.current.onThinking();
     setProcessingBridge(true);
     setIsReflecting(true);
     convo.dispatch({ type: "P1_REPLY_SUBMIT" });
@@ -3204,6 +3279,12 @@ export default function GuidancePage() {
                   >
                     Share what&apos;s on your heart — in your own words
                   </button>
+                )}
+                {philipHandsFreeVoice && voiceSession.isActive && (
+                  <VoiceConversationStatus
+                    label={voiceSession.statusLabel}
+                    state={voiceSession.state.state}
+                  />
                 )}
                 {philipHandsFreeVoice && (
                   <VoiceQuietHint visible={voiceQuietHintVisible} dark />

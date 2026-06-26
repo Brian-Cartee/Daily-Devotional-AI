@@ -218,3 +218,49 @@ export async function fetchPrayerRecordings(sessionId: string, limit?: number): 
   if (!res.ok) return [];
   return res.json();
 }
+
+/** Philip guidance TTS — same POST /api/tts as web (scope guidance). */
+export async function fetchGuidanceTtsAudio(
+  text: string,
+  sessionId: string,
+  isPro: boolean,
+): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/tts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: text.trim(),
+      scope: "guidance",
+      sessionId,
+      isPro,
+    }),
+  });
+  if (!res.ok) throw new Error(`tts_${res.status}`);
+  const ab = await res.arrayBuffer();
+  const bytes = new Uint8Array(ab);
+  let binary = "";
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + step)) as number[]);
+  }
+  if (typeof globalThis.btoa !== "function") throw new Error("btoa_unavailable");
+  return globalThis.btoa(binary);
+}
+
+export async function transcribeGuidanceAudioNative(
+  uri: string,
+  sessionId: string,
+  isPro: boolean,
+): Promise<string> {
+  const formData = new FormData();
+  formData.append("audio", { uri, name: "guidance.m4a", type: "audio/mp4" } as any);
+  formData.append("sessionId", sessionId);
+  formData.append("isPro", String(isPro));
+  const res = await fetch(`${API_BASE}/api/guidance/transcribe`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`transcribe_${res.status}`);
+  const data = (await res.json()) as { text?: string };
+  return data.text?.trim() ?? "";
+}

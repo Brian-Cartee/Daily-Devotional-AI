@@ -1,5 +1,6 @@
 import type { OpenCaptureParams } from "./createVoiceTurnController";
 import { createConversationalVoiceListener } from "./conversationalCapture";
+import type { VoiceCaptureSlot } from "./types";
 
 export type Phase1CaptureDeps = {
   silenceMs: number;
@@ -18,6 +19,7 @@ export function buildPhase1OpenCaptureParams(deps: Phase1CaptureDeps): OpenCaptu
     slot: "p1",
     buildListener: () =>
       createConversationalVoiceListener({
+        slot: "p1" as VoiceCaptureSlot,
         silenceMs: deps.silenceMs,
         spokenPatienceBridge: true,
         callbacks: {

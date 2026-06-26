@@ -1,6 +1,8 @@
 import { getSessionId } from "@/lib/session";
 import { isProVerifiedLocally } from "@/lib/proStatus";
 import { registerPhilipSpeakCancel } from "@/lib/philipAudioSession";
+import { isNativePhilipVoiceBridgeAvailable, type PhilipVoiceSlot } from "@/lib/philipVoiceBridge";
+import { speakPhilipNativeStream, speakPhilipNativeStreamWithMicHandoff } from "@/lib/philipNativeSpeak";
 
 export { releasePhilipAudioSession, interruptPhilipAudioSession, IOS_MIC_SETTLE_MS } from "@/lib/philipAudioSession";
 
@@ -84,6 +86,7 @@ export type SpeakShepherdOptions = {
   voice?: string;
   prefetchedBlob?: Blob | null;
   isPro?: boolean;
+  slot?: PhilipVoiceSlot;
 };
 
 export function prefetchShepherdTTS(text: string, isPro?: boolean): Promise<Blob | null> {
@@ -190,6 +193,16 @@ export function speakShepherdStream(
   let canplayDeadlineTimer: number | undefined;
 
   const proFlag = opts?.isPro !== undefined ? opts.isPro : isProVerifiedLocally();
+
+  if (isNativePhilipVoiceBridgeAvailable()) {
+    return speakPhilipNativeStream(input, {
+      isPro: proFlag,
+      slot: opts?.slot,
+      onStart: opts?.onStart,
+      onEnd: opts?.onEnd,
+      onFail: opts?.onFail,
+    });
+  }
 
   const bodyPayload = JSON.stringify({
     text: input,
@@ -464,8 +477,24 @@ export function speakShepherdStreamWithMicHandoff(
     onHandoff: () => void;
     handoffDelayMs?: number;
     isPro?: boolean;
+    slot?: PhilipVoiceSlot;
+    silenceMs?: number;
+    onFail?: () => void;
   },
 ): () => void {
+  if (isNativePhilipVoiceBridgeAvailable()) {
+    return speakPhilipNativeStreamWithMicHandoff(text, {
+      isPro: opts.isPro,
+      slot: opts.slot ?? "entry",
+      silenceMs: opts.silenceMs,
+      handoffDelayMs: opts.handoffDelayMs,
+      onStart: opts.onStart,
+      onSpeakingEnd: opts.onSpeakingEnd,
+      onHandoff: opts.onHandoff,
+      onFail: opts.onFail,
+    });
+  }
+
   let handoffScheduled = false;
   const handoffDelay = opts.handoffDelayMs ?? VOICE_MIC_HANDOFF_PHASE1_MS;
   const scheduleHandoff = () => {
