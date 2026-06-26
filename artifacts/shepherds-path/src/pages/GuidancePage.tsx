@@ -62,6 +62,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canUseAi } from "@/lib/aiUsage";
 import { apiSessionExtras } from "@/lib/requestExtras";
+import { getSessionId } from "@/lib/session";
 import {
   type GuidanceMessage,
   appendUserMessage,
