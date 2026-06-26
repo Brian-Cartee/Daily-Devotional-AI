@@ -10,6 +10,10 @@ export function adminAuth(req: Request, res: Response): boolean {
     return false;
   }
   const token = req.headers["x-admin-token"] as string | undefined;
+  if (!token?.trim()) {
+    res.status(401).json({ message: "Unauthorized." });
+    return false;
+  }
   if (token !== password && token !== bypass) {
     res.status(401).json({ message: "Unauthorized." });
     return false;
