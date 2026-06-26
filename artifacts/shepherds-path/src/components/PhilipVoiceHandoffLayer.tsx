@@ -92,7 +92,7 @@ export function PhilipVoiceHandoffLayer({
               textAlign: "center",
             }}
           >
-            Pauses automatically — tap only if needed
+            Pauses when you stop — tap only if needed
           </span>
         </>
       ) : (

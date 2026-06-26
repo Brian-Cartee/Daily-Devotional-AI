@@ -580,8 +580,10 @@ export default function GuidancePage() {
   const VOICE_QUIET_HINT_MS = 5000;
 
   useEffect(() => {
-    if (!situation.trim()) voiceQuietHintShownRef.current = false;
-  }, [situation]);
+    if (!isPhilipMode() || !hasSpeechSupport) return;
+    setShowHeartTypeFallback(false);
+    setShowPhase1TypeFallback(false);
+  }, [hasSpeechSupport]);
 
   useEffect(() => {
     if (!isPhilipMode() || !hasSpeechSupport || showHeartTypeFallback || showPhase1TypeFallback) return;
@@ -2342,9 +2344,13 @@ export default function GuidancePage() {
           setIsReflecting(false);
           convo.dispatch({ type: "ENTRY_OPEN" });
           toast({
-            description: VOICE_QUIET_HANDOFF_FAIL,
-            variant: "destructive",
+            description: "Philip didn't catch that — speak again when you're ready.",
           });
+          window.setTimeout(() => {
+            if (convoRef.current.phase === "entry" && !heartVoiceRef.current?.isActive()) {
+              startHeartListeningRef.current(true);
+            }
+          }, 400);
           return;
         }
         setHeartInput(resolved);
@@ -2434,11 +2440,16 @@ export default function GuidancePage() {
           phase1SubmittingRef.current = false;
           setIsReflecting(false);
           setPhase2Loading(false);
+          setVoiceHandoffPending(false);
           convo.dispatch({ type: "P1_REPLY_OPEN" });
           toast({
-            description: VOICE_QUIET_CAPTURE_FAIL,
-            variant: "destructive",
+            description: "Philip didn't catch that — speak again when you're ready.",
           });
+          window.setTimeout(() => {
+            if (!phase1SubmittingRef.current && !phase1VoiceRef.current?.isActive()) {
+              startPhase1ListeningRef.current?.();
+            }
+          }, 400);
           return;
         }
         setPhase2Loading(true);
@@ -2757,6 +2768,7 @@ export default function GuidancePage() {
     && (philipOrbMode === "listen" || philipMicCaptureOpen);
 
   const dismissThresholdForTyping = () => {
+    if (isPhilipMode() && hasSpeechSupport) return;
     greetingEngagedRef.current = true;
     cancelGreetingSpeakRef.current?.();
     cancelGreetingSpeakRef.current = null;
@@ -2892,6 +2904,7 @@ export default function GuidancePage() {
                   </p>
                 )}
 
+                {!philipHandsFreeVoice && (
                 <button
                   type="button"
                   onClick={dismissThresholdForTyping}
@@ -2908,6 +2921,7 @@ export default function GuidancePage() {
                 >
                   type instead
                 </button>
+                )}
               </div>
             </motion.div>
           )}
@@ -3075,7 +3089,7 @@ export default function GuidancePage() {
                       </button>
                     )}
 
-                    {showHeartTypeFallback && (
+                    {showHeartTypeFallback && !philipHandsFreeVoice && (
                       <>
                         <motion.p
                           initial={{ opacity: 0, y: 6 }}
@@ -4473,7 +4487,7 @@ export default function GuidancePage() {
 
       {/* ── Floating input bar — mobile only, docks above NavBar ── */}
       <AnimatePresence>
-        {showPhase2Content && responseComplete && !phase2SilenceActive && completionPath === "stay" && revealStage >= 3 && canUseAi() && (
+        {showPhase2Content && responseComplete && !phase2SilenceActive && completionPath === "stay" && revealStage >= 3 && canUseAi() && !(philipHandsFreeVoice && voiceConversation) && (
           <motion.div
             key="float-bar"
             initial={{ opacity: 0, y: 20 }}
