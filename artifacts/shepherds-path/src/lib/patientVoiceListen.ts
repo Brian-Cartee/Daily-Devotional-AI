@@ -12,6 +12,8 @@ export type PatientVoiceListener = {
   hasRecordedAudio: () => boolean;
   /** Enough preview text or captured audio for conversational handoff */
   canAutoSubmit: () => boolean;
+  /** Mic was open and we have bytes, SR activity, or VAD speech — even without preview text */
+  hadMeaningfulCapture: () => boolean;
   /** User done speaking — submit now (orb tap / escape hatch) */
   forceSubmit: () => void;
   /** Orb tap — stop mic and hand off immediately if any audio captured */
@@ -33,6 +35,8 @@ export type PatientVoiceOptions = {
   onAutoSubmit?: () => void;
   /** Listener stopped without submitting (getUserMedia failed, nothing captured, or forceStop) */
   onListenEnd?: () => void;
+  /** Manual Done tap but nothing usable was captured yet */
+  onInsufficientCapture?: () => void;
   /** MediaRecorder actually started or stopped — drives live mic UI */
   onMicLive?: (live: boolean) => void;
   conversational?: boolean;
@@ -605,18 +609,34 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     endListening(true);
   };
 
+  const flushRecorderData = () => {
+    if (mediaRecorder?.state === "recording") {
+      try { mediaRecorder.requestData(); } catch { /* noop */ }
+    }
+  };
+
+  const manualCanSubmit = (): boolean => {
+    const hasText = effectivePreview().trim().length > 0;
+    if (hasText) return true;
+    if (totalAudioBytes() > 0) return true;
+    if (userSpeechDetected || lastConfirmedSpeechAt > 0 || lastSrActivityAt > 0) return true;
+    // iOS WebView: SR often silent — trust mic-open duration once recorder is live.
+    return micOpenAt > 0 && Date.now() - micOpenAt >= 600;
+  };
+
   const submitNow = (manual = false) => {
     if (autoSubmitFired) return;
     if (!active && !manual) return;
+    if (manual) flushRecorderData();
     userSpeechDetected = true;
-    const hasAudio = manual
-      ? audioChunks.length > 0
-      : totalAudioBytes() >= minAudioBytesForHandoff();
-    const hasText = effectivePreview().trim().length > 0;
     const canSubmit = manual
-      ? (hasAudio || hasText)
+      ? manualCanSubmit()
       : readyForConversationalHandoff();
     if (!canSubmit) {
+      if (manual) {
+        opts.onInsufficientCapture?.();
+        return;
+      }
       if (!manual) triggerAutoSubmit();
       return;
     }
@@ -974,7 +994,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           maybeExtendForSrStall(e.data.size);
         }
       };
-      mediaRecorder.start(1000);
+      mediaRecorder.start(preferLocalSilenceDetection() ? 250 : 1000);
       opts.onMicLive?.(true);
       armRecordingTimers();
       startAnalyserSilence(stream);
@@ -1040,7 +1060,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       return effectivePreview();
     },
     hasRecordedAudio() {
-      return audioChunks.length > 0;
+      return totalAudioBytes() > 0;
+    },
+    hadMeaningfulCapture() {
+      return manualCanSubmit();
     },
     canAutoSubmit() {
       return hasEnoughToSubmit();
@@ -1049,7 +1072,26 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       submitNow(true);
     },
     finishSpeaking() {
-      submitNow(true);
+      flushRecorderData();
+      const delay = preferLocalSilenceDetection() ? 220 : 60;
+      window.setTimeout(() => {
+        if (active) {
+          submitNow(true);
+          return;
+        }
+        if (manualCanSubmit() || totalAudioBytes() > 0) {
+          if (!autoSubmitFired) {
+            autoSubmitFired = true;
+            void waitForRecorderStop()
+              .then(() => { endListening(false); opts.onAutoSubmit?.(); })
+              .catch(() => { opts.onAutoSubmit?.(); });
+          } else {
+            opts.onAutoSubmit?.();
+          }
+          return;
+        }
+        opts.onInsufficientCapture?.();
+      }, delay);
     },
     getPreview() {
       return effectivePreview();

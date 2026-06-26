@@ -569,8 +569,10 @@ export default function GuidancePage() {
   const voiceQuietHintShownRef = useRef(false);
   const [entryMicLive, setEntryMicLive] = useState(false);
   const [micArming, setMicArming] = useState(false);
+  const heartMicWasLiveRef = useRef(false);
   const [phase1MicLive, setPhase1MicLive] = useState(false);
   const [phase1MicArming, setPhase1MicArming] = useState(false);
+  const phase1MicWasLiveRef = useRef(false);
   const [followUpMicLive, setFollowUpMicLive] = useState(false);
   const [followUpMicArming, setFollowUpMicArming] = useState(false);
   const [voiceHandoffPending, setVoiceHandoffPending] = useState(false);
@@ -1617,6 +1619,7 @@ export default function GuidancePage() {
       onMicLive: (live) => {
         setEntryMicLive(live);
         if (live) {
+          heartMicWasLiveRef.current = true;
           setMicArming(false);
           entryMicRetryRef.current = 0;
         }
@@ -1664,6 +1667,24 @@ export default function GuidancePage() {
             description: "Tap the mic when you're ready to speak.",
           });
         }
+      },
+      onInsufficientCapture: () => {
+        setVoiceHandoffPending(false);
+        setEntryMicLive(false);
+        setMicArming(false);
+        toast({
+          description: VOICE_QUIET_CAPTURE_FAIL,
+          variant: "destructive",
+        });
+        window.setTimeout(() => {
+          if (
+            convoRef.current.phase === "entry"
+            && !heartSubmittingRef.current
+            && !heartVoiceRef.current?.isActive()
+          ) {
+            startHeartListeningRef.current(true);
+          }
+        }, 400);
       },
       onAutoSubmit: () => {
         if (heartSubmittingRef.current || processingBridgeRef.current) return;
@@ -1748,6 +1769,7 @@ export default function GuidancePage() {
       onMicLive: (live) => {
         setPhase1MicLive(live);
         if (live) {
+          phase1MicWasLiveRef.current = true;
           setPhase1MicArming(false);
           phase1MicRetryRef.current = 0;
         }
@@ -1790,6 +1812,24 @@ export default function GuidancePage() {
           }, 500);
         }
       },
+      onInsufficientCapture: () => {
+        setVoiceHandoffPending(false);
+        setPhase1MicLive(false);
+        setPhase1MicArming(false);
+        toast({
+          description: VOICE_QUIET_CAPTURE_FAIL,
+          variant: "destructive",
+        });
+        window.setTimeout(() => {
+          if (
+            !phase1SubmittingRef.current
+            && !phase2StartedRef.current
+            && !phase1VoiceRef.current?.isActive()
+          ) {
+            startPhase1ListeningRef.current?.();
+          }
+        }, 400);
+      },
       onTakeYourTime: () => {
         if (phase1TakeYourTimeRef.current) return;
         phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
@@ -1814,6 +1854,36 @@ export default function GuidancePage() {
 
   const startPhase1ListeningRef = useRef(startPhase1Listening);
   startPhase1ListeningRef.current = startPhase1Listening;
+
+  // Recover if handoff pending stalls (failed capture left UI on purple speaker / black screen).
+  useEffect(() => {
+    if (!voiceHandoffPending) return;
+    const t = window.setTimeout(() => {
+      if (
+        !philipGreetingTtsActive
+        && !phase1Speaking
+        && !phase2Speaking
+        && !followUpSpeaking
+        && !processingBridge
+        && !phase2Loading
+        && !isReflecting
+        && !isSending
+      ) {
+        setVoiceHandoffPending(false);
+        const phase = convoRef.current.phase;
+        if (phase === "entry" && !situation.trim() && !heartVoiceRef.current?.isActive()) {
+          startHeartListeningRef.current(true);
+        } else if (
+          (phase === "p1-reply" || phase === "p1-silence")
+          && !phase1VoiceRef.current?.isActive()
+          && !phase2StartedRef.current
+        ) {
+          startPhase1ListeningRef.current?.();
+        }
+      }
+    }, 3500);
+    return () => window.clearTimeout(t);
+  }, [voiceHandoffPending, philipGreetingTtsActive, phase1Speaking, phase2Speaking, followUpSpeaking, processingBridge, phase2Loading, isReflecting, isSending, situation]);
 
   const togglePhase1Voice = () => {
     if (isPhilipMode() && voiceConversation) return;
@@ -1911,6 +1981,24 @@ export default function GuidancePage() {
             }
           }, 500);
         }
+      },
+      onInsufficientCapture: () => {
+        setVoiceHandoffPending(false);
+        setFollowUpMicLive(false);
+        setFollowUpMicArming(false);
+        toast({
+          description: VOICE_QUIET_CAPTURE_FAIL,
+          variant: "destructive",
+        });
+        window.setTimeout(() => {
+          if (
+            convoRef.current.phase === "fu-reply"
+            && !followUpSubmittingRef.current
+            && !followUpVoiceRef.current?.isActive()
+          ) {
+            startFollowUpListeningRef.current();
+          }
+        }, 400);
       },
       onTakeYourTime: () => {
         if (followUpTakeYourTimeRef.current) return;
@@ -2298,11 +2386,29 @@ export default function GuidancePage() {
       setHeartInput(stopped || trimmed);
     }
 
-    if (!trimmed && !(fromVoice && listener?.hasRecordedAudio())) {
+    const voiceSession = fromVoice && (listener != null || heartMicWasLiveRef.current);
+    if (!trimmed && !voiceSession) {
+      setVoiceHandoffPending(false);
       toast({
         description: VOICE_QUIET_CAPTURE_FAIL,
         variant: "destructive",
       });
+      window.setTimeout(() => {
+        if (convoRef.current.phase === "entry" && !heartVoiceRef.current?.isActive()) {
+          startHeartListeningRef.current(true);
+        }
+      }, 400);
+      return;
+    }
+
+    if (!trimmed && fromVoice && !listener) {
+      setVoiceHandoffPending(false);
+      heartMicWasLiveRef.current = false;
+      window.setTimeout(() => {
+        if (convoRef.current.phase === "entry" && !heartVoiceRef.current?.isActive()) {
+          startHeartListeningRef.current(true);
+        }
+      }, 300);
       return;
     }
 
@@ -2343,7 +2449,9 @@ export default function GuidancePage() {
         const resolved = clampGuidanceInput(final);
         if (!resolved.trim()) {
           heartSubmittingRef.current = false;
+          heartMicWasLiveRef.current = false;
           setIsReflecting(false);
+          setVoiceHandoffPending(false);
           convo.dispatch({ type: "ENTRY_OPEN" });
           toast({
             description: "Philip didn't catch that — speak again when you're ready.",
@@ -2356,6 +2464,7 @@ export default function GuidancePage() {
           return;
         }
         setHeartInput(resolved);
+        heartMicWasLiveRef.current = false;
         beginGuidanceEntry(resolved);
         heartSubmittingRef.current = false;
       });
@@ -2363,8 +2472,7 @@ export default function GuidancePage() {
     }
 
     // Happy path: preview text available → start the flow immediately.
-    // Whisper runs in the background and startGuidanceFlow will race it
-    // for up to 400 ms before calling the Phase 1 API.
+    heartMicWasLiveRef.current = false;
     beginGuidanceEntry(trimmed);
     heartSubmittingRef.current = false;
   };
@@ -2400,17 +2508,22 @@ export default function GuidancePage() {
     const hasVoiceCapture =
       fromVoiceOverride
       && (
-        listener?.hasRecordedAudio()
-        || listener?.canAutoSubmit()
+        listener != null
+        || phase1MicWasLiveRef.current
         || phase1MicLive
         || phase1MicArming
-        || phase1VoiceRef.current !== null
       );
     if (!reply.trim() && !hasVoiceCapture) {
       setVoiceHandoffPending(false);
       toast({
-        description: "Didn't catch enough — speak a little more, then tap Done speaking.",
+        description: VOICE_QUIET_CAPTURE_FAIL,
+        variant: "destructive",
       });
+      window.setTimeout(() => {
+        if (!phase1SubmittingRef.current && !phase1VoiceRef.current?.isActive()) {
+          startPhase1ListeningRef.current?.();
+        }
+      }, 400);
       return;
     }
 
@@ -2491,12 +2604,22 @@ export default function GuidancePage() {
     nativeDiag("orb_tap", phase);
 
     const finishPhase1 = () => {
-      setVoiceHandoffPending(true);
-      setPhase1MicLive(false);
-      setPhase1MicArming(false);
       const listener = phase1VoiceRef.current;
       if (listener?.isActive()) {
         listener.finishSpeaking();
+        return;
+      }
+      if (listener && (listener.hasRecordedAudio() || listener.hadMeaningfulCapture() || listener.getPreview().trim())) {
+        handlePhase1ContinueRef.current(listener.getPreview().trim(), true);
+        return;
+      }
+      if (phase1MicArming && !listener) return;
+      if (phase1MicLive || phase1MicWasLiveRef.current) {
+        if (listener) {
+          listener.forceSubmit();
+          return;
+        }
+        startPhase1ListeningRef.current?.();
         return;
       }
       const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
@@ -2505,11 +2628,21 @@ export default function GuidancePage() {
 
     const finishEntry = () => {
       const listener = heartVoiceRef.current;
-      setVoiceHandoffPending(true);
-      setMicArming(false);
-      setEntryMicLive(false);
       if (listener?.isActive()) {
         listener.finishSpeaking();
+        return;
+      }
+      if (listener && (listener.hasRecordedAudio() || listener.hadMeaningfulCapture() || listener.getPreview().trim())) {
+        submitHeartEntryRef.current(listener.getPreview().trim(), true);
+        return;
+      }
+      if (micArming && !listener) return;
+      if (entryMicLive || heartMicWasLiveRef.current) {
+        if (listener) {
+          listener.forceSubmit();
+          return;
+        }
+        startHeartListeningRef.current(true);
         return;
       }
       submitHeartEntryRef.current((listener?.getPreview() ?? heartInputRef.current).trim(), true);
@@ -2602,11 +2735,17 @@ export default function GuidancePage() {
       setFollowUp(stopped || text);
     }
 
-    if (!text && !(fromVoice && listener?.hasRecordedAudio())) {
+    if (!text && !(fromVoice && listener && (listener.hasRecordedAudio() || listener.hadMeaningfulCapture()))) {
+      setVoiceHandoffPending(false);
       toast({
         description: VOICE_QUIET_CAPTURE_FAIL,
         variant: "destructive",
       });
+      window.setTimeout(() => {
+        if (convoRef.current.phase === "fu-reply" && !followUpVoiceRef.current?.isActive()) {
+          startFollowUpListeningRef.current();
+        }
+      }, 400);
       return;
     }
 
@@ -2633,10 +2772,16 @@ export default function GuidancePage() {
         if (!text.trim()) {
           followUpSubmittingRef.current = false;
           setIsReflecting(false);
+          setVoiceHandoffPending(false);
           toast({
             description: VOICE_QUIET_CAPTURE_FAIL,
             variant: "destructive",
           });
+          window.setTimeout(() => {
+            if (convoRef.current.phase === "fu-reply" && !followUpVoiceRef.current?.isActive()) {
+              startFollowUpListeningRef.current();
+            }
+          }, 400);
           return;
         }
         if (!canUseAi()) {
@@ -2775,6 +2920,12 @@ export default function GuidancePage() {
     || phase1MicArming
     || followUpMicLive
     || followUpMicArming;
+
+  /** Done-speaking tap only when MediaRecorder is live — not while mic is still arming. */
+  const philipMicCaptureReady =
+    entryMicLive
+    || phase1MicLive
+    || followUpMicLive;
 
   const dismissThresholdForTyping = () => {
     if (isPhilipMode() && hasSpeechSupport) return;
@@ -2956,7 +3107,7 @@ export default function GuidancePage() {
         {/* Voice handoff — portal to body so iOS WebView receives taps above scroll content */}
         <PhilipVoiceHandoffLayer
           visible={!!philipOrbMode && (!showThresholdOverlay || philipMicCaptureOpen)}
-          micCaptureOpen={philipMicCaptureOpen}
+          micCaptureOpen={philipMicCaptureReady}
           mode={philipOrbMode ?? "idle"}
           onDone={() => handlePhilipOrbTapRef.current()}
           quietHintVisible={voiceQuietHintVisible}
