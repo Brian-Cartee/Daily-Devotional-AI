@@ -60,7 +60,7 @@ function turnServiceUrl(): string {
 const FALLBACK_AUTO_SUBMIT_MS = 1_200;
 const DEFAULT_MIN_CHARS = 8;
 const MIN_AUDIO_BYTES_FOR_HANDOFF = 2_500;
-const MIN_AUDIO_BYTES_FOR_HANDOFF_IOS = 1_000;
+const MIN_AUDIO_BYTES_FOR_HANDOFF_IOS = 400;
 const POST_SPEECH_SUBMIT_MS = 850;
 const ANALYSER_POLL_MS = 120;
 /** Time-domain RMS above this ≈ user speaking (0–100 scale). */
@@ -167,6 +167,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
   let hysteresisBandSince: number | null = null;
   let lastConfirmedSpeechAt = 0;
   let speechIdleWatchdog: ReturnType<typeof setInterval> | null = null;
+  let micOpenAt = 0;
 
   const rmsSpeechThreshold = () =>
     dynamicSpeechTh ?? (preferLocalSilenceDetection() ? RMS_SPEECH_THRESHOLD_IOS : RMS_SPEECH_THRESHOLD);
@@ -202,12 +203,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
       const idleMs = Date.now() - lastConfirmedSpeechAt;
       if (idleMs < pause) return;
-      if (hasEnoughToSubmit() || totalAudioBytes() >= minAudioBytesForHandoff()) {
+      if (readyForConversationalHandoff()) {
         triggerAutoSubmit();
         return;
       }
-      // iOS: SR silent but user spoke — hand off on captured audio alone after idle.
-      if (idleMs >= pause + 200 && totalAudioBytes() >= 400) {
+      if (idleMs >= pause + 150 && totalAudioBytes() >= minAudioBytesForHandoff()) {
+        userSpeechDetected = true;
         triggerAutoSubmit();
       }
     }, 250);
@@ -231,11 +232,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       if (anchor <= 0) return;
       const silentMs = Date.now() - anchor;
       if (silentMs < pause) return;
-      if (hasEnoughToSubmit()) {
+      if (readyForConversationalHandoff()) {
         triggerAutoSubmit();
         return;
       }
-      if (silentMs >= pause + 400 && totalAudioBytes() >= minAudioBytesForHandoff()) {
+      if (silentMs >= pause + 200 && totalAudioBytes() >= minAudioBytesForHandoff()) {
+        userSpeechDetected = true;
         triggerAutoSubmit();
       }
     }, 200);
@@ -267,7 +269,12 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     utteranceEndTimer = setTimeout(() => {
       utteranceEndTimer = null;
       utteranceEndArmed = false;
-      if (active && !autoSubmitFired) triggerAutoSubmit();
+      if (active && !autoSubmitFired) {
+        if (readyForConversationalHandoff() || totalAudioBytes() >= minAudioBytesForHandoff()) {
+          userSpeechDetected = true;
+          triggerAutoSubmit();
+        }
+      }
     }, pause);
   };
 
@@ -283,7 +290,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const tryConversationalSubmit = () => {
     if (!active || autoSubmitFired || !opts.conversational) return;
-    if (!hasEnoughToSubmit()) return;
+    if (!readyForConversationalHandoff()) return;
     const autoMs = resolveConversationalAutoSubmitMs(
       wordCount(previewTranscript),
       opts.autoSubmitSilenceMs,
@@ -373,7 +380,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
           const pause = opts.autoSubmitSilenceMs ?? FALLBACK_AUTO_SUBMIT_MS;
           if (bandMs >= pause + 400) {
             if (quietSince === null) quietSince = Date.now();
-            if (hasEnoughToSubmit() || totalAudioBytes() >= minAudioBytesForHandoff()) {
+            if (readyForConversationalHandoff()) {
               triggerAutoSubmit();
             }
           }
@@ -527,6 +534,14 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
     return false;
   };
 
+  /** Conversational: Whisper can recover words — hand off on short silence + any real capture. */
+  const readyForConversationalHandoff = (): boolean => {
+    if (!opts.conversational) return hasEnoughToSubmit();
+    if (hasEnoughToSubmit()) return true;
+    if (!userSpeechDetected) return false;
+    return totalAudioBytes() >= minAudioBytesForHandoff();
+  };
+
   const pushPreview = (final: string, interim: string) => {
     const display = (final + (interim ? ` ${interim}` : "")).trim();
     opts.onTranscript(final, interim);
@@ -557,8 +572,8 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const forceStop = () => {
     if (!active) return;
-    if (opts.conversational && hasEnoughToSubmit()) {
-      triggerAutoSubmit();
+    if (opts.conversational && readyForConversationalHandoff()) {
+      submitNow(false);
       return;
     }
     endListening(true);
@@ -572,7 +587,10 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       ? audioChunks.length > 0
       : totalAudioBytes() >= minAudioBytesForHandoff();
     const hasText = effectivePreview().trim().length > 0;
-    if (!hasEnoughToSubmit() && !(manual && (hasAudio || hasText))) {
+    const canSubmit = manual
+      ? (hasAudio || hasText)
+      : readyForConversationalHandoff();
+    if (!canSubmit) {
       if (!manual) triggerAutoSubmit();
       return;
     }
@@ -594,14 +612,22 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
 
   const triggerAutoSubmit = () => {
     if (autoSubmitFired || !active) return;
-    if (!hasEnoughToSubmit()) {
+    if (!readyForConversationalHandoff()) {
       if (!hardTimeoutTimer) {
         hardTimeoutTimer = setTimeout(() => {
           hardTimeoutTimer = null;
-          if (!active) return;
-          if (hasEnoughToSubmit()) triggerAutoSubmit();
-          else forceStop();
-        }, 1500);
+          if (!active || autoSubmitFired) return;
+          if (readyForConversationalHandoff()) {
+            triggerAutoSubmit();
+            return;
+          }
+          if (opts.conversational && totalAudioBytes() >= minAudioBytesForHandoff()) {
+            userSpeechDetected = true;
+            triggerAutoSubmit();
+            return;
+          }
+          forceStop();
+        }, 900);
       }
       return;
     }
@@ -900,6 +926,15 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunks.push(e.data);
+          if (
+            opts.conversational
+            && micOpenAt > 0
+            && Date.now() - micOpenAt > 700
+            && totalAudioBytes() >= minAudioBytesForHandoff()
+          ) {
+            userSpeechDetected = true;
+            if (lastConfirmedSpeechAt <= 0) markConfirmedSpeech();
+          }
           // Room tone still fills chunks — only treat as speech when VAD/SR agree.
           if (
             opts.conversational
@@ -956,6 +991,7 @@ export function createPatientVoiceListener(opts: PatientVoiceOptions): PatientVo
       dynamicQuietTh = null;
       hysteresisBandSince = null;
       lastConfirmedSpeechAt = 0;
+      micOpenAt = Date.now();
       setPhase("listening");
       if (!canRecord) {
         if (!canPreview) {

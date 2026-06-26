@@ -24,7 +24,7 @@ import { usePhilipVoiceStream } from "@/lib/usePhilipVoiceStream";
 import { createPatientVoiceListener, isLiveMediaStream, type VoiceListenUiPhase, type PatientVoiceListener } from "@/lib/patientVoiceListen";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { fetchGuidanceRecap, type GuidanceRecap } from "@/lib/guidanceRecap";
-import { resolveGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
+import { resolveGuidanceSituation, readGuidanceSituation, stashGuidanceSituation } from "@/lib/guidanceSituation";
 import {
   consumeCrisisReentryLine,
   isGuidanceSafetyBlock,
@@ -367,6 +367,11 @@ export default function GuidancePage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const situation = resolveGuidanceSituation(search);
+  const situationTextRef = useRef(situation);
+  useEffect(() => { situationTextRef.current = situation; }, [situation]);
+
+  const activeSituation = () =>
+    situation.trim() || readGuidanceSituation() || situationTextRef.current.trim();
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -930,7 +935,7 @@ export default function GuidancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          situation,
+          situation: activeSituation(),
           messages: conversationMessages,
           userName: getUserName() ?? undefined,
           guidanceMode: explicitMode ?? guidanceMode,
@@ -989,7 +994,7 @@ export default function GuidancePage() {
   };
 
   const streamPhase1 = async (flowGen: number, situationOverride?: string): Promise<boolean> => {
-    const effectiveSituation = situationOverride ?? situation;
+    const effectiveSituation = situationOverride ?? activeSituation();
     setPhase1StreamingText("");
     setPhase1Response(null);
     setPhase1Complete(false);
@@ -1662,22 +1667,6 @@ export default function GuidancePage() {
         const preview = (listener?.getPreview() ?? heartInputRef.current).trim();
         setMicArming(false);
         setEntryMicLive(false);
-        if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
-          if (!listener?.hasRecordedAudio()) {
-            listener?.destroy();
-            heartVoiceRef.current = null;
-            window.setTimeout(() => {
-              if (
-                convoRef.current.phase === "entry"
-                && !heartSubmittingRef.current
-                && !heartVoiceRef.current?.isActive()
-              ) {
-                startHeartListeningRef.current(true);
-              }
-            }, 400);
-            return;
-          }
-        }
         setVoiceHandoffPending(true);
         submitHeartEntryRef.current(preview, true);
       },
@@ -1802,29 +1791,13 @@ export default function GuidancePage() {
         phase1TakeYourTimeRef.current = speakTakeYourTimeBridge();
       },
       onAutoSubmit: () => {
-        if (phase1SubmittingRef.current || phase2LoadingRef.current || processingBridgeRef.current || !phase1ResponseRef.current) return;
+        if (phase1SubmittingRef.current || phase2LoadingRef.current || !phase1ResponseRef.current) return;
         nativeDiag("p1_auto_submit");
         setPhase1MicLive(false);
         setPhase1MicArming(false);
+        setVoiceHandoffPending(true);
         const listener = phase1VoiceRef.current;
         const preview = (listener?.getPreview() ?? phase1UserReplyRef.current).trim();
-        if (!listener?.canAutoSubmit() && preview.length < GUIDANCE_INPUT_MIN) {
-          if (!listener?.hasRecordedAudio()) {
-            listener?.destroy();
-            phase1VoiceRef.current = null;
-            window.setTimeout(() => {
-              if (
-                convoRef.current.phase === "p1-reply"
-                && !phase1SubmittingRef.current
-                && !phase1VoiceRef.current?.isActive()
-              ) {
-                startPhase1ListeningRef.current?.();
-              }
-            }, 400);
-            return;
-          }
-        }
-        setVoiceHandoffPending(true);
         handlePhase1ContinueRef.current(preview, true);
       },
     });
@@ -2416,8 +2389,21 @@ export default function GuidancePage() {
       setPhase1UserReply(stopped || reply);
     }
 
-    const hasVoiceCapture = fromVoiceOverride && (listener?.hasRecordedAudio() || listener?.canAutoSubmit());
-    if (!reply.trim() && !hasVoiceCapture) return;
+    const hasVoiceCapture =
+      fromVoiceOverride
+      && (
+        listener?.hasRecordedAudio()
+        || listener?.canAutoSubmit()
+        || phase1MicLive
+        || phase1MicArming
+      );
+    if (!reply.trim() && !hasVoiceCapture) {
+      setVoiceHandoffPending(false);
+      toast({
+        description: "Didn't catch enough — speak a little more, then tap Done speaking.",
+      });
+      return;
+    }
 
     setPhase1MicLive(false);
     setPhase1MicArming(false);
@@ -2462,7 +2448,7 @@ export default function GuidancePage() {
         setConversationPhase(2);
         setPhase2SpeechDone(false);
         phase2SpokenRef.current = null;
-        const initialUserMsg: Message = { role: "user", content: situation };
+        const initialUserMsg: Message = { role: "user", content: activeSituation() };
         startPhase2(reply);
         const ok = await streamResponse([initialUserMsg], undefined, {
           phase1Response,
@@ -2504,7 +2490,24 @@ export default function GuidancePage() {
       handlePhase1ContinueRef.current(preview, true);
     };
 
-    if (phase === "entry") {
+    const inPhase1ReplyWindow =
+      !!phase1ResponseRef.current
+      && !phase2StartedRef.current
+      && (
+        phase === "p1-reply"
+        || phase === "p1-silence"
+        || phase === "p1-speaking"
+        || phase1MicLive
+        || phase1MicArming
+        || !!phase1VoiceRef.current?.isActive()
+      );
+
+    if (inPhase1ReplyWindow) {
+      finishPhase1();
+      return;
+    }
+
+    if (phase === "entry" && !phase1ResponseRef.current) {
       const listener = heartVoiceRef.current;
       if (!listener) return;
       setVoiceHandoffPending(true);
@@ -2515,19 +2518,13 @@ export default function GuidancePage() {
         return;
       }
       submitHeartEntryRef.current((listener.getPreview() ?? heartInputRef.current).trim(), true);
-    } else if (
-      phase === "p1-reply"
-      || phase === "p1-silence"
-      || phase1VoiceRef.current?.isActive()
-    ) {
-      finishPhase1();
     } else if (phase === "fu-reply") {
       const listener = followUpVoiceRef.current;
       if (!listener) return;
       if (listener.isActive()) listener.finishSpeaking();
       else submitFollowUpRef.current(true, followUp);
     }
-  }, [hasSpeechSupport, followUp]);
+  }, [hasSpeechSupport, followUp, phase1MicLive, phase1MicArming]);
   handlePhilipOrbTapRef.current = handlePhilipOrbTap;
 
   const handleHeartKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
