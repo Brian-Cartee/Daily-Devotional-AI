@@ -207,17 +207,6 @@ const PULL_DIAG_JS = `(function(){
   true;
 })();`;
 
-const VISIBILITY_PROBE_JS = `(function(){
-  try{
-    if(document.getElementById('sp-native-boot-placeholder')){return true;}
-    var homeSel='[data-testid="landing-home"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"]';
-    if(!document.querySelector(homeSel)){return true;}
-    var bs=document.getElementById('sp-boot-splash');if(bs&&bs.remove)bs.remove();
-    var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
-  }catch(e){}
-  true;
-})();`;
-
 function deferInjectWebview(webviewRef: RefObject<WebView | null>, js: string, delayMs = 0): void {
   setTimeout(() => {
     try {
@@ -409,7 +398,7 @@ export default function MainScreen() {
     (pageUrl: string) => {
       if (!shouldBootstrapWebView(pageUrl)) return;
       const main = mainJsPathRef.current ?? "";
-      webviewRef.current?.injectJavaScript(buildNativeBootstrapJs(APP_ORIGIN, main));
+      deferInjectWebview(webviewRef, buildNativeBootstrapJs(APP_ORIGIN, main), 0);
     },
     [],
   );
@@ -418,11 +407,6 @@ export default function MainScreen() {
     if (!mainJsPath) return;
     runNativeBootstrap(entryUrl);
   }, [mainJsPath, entryUrl, runNativeBootstrap]);
-
-  const probeWebReady = useCallback(() => {
-    if (webUiConfirmedRef.current) return;
-    deferInjectWebview(webviewRef, VISIBILITY_PROBE_JS, 0);
-  }, []);
 
   const onWebUiVisible = useCallback(() => {
     if (webUiConfirmedRef.current) return;
@@ -511,22 +495,14 @@ export default function MainScreen() {
         webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
       }
     }, 45000);
-    let probeLoop: ReturnType<typeof setInterval> | undefined;
-    const probeStartTimer = setTimeout(() => {
-      probeLoop = setInterval(() => {
-        if (!webUiConfirmedRef.current) probeWebReady();
-      }, 1500);
-    }, 8000);
 
     return () => {
       clearTimeout(slowTimer);
       clearTimeout(stuckTimer);
       clearTimeout(blankTimer);
-      clearTimeout(probeStartTimer);
-      if (probeLoop) clearInterval(probeLoop);
       clearInterval(diagPullTimer);
     };
-  }, [entryUrl, probeWebReady, pushNativeDiag, showDiagAlert]);
+  }, [entryUrl, pushNativeDiag, showDiagAlert]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -563,7 +539,6 @@ export default function MainScreen() {
     const { url, navigationType } = event;
     if (!url || url === "about:blank") return true;
     if (url.startsWith("shepherdspath://app-ready")) {
-      onWebUiVisible();
       return false;
     }
     if (url.startsWith("shepherdspath://diag")) {
@@ -848,7 +823,6 @@ export default function MainScreen() {
           }
           if (nativeEvent.progress >= 0.99) {
             pushNativeDiag("onLoadProgress", "100%");
-            probeWebReady();
           }
         }}
         startInLoadingState
@@ -859,9 +833,6 @@ export default function MainScreen() {
           pushNativeDiag("onLoadEnd", pageUrl);
           if (!shouldBootstrapWebView(pageUrl)) return;
           runNativeBootstrap(pageUrl);
-          if (!webUiConfirmedRef.current) {
-            setTimeout(() => probeWebReady(), 3000);
-          }
         }}
         onError={(e) => {
           setPullRefreshing(false);

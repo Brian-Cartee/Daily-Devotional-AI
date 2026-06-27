@@ -76,13 +76,6 @@
         }
       } catch (_e) {}
 
-      // Fire react_booted at the absolute earliest moment — first script tag.
-      // Hides the Expo native splash (pure black) before any other JS runs.
-      try {
-        var _b = window.ReactNativeWebView;
-        if (_b) _b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
-      } catch (_e) {}
-
       if (!window.ReactNativeWebView) return;
       if (location.pathname.indexOf("native-shell") >= 0) return;
       if (location.search.indexOf("enter=1") >= 0) return;
@@ -766,17 +759,6 @@
       }
 
       var sent = false;
-      function notifyAppReadyViaScheme() {
-        try {
-          var iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = "shepherdspath://app-ready";
-          document.documentElement.appendChild(iframe);
-          setTimeout(function () {
-            iframe.remove();
-          }, 120);
-        } catch (e) {}
-      }
 
       function notify(force) {
         if (window.__spNativeBridgeNotified) return;
@@ -791,7 +773,6 @@
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
-        notifyAppReadyViaScheme();
       }
 
       // Called by React after paint — dispatches sp-app-ready; notify() runs once via listener.
@@ -965,26 +946,6 @@
       }
       hookModuleScript();
 
-      // Old TestFlight builds inject #sp-fg-cover on every WebView load — strip it until home paints.
-      (function stripReloadCover() {
-        var ticks = 0;
-        var guard = setInterval(function () {
-          ticks += 1;
-          spRemoveId("sp-fg-cover");
-          if (
-            (document.querySelector('[data-testid="landing-home"]') &&
-              !document.getElementById("sp-native-boot-placeholder")) ||
-            document.querySelector('[data-testid="card-devotional"]')
-          ) {
-            try {
-              if (window.__spSignalReady) window.__spSignalReady();
-            } catch (e) {}
-            clearInterval(guard);
-          }
-          if (ticks >= 40) clearInterval(guard);
-        }, 500);
-      })();
-
       // Dismiss native overlay once React has mounted real UI (fallback if components miss __spSignalReady).
       setTimeout(function () {
         if (sent) return;
@@ -1020,29 +981,6 @@
         document.addEventListener("DOMContentLoaded", tryStartNativeBridge);
         window.addEventListener("load", tryStartNativeBridge);
       }
-
-      // ── GLOBAL EMERGENCY FALLBACK ──────────────────────────────────────────
-      // Two-stage: hide Expo splash fast (1.5 s), then force overlay off (8 s).
-      // Fires regardless of startNativeBridge so even a broken bridge unblocks.
-
-      // Stage 1 — hide the Expo native splash (purple cross). Do NOT dismiss the
-      // native loading overlay here — wait until real UI paints via notify().
-      (function () {
-        try {
-          var b = window.ReactNativeWebView;
-          if (!b) return;
-          b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
-        } catch (e) {}
-      })();
-      // Belt-and-suspenders: also send at 500 ms in case the bridge initialises
-      // slightly after first parse (some WKWebView builds inject it async).
-      setTimeout(function () {
-        try {
-          var b = window.ReactNativeWebView;
-          if (!b) return;
-          b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
-        } catch (e) {}
-      }, 500);
     })();
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->

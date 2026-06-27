@@ -158,8 +158,10 @@ async function mountApp() {
 
   if (typeof window !== "undefined" && native) {
     requestAnimationFrame(() => {
-      nativeDiag("react_booted");
-      notifyNativeReactBooted();
+      requestAnimationFrame(() => {
+        nativeDiag("react_booted");
+        notifyNativeReactBooted();
+      });
     });
   } else {
     removeNativeBootPlaceholder();
