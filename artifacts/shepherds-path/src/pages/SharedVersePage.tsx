@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import { buildVerseSharePreviewUrl, SHARE_SITE_ORIGIN } from "@/lib/shareVerse";
 import { APP_STORE_URL } from "@/components/ExternalPromoLinks";
+import { formatVerseForDisplay } from "@/lib/verseText";
 
 type Verse = {
   id?: number;
@@ -144,7 +145,7 @@ export default function SharedVersePage() {
                   textShadow: "0 2px 12px rgba(0,0,0,0.6)",
                 }}
               >
-                &ldquo;{verse.text}&rdquo;
+                {formatVerseForDisplay(verse.text)}
               </p>
               <p
                 className="text-[15px] font-semibold tracking-wide"

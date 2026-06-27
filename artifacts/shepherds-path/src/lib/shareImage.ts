@@ -111,6 +111,26 @@ export function getDevotionalHeroPhoto(): string {
   return pool[(dayOfYear + 7) % pool.length];
 }
 
+/** Fixed brand styling for social share cards — never random per generation. */
+export const SHARE_CARD_ACCENT = "rgba(212,165,116,0.78)";
+export const SHARE_CARD_REF_COLOR = "#e8c87a";
+
+/** Cycle to the next background when the user taps "New scene". */
+export function pickNextShareBackground(
+  currentUrl: string | null | undefined,
+  extraUrls: string[] = [],
+): string {
+  const pool = [...new Set([...extraUrls.filter(Boolean), ...PHOTO_POOL])];
+  if (!currentUrl) return pool[0];
+  const idx = pool.findIndex((u) => u === currentUrl);
+  if (idx >= 0) return pool[(idx + 1) % pool.length];
+  const loose = pool.findIndex(
+    (u) => currentUrl.includes(u.split("photo-")[1]?.slice(0, 12) ?? "___"),
+  );
+  if (loose >= 0) return pool[(loose + 1) % pool.length];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -631,19 +651,8 @@ export async function createShareImage(
   canvas.height = S;
   const ctx = canvas.getContext("2d")!;
 
-  // Color palette for text/accents
-  const palettes = ["warm", "cool", "gold"] as const;
-  const palette = palettes[Math.floor(Math.random() * palettes.length)];
-
-  const accentColor =
-    palette === "cool"
-      ? "rgba(160,140,255,0.75)"
-      : palette === "gold"
-      ? "rgba(255,200,80,0.75)"
-      : "rgba(255,165,80,0.75)";
-
-  const refColor =
-    palette === "cool" ? "#d0c4ff" : palette === "gold" ? "#ffe099" : "#ffcc88";
+  const accentColor = SHARE_CARD_ACCENT;
+  const refColor = SHARE_CARD_REF_COLOR;
 
   // ── Draw background — prefer AI verse art, fall back to photo pool ─────────
   const backgroundUrl = verseArtUrl || PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
@@ -1057,16 +1066,8 @@ export async function createStoryShareImage(
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  const palettes = ["warm", "cool", "gold"] as const;
-  const palette = palettes[Math.floor(Math.random() * palettes.length)];
-  const accentColor =
-    palette === "cool" ? "rgba(160,140,255,0.75)" :
-    palette === "gold" ? "rgba(255,200,80,0.75)" :
-    "rgba(255,165,80,0.75)";
-  const refColor =
-    palette === "cool" ? "#d0c4ff" :
-    palette === "gold" ? "#ffe099" :
-    "#ffcc88";
+  const accentColor = SHARE_CARD_ACCENT;
+  const refColor = SHARE_CARD_REF_COLOR;
 
   const backgroundUrl = verseArtUrl || PHOTO_POOL[Math.floor(Math.random() * PHOTO_POOL.length)];
   try {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, Loader2 } from "lucide-react";
 import { createStoryShareImage } from "@/lib/shareImage";
 
-import { stripWrappingQuotes } from "@/lib/verseText";
+import { normalizeVerseBody } from "@/lib/verseText";
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1920;
@@ -33,7 +33,7 @@ function fitVerseLines(
   ctx: CanvasRenderingContext2D,
   text: string,
 ): { lines: string[]; fontSize: number } {
-  const clean = stripWrappingQuotes(text);
+  const clean = normalizeVerseBody(text);
   let fontSize =
     clean.length > 180 ? 44 :
     clean.length > 130 ? 52 :
@@ -114,11 +114,8 @@ function renderVerseImageBlob(verseText: string, verseReference: string): Promis
     const lineHeight = fontSize * 1.52;
     const blockH = lines.length * lineHeight;
     let y = CANVAS_H / 2 - blockH / 2 + fontSize * 0.35;
-    // Open quote before first line, close after last
     for (let i = 0; i < lines.length; i++) {
-      const prefix = i === 0 ? "“" : "";
-      const suffix = i === lines.length - 1 ? "”" : "";
-      ctx.fillText(`${prefix}${lines[i]}${suffix}`, CANVAS_W / 2, y);
+      ctx.fillText(lines[i], CANVAS_W / 2, y);
       y += lineHeight;
     }
     ctx.shadowBlur = 0;

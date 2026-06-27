@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Check, X, ImageIcon, Heart, Link2, Loader2, Download } from "lucide-react";
-import { createShareImage, createStoryShareImage } from "@/lib/shareImage";
+import { Share2, Check, X, ImageIcon, Heart, Link2, Loader2, Download, RefreshCw } from "lucide-react";
+import { createShareImage, createStoryShareImage, pickNextShareBackground } from "@/lib/shareImage";
 import { getDevotionalHeroImage } from "@/lib/devotionalHeroImage";
 import {
   buildFriendVerseShareText,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/shareVerse";
 import { getUserName } from "@/lib/userName";
 import { useToast } from "@/hooks/use-toast";
+import { formatVerseForDisplay } from "@/lib/verseText";
 
 export type ShareVerseVariant = "verse" | "moment";
 
@@ -59,6 +60,7 @@ export function ShareVerseSheet({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [format, setFormat] = useState<"square" | "story">("story");
+  const [shareBgUrl, setShareBgUrl] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const autoGenAttempted = useRef(false);
 
@@ -75,9 +77,15 @@ export function ShareVerseSheet({
       clearPreview();
       setDone(null);
       setFormat("story");
+      setShareBgUrl(null);
       autoGenAttempted.current = false;
     }
   }, [open, clearPreview]);
+
+  useEffect(() => {
+    if (!open) return;
+    setShareBgUrl(imageBgUrl ?? getDevotionalHeroImage(date));
+  }, [open, imageBgUrl, date]);
 
   useEffect(() => {
     if (!open) return;
@@ -92,10 +100,10 @@ export function ShareVerseSheet({
   const imageShareCaption = buildImageShareCaption(reference, date);
 
   const generateImage = useCallback(
-    async (fmt: "square" | "story" = "square"): Promise<Blob | null> => {
+    async (fmt: "square" | "story" = "square", bgOverride?: string | null): Promise<Blob | null> => {
       setBusy("image");
       try {
-        const bg = imageBgUrl ?? getDevotionalHeroImage();
+        const bg = bgOverride ?? shareBgUrl ?? imageBgUrl ?? getDevotionalHeroImage(date);
         const blob =
           fmt === "story"
             ? await createStoryShareImage(text, reference, bg)
@@ -104,6 +112,7 @@ export function ShareVerseSheet({
         setPreviewBlob(blob);
         setPreviewUrl(URL.createObjectURL(blob));
         setFormat(fmt);
+        if (bgOverride) setShareBgUrl(bgOverride);
         return blob;
       } catch {
         toast({ title: "Couldn't make image", variant: "destructive" });
@@ -112,8 +121,15 @@ export function ShareVerseSheet({
         setBusy(null);
       }
     },
-    [imageBgUrl, text, reference, clearPreview, toast],
+    [shareBgUrl, imageBgUrl, date, text, reference, clearPreview, toast],
   );
+
+  const refreshBackground = useCallback(async () => {
+    if (busy === "image") return;
+    const nextBg = pickNextShareBackground(shareBgUrl ?? imageBgUrl ?? getDevotionalHeroImage(date));
+    setShareBgUrl(nextBg);
+    await generateImage(format, nextBg);
+  }, [busy, shareBgUrl, imageBgUrl, date, format, generateImage]);
 
   useEffect(() => {
     if (!open || !generateOnOpen || autoGenAttempted.current) return;
@@ -200,7 +216,19 @@ export function ShareVerseSheet({
     <button
       type="button"
       data-testid="button-save-verse-image"
-      onClick={() => downloadBlob(previewBlob, shareImageFilename(reference))}
+      onClick={() =>
+        void shareImageBlob(previewBlob, {
+          filename: shareImageFilename(reference),
+          title: `${reference} — Shepherd's Path`,
+          text: isMoment ? imageShareCaption : shareText,
+        }).then((result) => {
+          if (result === "shared") {
+            toast({ title: "Ready to save", description: "Choose Save Image in the share sheet." });
+          } else if (result === "saved") {
+            toast({ title: "Saved", description: "Open Photos to post on social." });
+          }
+        })
+      }
       className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-medium text-muted-foreground"
     >
       <Download className="w-3.5 h-3.5" />
@@ -254,20 +282,42 @@ export function ShareVerseSheet({
                 className="text-[15px] text-foreground/90 leading-snug italic line-clamp-4"
                 style={{ fontFamily: "var(--font-serif, Georgia, serif)" }}
               >
-                &ldquo;{text}&rdquo;
+                {formatVerseForDisplay(text)}
               </p>
               <p className="text-[13px] font-semibold text-primary/70 mt-1">— {reference}</p>
             </div>
 
             {(previewUrl || busy === "image") && (
-              <div className="rounded-xl overflow-hidden border border-border/40 bg-black/20">
+              <div className="rounded-xl overflow-hidden border border-border/40 bg-black/20 relative">
                 {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt="Share preview with verse on today's art"
-                    className="w-full object-contain mx-auto"
-                    style={{ aspectRatio: format === "story" ? "9/16" : "1/1", maxHeight: 280 }}
-                  />
+                  <>
+                    <img
+                      src={previewUrl}
+                      alt="Share preview with verse on today's art"
+                      className="w-full object-contain mx-auto"
+                      style={{ aspectRatio: format === "story" ? "9/16" : "1/1", maxHeight: 280 }}
+                    />
+                    <button
+                      type="button"
+                      data-testid="button-share-verse-refresh-scene"
+                      disabled={busy === "image"}
+                      onClick={() => void refreshBackground()}
+                      title="New background"
+                      className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-semibold text-white active:scale-95 transition-all disabled:opacity-40"
+                      style={{
+                        background: "rgba(0,0,0,0.58)",
+                        backdropFilter: "blur(6px)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                      }}
+                    >
+                      {busy === "image" ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      )}
+                      New scene
+                    </button>
+                  </>
                 ) : (
                   <div
                     className="flex flex-col items-center justify-center gap-2 text-muted-foreground"

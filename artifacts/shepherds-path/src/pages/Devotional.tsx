@@ -4,7 +4,7 @@ import { saveBookmark, getBookmark } from "@/lib/bookmarks";
 import { ResumeBar } from "@/components/ResumeBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartHandshake, Loader2, Share2, Check, BookOpen, MessageCircle, Bookmark, BookmarkCheck, Flame, Heart, ImageDown, Zap, Star, Headphones, Square, ChevronDown, X, Download, RefreshCw, Sparkles, Lock } from "lucide-react";
-import { createShareImage, createStoryShareImage, getDailyVersePhoto, PHOTO_POOL } from "@/lib/shareImage";
+import { createShareImage, createStoryShareImage, getDailyVersePhoto, pickNextShareBackground } from "@/lib/shareImage";
 import { isProVerifiedLocally, activateProCode } from "@/lib/proStatus";
 import { apiSessionExtras } from "@/lib/requestExtras";
 import { recordStreakVisit } from "@/lib/streakApi";
@@ -224,6 +224,7 @@ export default function Devotional() {
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
   const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
   const [sharePreviewFormat, setSharePreviewFormat] = useState<"square" | "story">("square");
+  const [shareSceneBgUrl, setShareSceneBgUrl] = useState<string | null>(null);
   const [regeneratingPreview, setRegeneratingPreview] = useState(false);
   const [forTwoContent, setForTwoContent] = useState("");
   const [forTwoLoading, setForTwoLoading] = useState(false);
@@ -1284,7 +1285,9 @@ export default function Devotional() {
     if (!verse || sharingImage) return;
     setSharingImage(true);
     try {
-      const blob = await createShareImage(verse.text, verse.reference, heroBgForDisplay);
+      const bg = heroBgForDisplay;
+      setShareSceneBgUrl(bg);
+      const blob = await createShareImage(verse.text, verse.reference, bg);
       const url = URL.createObjectURL(blob);
       // Clean up any previous preview URL
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
@@ -1309,16 +1312,26 @@ export default function Devotional() {
     }
   };
 
-  const handleDownloadImage = () => {
+  const handleDownloadImage = async () => {
     if (!sharePreviewBlob || !verse) return;
-    downloadBlob(sharePreviewBlob, shareImageFilename(verse.reference));
-    toast({ title: "Saved", description: "Your verse image is in Photos or Downloads." });
+    const filename = shareImageFilename(verse.reference);
+    const result = await shareImageBlob(sharePreviewBlob, {
+      filename,
+      title: `${verse.reference} — Shepherd's Path`,
+      text: buildShareText(),
+    });
+    if (result === "shared") {
+      toast({ title: "Ready to save", description: "Choose Save Image in the share sheet." });
+    } else {
+      toast({ title: "Saved", description: "Your verse image is in Photos or Downloads." });
+    }
   };
 
   const closeSharePreview = () => {
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     setSharePreviewUrl(null);
     setSharePreviewBlob(null);
+    setShareSceneBgUrl(null);
     setSharePreviewFormat("square");
   };
 
@@ -1326,7 +1339,7 @@ export default function Devotional() {
     if (!verse || fmt === sharePreviewFormat || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
-      const activeBg = heroBgForDisplay;
+      const activeBg = shareSceneBgUrl ?? heroBgForDisplay;
       const blob = fmt === "story"
         ? await createStoryShareImage(verse.text, verse.reference, activeBg)
         : await createShareImage(verse.text, verse.reference, activeBg);
@@ -1343,15 +1356,12 @@ export default function Devotional() {
     if (!verse || regeneratingPreview) return;
     setRegeneratingPreview(true);
     try {
-      // Build full pool: today's real photo + the curated fallback set
-      const activeBg = heroBgForDisplay;
-      const extendedPool = [bundledHeroSrc, ...PHOTO_POOL];
-      const others = extendedPool.filter(u => u !== activeBg);
-      const pool = others.length > 0 ? others : extendedPool;
-      const randomUrl = pool[Math.floor(Math.random() * pool.length)];
+      const currentBg = shareSceneBgUrl ?? heroBgForDisplay;
+      const nextBg = pickNextShareBackground(currentBg, [bundledHeroSrc]);
+      setShareSceneBgUrl(nextBg);
       const blob = sharePreviewFormat === "story"
-        ? await createStoryShareImage(verse.text, verse.reference, randomUrl)
-        : await createShareImage(verse.text, verse.reference, randomUrl);
+        ? await createStoryShareImage(verse.text, verse.reference, nextBg)
+        : await createShareImage(verse.text, verse.reference, nextBg);
       const url = URL.createObjectURL(blob);
       if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
       setSharePreviewBlob(blob);
@@ -2865,8 +2875,8 @@ export default function Devotional() {
                   disabled={regeneratingPreview}
                   data-testid="button-refresh-scene"
                   title="New scene"
-                  className="absolute bottom-6 right-7 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white/90 active:scale-95 transition-all disabled:opacity-40"
-                  style={{ background: "rgba(0,0,0,0.52)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.15)" }}
+                  className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12px] font-semibold text-white active:scale-95 transition-all disabled:opacity-40 z-10"
+                  style={{ background: "rgba(0,0,0,0.58)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.18)" }}
                 >
                   {regeneratingPreview
                     ? <Loader2 className="w-3 h-3 animate-spin" />
