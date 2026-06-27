@@ -213,8 +213,8 @@ const VISIBILITY_PROBE_JS = `(function(){
     var splashSel='[data-testid="sp-splash-active"]';
     if(document.querySelector(splashSel)||document.querySelector(homeSel)){
       document.documentElement.setAttribute('data-native-ui-ready','1');
-      document.getElementById('sp-boot-splash')?.remove();
-      document.getElementById('sp-fg-cover')?.remove();
+      var bs=document.getElementById('sp-boot-splash');if(bs&&bs.remove)bs.remove();
+      var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'web_ui_visible' }));
     }
   }catch(e){}
@@ -309,8 +309,8 @@ export default function MainScreen() {
       appStateRef.current = nextState;
       if (prev.match(/inactive|background/) && nextState === "active") {
         webviewRef.current?.injectJavaScript(`(function(){
-          document.getElementById('sp-fg-cover')?.remove();
-          try{window.__onAppForeground?.();}catch(e){}
+          var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
+          try{if(window.__onAppForeground)window.__onAppForeground();}catch(e){}
           true;
         })();`);
         // Check if Siri launched us into a specific screen
@@ -806,7 +806,7 @@ export default function MainScreen() {
           pushNativeDiag("onLoadStart", entryUrl);
           // Drop any stale reload cover; splashes are disabled on native cold start.
           webviewRef.current?.injectJavaScript(`(function(){
-            document.getElementById('sp-fg-cover')?.remove();
+            var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
             true;
           })();`);
         }}

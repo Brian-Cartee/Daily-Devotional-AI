@@ -624,6 +624,11 @@
       document.documentElement.setAttribute("data-sp-shell", "native");
       document.documentElement.classList.add("sp-native-shell");
 
+      function spRemoveId(id) {
+        var el = document.getElementById(id);
+        if (el && el.remove) el.remove();
+      }
+
       var debugPanel = /(?:\?|&)debugNative=1(?:&|$)/.test(location.search);
 
       function diag(event, detail) {
@@ -749,13 +754,13 @@
         if (sent && !force) return;
         if (!force && !hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
-        document.getElementById("sp-native-recovery")?.remove();
+        spRemoveId("sp-native-recovery");
         sent = true;
         // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
         // Only remove covers here as a last-resort fallback (force=true from timeouts).
         if (force) {
-          document.getElementById("sp-boot-splash")?.remove();
-          document.getElementById("sp-fg-cover")?.remove();
+          spRemoveId("sp-boot-splash");
+          spRemoveId("sp-fg-cover");
         }
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
@@ -767,8 +772,8 @@
       // Called by React components after double-RAF (guaranteed post-paint).
       // Removes the web boot cover and signals the native overlay to drop.
       window.__spSignalReady = function() {
-        document.getElementById("sp-boot-splash")?.remove();
-        document.getElementById("sp-fg-cover")?.remove();
+        spRemoveId("sp-boot-splash");
+        spRemoveId("sp-fg-cover");
         notify(true);
       };
 
@@ -787,8 +792,8 @@
       setTimeout(function () {
         if (sent || hasVisibleAppUi()) return;
         diag("force_ui_visible_15s", "timeout_fallback");
-        document.getElementById("sp-boot-splash")?.remove();
-        document.getElementById("sp-fg-cover")?.remove();
+        spRemoveId("sp-boot-splash");
+        spRemoveId("sp-fg-cover");
         showWebReloadScreen();
       }, 15000);
 
@@ -843,7 +848,8 @@
             alert("Shepherd's Path load status:\n\n" + diagText);
           } catch (e2) {}
         }
-        document.getElementById("sp-native-reload-btn")?.addEventListener("click", function () {
+        var reloadBtn = document.getElementById("sp-native-reload-btn");
+        if (reloadBtn) reloadBtn.addEventListener("click", function () {
           hardReloadApp();
         });
       }
@@ -939,7 +945,7 @@
         var ticks = 0;
         var guard = setInterval(function () {
           ticks += 1;
-          document.getElementById("sp-fg-cover")?.remove();
+          spRemoveId("sp-fg-cover");
           if (
             document.querySelector('[data-testid="landing-home"]') ||
             document.querySelector('[data-testid="card-devotional"]')
