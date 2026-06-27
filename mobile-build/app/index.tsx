@@ -35,6 +35,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
 import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
+import { NativeAppWebView, type NativeAppWebViewHandlers } from "@/components/NativeAppWebView";
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
@@ -58,17 +59,6 @@ function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   }
   return url;
 }
-
-const BEFORE_CONTENT_JS = `(function(){
-  document.documentElement.style.backgroundColor='#0d0612';
-  if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
-  document.documentElement.setAttribute('data-sp-shell','native');
-  document.documentElement.setAttribute('data-sp-philip-native-voice','0');
-  window.__SP_PHILIP_NATIVE_VOICE__=false;
-  document.documentElement.setAttribute('data-sp-native-share','1');
-  document.documentElement.classList.add('sp-native-shell','dark');
-  true;
-})();`;
 
 const IN_APP_HOST_SUFFIXES = [
   "shepherdspathai.com",
@@ -213,7 +203,6 @@ export default function MainScreen() {
   const wasSubscribedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const [entryUrl, setEntryUrl] = useState<string | null>(null);
-  const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSlowOptions, setShowSlowOptions] = useState(false);
   const [showStuckHelp, setShowStuckHelp] = useState(false);
@@ -225,9 +214,19 @@ export default function MainScreen() {
   const reloadCountRef = useRef(0);
   const diagLogsRef = useRef<WebViewDiagEntry[]>([]);
   const [diagSummary, setDiagSummary] = useState("");
-  const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
   const philipVoiceRef = useRef<PhilipNativeVoiceController | null>(null);
+  const webviewHandlersRef = useRef<NativeAppWebViewHandlers>({
+    onMessage: () => {},
+    onShouldStartLoadWithRequest: () => true,
+    onLoadStart: () => {},
+    onLoadProgress: () => {},
+    onLoadEnd: () => {},
+    onError: () => {},
+    onHttpError: () => {},
+    onNavigation: () => {},
+    onContentProcessDidTerminate: () => {},
+  });
   const philipVoiceLoadRef = useRef<Promise<PhilipNativeVoiceController> | null>(null);
   const webviewSessionStartedAtRef = useRef(0);
   const loadStartedRef = useRef(false);
@@ -286,7 +285,6 @@ export default function MainScreen() {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
       if (cancelled) return;
-      setBeforeContentJs(BEFORE_CONTENT_JS);
       setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
     return () => {
@@ -424,7 +422,6 @@ export default function MainScreen() {
       .then((j: { mainJs?: string }) => {
         if (cancelled || !j?.mainJs) return;
         mainJsPathRef.current = j.mainJs;
-        setMainJsPath(j.mainJs);
         pushNativeDiag("manifest_loaded", j.mainJs);
       })
       .catch((err) => {
@@ -513,6 +510,7 @@ export default function MainScreen() {
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
     pushNativeDiag("webview_session_start", entryUrl);
+    pushNativeDiag("webview_will_mount", entryUrl);
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
     const loadWatchdog = setTimeout(() => {
@@ -574,7 +572,6 @@ export default function MainScreen() {
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
-      setBeforeContentJs(BEFORE_CONTENT_JS);
       const next = shellEntryUrl(subscriberEmail, sessionId);
       setEntryUrl(next);
       if (entryUrl === next) {
@@ -865,6 +862,18 @@ export default function MainScreen() {
     reload();
   }, [pushNativeDiag, reload]);
 
+  webviewHandlersRef.current = {
+    onMessage: handleWebViewMessage,
+    onShouldStartLoadWithRequest,
+    onLoadStart: handleWebViewLoadStart,
+    onLoadProgress: handleWebViewLoadProgress,
+    onLoadEnd: handleWebViewLoadEnd,
+    onError: handleWebViewError,
+    onHttpError: handleWebViewHttpError,
+    onNavigation: handleWebViewNavigation,
+    onContentProcessDidTerminate: handleWebViewContentProcessDidTerminate,
+  };
+
   if (error) {
     return (
       <SafeAreaView style={styles.errorContainer} edges={["top", "bottom"]}>
@@ -888,7 +897,7 @@ export default function MainScreen() {
     );
   }
 
-  if (!beforeContentJs || !entryUrl) {
+  if (!entryUrl) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar style="light" />
@@ -900,48 +909,7 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <WebView
-        key="sp-main-webview"
-        ref={webviewRef}
-        source={{ uri: entryUrl }}
-        style={styles.webview}
-        originWhitelist={["https://*", "http://*", "shepherdspath://*"]}
-        javaScriptEnabled
-        domStorageEnabled
-        sharedCookiesEnabled
-        allowsBackForwardNavigationGestures={false}
-        pullToRefreshEnabled={false}
-        scrollEnabled
-        bounces
-        {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-        allowsFullscreenVideo
-        setSupportMultipleWindows={false}
-        cacheEnabled
-        injectedJavaScriptBeforeContentLoaded={beforeContentJs}
-        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onMessage={(event) => {
-          try {
-            handleWebViewMessage(JSON.parse(event.nativeEvent.data) as Record<string, unknown>);
-          } catch {
-            /* noop */
-          }
-        }}
-        onLoadStart={handleWebViewLoadStart}
-        onLoadProgress={({ nativeEvent }) => handleWebViewLoadProgress(nativeEvent.progress)}
-        onLoadEnd={(event) => handleWebViewLoadEnd(event.nativeEvent.url || entryUrl)}
-        onError={(event) => handleWebViewError(String(event.nativeEvent.description || "unknown"))}
-        onHttpError={(event) => handleWebViewHttpError(event.nativeEvent.statusCode)}
-        onNavigationStateChange={(nav) =>
-          handleWebViewNavigation(Boolean(nav.loading), nav.title || "", nav.url || "")
-        }
-        onContentProcessDidTerminate={handleWebViewContentProcessDidTerminate}
-        {...(Platform.OS === "android"
-          ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
-          : {})}
-      />
+      <NativeAppWebView uri={entryUrl} webviewRef={webviewRef} handlersRef={webviewHandlersRef} />
       {showOverlay && showSlowOptions && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <>
