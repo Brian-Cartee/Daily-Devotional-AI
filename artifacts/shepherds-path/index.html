@@ -425,6 +425,14 @@
       visibility: visible !important;
       opacity: 1 !important;
     }
+    html[data-sp-shell="native"] [data-testid="sp-splash-active"],
+    html[data-sp-shell="native"] [data-testid="sp-splash-active"] button,
+    html[data-sp-shell="native"] [data-testid="button-brand-splash-enter"],
+    html[data-sp-shell="native"] [data-testid="button-brand-splash-enter-zone"],
+    html[data-sp-shell="native"] [data-testid="button-brand-splash-skip"] {
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+    }
     html[data-sp-shell="native"] body::-webkit-scrollbar { display: none !important; }
     html[data-sp-shell="native"] #sp-safari-link,
     html[data-sp-shell="native"] #sp-enter-btn { display: none !important; }

@@ -14,6 +14,8 @@ import {
   markEntrySplashDismissedThisSession,
 } from "@/lib/entrySplashState";
 import { markNativeShellUiPainted } from "@/lib/platform";
+import { setEntryOverlayActive } from "@/lib/entryOverlayState";
+import { nativeDiag } from "@/lib/nativeDiag";
 import { preloadDailySplashImages } from "@/lib/dailySplash";
 import { formatVerseForDisplay } from "@/lib/verseText";
 import { prewarmTTS } from "@/hooks/use-tts";
@@ -161,8 +163,10 @@ export function commitEntrySplash(): BrandSplashInit | null {
 }
 
 function fireSplashDismiss(onDismiss: () => void) {
+  nativeDiag("entry_splash_dismiss");
   markEntrySplashDismissedThisSession();
   markEntryShown();
+  setEntryOverlayActive(false);
   try {
     (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
     markNativeShellUiPainted();
@@ -183,18 +187,19 @@ function SplashTapButton({
   onPress: () => void;
   primary?: boolean;
 }) {
-  const busyRef = useRef(false);
   const fire = () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    window.setTimeout(() => { busyRef.current = false; }, 600);
     onPress();
   };
 
   return (
     <button
       type="button"
-      onTouchEnd={(e) => {
+      onTouchStart={(e) => {
+        e.stopPropagation();
+        fire();
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType === "touch") return;
         e.preventDefault();
         e.stopPropagation();
         fire();
@@ -214,6 +219,9 @@ function SplashTapButton({
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
         cursor: "pointer",
+        position: "relative",
+        zIndex: 1000003,
+        pointerEvents: "auto",
       }}
     >
       {label}
@@ -243,6 +251,11 @@ export function markEntryShown() {
 
 function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: () => void }) {
   const { splash, character, shortSplash } = init;
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+  const dismissEntry = useCallback(() => {
+    onDismissRef.current();
+  }, []);
   const shouldDelayNamePrompt = init.showIcebreaker && !init.showCallback && !shortSplash;
   const [showIcebreaker, setShowIcebreaker] = useState(
     init.showIcebreaker && !shouldDelayNamePrompt,
@@ -277,6 +290,14 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   useLayoutEffect(() => {
     (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
   }, []);
+
+  useEffect(() => {
+    const win = window as Window & { __spDismissEntrySplash?: () => void };
+    win.__spDismissEntrySplash = dismissEntry;
+    return () => {
+      delete win.__spDismissEntrySplash;
+    };
+  }, [dismissEntry]);
 
   // Peel native fg-cover whenever splash is visible — AppState/resume can stack it above us.
   useEffect(() => {
@@ -414,8 +435,41 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
     <div
       data-testid="sp-splash-active"
       className="fixed inset-0 overflow-hidden"
-      style={{ zIndex: 1000001, background: "#000" }}
+      style={{ zIndex: 1000001, background: "#000", pointerEvents: "auto", touchAction: "manipulation" }}
     >
+      <button
+        type="button"
+        aria-label="Skip splash"
+        data-testid="button-brand-splash-skip"
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          dismissEntry();
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dismissEntry();
+        }}
+        style={{
+          position: "absolute",
+          top: "max(14px, env(safe-area-inset-top, 14px))",
+          right: "16px",
+          zIndex: 1000004,
+          border: "none",
+          background: "rgba(0,0,0,0.35)",
+          color: "rgba(255,255,255,0.55)",
+          fontSize: "12px",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          padding: "10px 12px",
+          borderRadius: "999px",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+          cursor: "pointer",
+        }}
+      >
+        Skip
+      </button>
       {/* Full-bleed image — visible immediately behind icebreaker */}
       <motion.div
         className="absolute inset-0"
@@ -644,7 +698,11 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
 
           <motion.div
             className="absolute left-6 right-6"
-            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)" }}
+            style={{
+              bottom: "calc(env(safe-area-inset-bottom, 0px) + 44px)",
+              zIndex: 1000002,
+              pointerEvents: "auto",
+            }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
@@ -652,9 +710,37 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
             <SplashTapButton
               testId="button-brand-splash-enter"
               label={cta}
-              onPress={onDismiss}
+              onPress={dismissEntry}
             />
           </motion.div>
+          {/* Full lower tap zone — WKWebView often misses small button targets */}
+          <button
+            type="button"
+            aria-label={cta}
+            data-testid="button-brand-splash-enter-zone"
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              dismissEntry();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              dismissEntry();
+            }}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "min(42vh, 320px)",
+              zIndex: 1000001,
+              border: "none",
+              background: "transparent",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+              cursor: "pointer",
+            }}
+          />
         </>
       )}
     </div>

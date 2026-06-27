@@ -1143,8 +1143,13 @@ function LandingHomeInner() {
         }}
       />
 
-      {!blockHomeChrome && (
-      <>
+      <div
+        aria-hidden={blockHomeChrome}
+        style={{
+          visibility: blockHomeChrome ? "hidden" : "visible",
+          pointerEvents: blockHomeChrome ? "none" : "auto",
+        }}
+      >
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
 
       {/* "You stepped inside" message and Gentle Start card removed —
@@ -2096,8 +2101,7 @@ function LandingHomeInner() {
           </div>
         </motion.div>
       </div>
-      </>
-      )}
+      </div>
 
     </div>
   );

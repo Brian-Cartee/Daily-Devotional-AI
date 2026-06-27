@@ -1,5 +1,4 @@
 import { useState, useLayoutEffect } from "react";
-import { canShowEntrySplash } from "./entrySplashState";
 
 let _active = false;
 const _listeners = new Set<() => void>();
@@ -12,7 +11,8 @@ export function reconcileEntryOverlayIdle(): void {
       setEntryOverlayActive(false);
       return;
     }
-    setEntryOverlayActive(canShowEntrySplash());
+    const splashVisible = !!document.querySelector('[data-testid="sp-splash-active"]');
+    setEntryOverlayActive(splashVisible);
   } catch {
     setEntryOverlayActive(false);
   }
