@@ -60,6 +60,7 @@ import { shareAppInviteText, shareAppUrl, shareNative } from "@/lib/shareVerse";
 import { NATIVE_CARD, NATIVE_PAGE, NATIVE_TEXT, NATIVE_TEXT_SOFT } from "@/lib/nativeColors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { HomeEntryScreen, markEntryShown, shouldShowHomeEntry, commitEntrySplash, type BrandSplashInit } from "@/components/HomeEntryScreen";
+import { hasDismissedEntrySplashThisSession } from "@/lib/entrySplashState";
 import { BeginTodaysWalk, hasShownBeginWalk, markBeginWalkShown } from "@/components/BeginTodaysWalk";
 import {
   bumpHomeVisitAfterThreshold,
@@ -828,7 +829,7 @@ function LandingHomeInner() {
 
   const [entrySplashInit, setEntrySplashInit] = useState<BrandSplashInit | null>(() => {
     const reserve = (): BrandSplashInit | null => {
-      if (_splashShownThisSession) return null;
+      if (_splashShownThisSession || hasDismissedEntrySplashThisSession()) return null;
       const init = commitEntrySplash();
       if (init) {
         _splashShownThisSession = true;
@@ -888,7 +889,7 @@ function LandingHomeInner() {
     };
 
     const tryShowSplash = () => {
-      if (_splashShownThisSession) return;
+      if (_splashShownThisSession || hasDismissedEntrySplashThisSession()) return;
       const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? "0", 10);
       const elapsed = Date.now() - last;
       if (elapsed < REOPEN_THRESHOLD_MS) return;

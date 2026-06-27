@@ -480,6 +480,32 @@ export function hasCommittedEntrySplashThisSession(): boolean {
   }
 }
 
+const DISMISSED_SESSION_KEY = "sp_entry_splash_dismissed";
+
+export function hasDismissedEntrySplashThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISSED_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markEntrySplashDismissedThisSession(): void {
+  try {
+    sessionStorage.setItem(DISMISSED_SESSION_KEY, "1");
+  } catch {
+    /* noop */
+  }
+}
+
+export function clearEntrySplashDismissedThisSession(): void {
+  try {
+    sessionStorage.removeItem(DISMISSED_SESSION_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
 export function markEntrySplashCommittedThisSession(): void {
   try {
     sessionStorage.setItem(SESSION_COMMIT_KEY, "1");

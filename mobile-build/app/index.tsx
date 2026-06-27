@@ -425,8 +425,6 @@ export default function MainScreen() {
   }, []);
 
   const onWebUiVisible = useCallback(() => {
-    if (webUiConfirmedRef.current) return;
-    webUiConfirmedRef.current = true;
     readyRef.current = true;
     setAppReady(true);
     setShowOverlay(false);
@@ -434,6 +432,9 @@ export default function MainScreen() {
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
     hideNativeSplashWhenWebReady();
+    if (!webUiConfirmedRef.current) {
+      webUiConfirmedRef.current = true;
+    }
   }, []);
 
   const syncAppleProToWeb = useCallback(
@@ -880,7 +881,13 @@ export default function MainScreen() {
       />
 
       {showOverlay && (
-        <View style={styles.loadingOverlay} pointerEvents="auto">
+        <View
+          style={[
+            styles.loadingOverlay,
+            !showSlowOptions && styles.loadingOverlayTransparent,
+          ]}
+          pointerEvents={showSlowOptions ? "auto" : "none"}
+        >
           {showSlowOptions && (
             <>
               <Image
@@ -977,6 +984,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     gap: 10,
     zIndex: 20,
+  },
+  loadingOverlayTransparent: {
+    backgroundColor: "transparent",
   },
   loadingHint: {
     fontSize: 16,

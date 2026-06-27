@@ -7,11 +7,13 @@ import { isLateNight } from "@/lib/nightMode";
 import {
   advanceEntrySplash,
   canShowEntrySplash,
-  clearEntrySplashSessionCommit,
   getOnboardingSplashCount,
   hasCommittedEntrySplashThisSession,
+  hasDismissedEntrySplashThisSession,
   markEntrySplashCommittedThisSession,
+  markEntrySplashDismissedThisSession,
 } from "@/lib/entrySplashState";
+import { markNativeShellUiPainted } from "@/lib/platform";
 import { preloadDailySplashImages } from "@/lib/dailySplash";
 import { formatVerseForDisplay } from "@/lib/verseText";
 import { prewarmTTS } from "@/hooks/use-tts";
@@ -149,12 +151,74 @@ function resolveBrandSplashInit(): BrandSplashInit {
 
 /** Reserve and return the next entry splash — call once per cold open before mounting UI. */
 export function commitEntrySplash(): BrandSplashInit | null {
+  if (hasDismissedEntrySplashThisSession()) return null;
   if (hasCommittedEntrySplashThisSession()) return null;
   if (!canShowEntrySplash()) return null;
   const init = resolveBrandSplashInit();
   if (!init) return null;
   markEntrySplashCommittedThisSession();
   return init;
+}
+
+function fireSplashDismiss(onDismiss: () => void) {
+  markEntrySplashDismissedThisSession();
+  markEntryShown();
+  try {
+    (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
+    markNativeShellUiPainted();
+  } catch {
+    /* noop */
+  }
+  onDismiss();
+}
+
+function SplashTapButton({
+  testId,
+  label,
+  onPress,
+  primary = true,
+}: {
+  testId: string;
+  label: string;
+  onPress: () => void;
+  primary?: boolean;
+}) {
+  const busyRef = useRef(false);
+  const fire = () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    window.setTimeout(() => { busyRef.current = false; }, 600);
+    onPress();
+  };
+
+  return (
+    <button
+      type="button"
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fire();
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fire();
+      }}
+      data-testid={testId}
+      className="w-full py-4 rounded-2xl text-white font-semibold text-base tracking-wide transition-opacity active:opacity-70 touch-manipulation"
+      style={{
+        border: primary ? "1px solid rgba(255,255,255,0.45)" : "1px solid rgba(255,255,255,0.28)",
+        background: primary ? "rgba(0,0,0,0.45)" : "transparent",
+        backdropFilter: primary ? "blur(16px)" : undefined,
+        WebkitBackdropFilter: primary ? "blur(16px)" : undefined,
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 function getTodayStr() {
@@ -211,22 +275,25 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
   }, [stopIcebreakerSpeech]);
 
   useLayoutEffect(() => {
-    (window as any).__spSignalReady?.();
+    (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
   }, []);
 
-  // Native shell injects a black fg-cover on resume — peel it while splash is still showing.
+  // Peel native fg-cover whenever splash is visible — AppState/resume can stack it above us.
   useEffect(() => {
-    const peelForegroundCover = () => {
+    const peel = () => {
       if (document.visibilityState !== "visible") return;
-      (window as any).__spSignalReady?.();
+      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
     };
-    document.addEventListener("visibilitychange", peelForegroundCover);
-    window.addEventListener("focus", peelForegroundCover);
-    window.addEventListener("pageshow", peelForegroundCover);
+    peel();
+    const interval = window.setInterval(peel, 1200);
+    document.addEventListener("visibilitychange", peel);
+    window.addEventListener("focus", peel);
+    window.addEventListener("pageshow", peel);
     return () => {
-      document.removeEventListener("visibilitychange", peelForegroundCover);
-      window.removeEventListener("focus", peelForegroundCover);
-      window.removeEventListener("pageshow", peelForegroundCover);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", peel);
+      window.removeEventListener("focus", peel);
+      window.removeEventListener("pageshow", peel);
     };
   }, []);
 
@@ -347,7 +414,7 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
     <div
       data-testid="sp-splash-active"
       className="fixed inset-0 overflow-hidden"
-      style={{ zIndex: 99999, background: "#000" }}
+      style={{ zIndex: 1000001, background: "#000" }}
     >
       {/* Full-bleed image — visible immediately behind icebreaker */}
       <motion.div
@@ -457,44 +524,41 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
                   outline: "none",
                 }}
               />
-              <button
-                type="button"
-                onClick={handleSubmitName}
-                data-testid="button-splash-name-continue"
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  borderRadius: "14px",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  background: "rgba(255,255,255,0.10)",
-                  color: "#fff",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Continue
-              </button>
-              <button
-                type="button"
-                onClick={handleSkip}
-                data-testid="button-splash-name-skip"
-                style={{
-                  display: "block",
-                  width: "100%",
-                  marginTop: "14px",
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "rgba(255,255,255,0.38)",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  textUnderlineOffset: "3px",
-                }}
-              >
-                {skipLabel}
-              </button>
+              <SplashTapButton
+                testId="button-splash-name-continue"
+                label="Continue"
+                onPress={handleSubmitName}
+              />
+            <button
+              type="button"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleSkip();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSkip();
+              }}
+              data-testid="button-splash-name-skip"
+              className="touch-manipulation"
+              style={{
+                display: "block",
+                width: "100%",
+                marginTop: "14px",
+                padding: "8px 4px",
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.38)",
+                fontSize: "13px",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {skipLabel}
+            </button>
             </div>
           </motion.div>
         )}
@@ -537,22 +601,12 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
               >
                 {callbackMessage}
               </p>
-              <button
-                type="button"
-                onClick={finishIcebreaker}
-                data-testid="button-splash-callback-continue"
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(255,255,255,0.28)",
-                  background: "transparent",
-                  color: "rgba(255,255,255,0.75)",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                }}
-              >
-                Continue
-              </button>
+              <SplashTapButton
+                testId="button-splash-callback-continue"
+                label="Continue"
+                onPress={finishIcebreaker}
+                primary={false}
+              />
             </div>
           </motion.div>
         )}
@@ -595,22 +649,11 @@ function BrandSplash({ init, onDismiss }: { init: BrandSplashInit; onDismiss: ()
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDismiss();
-              }}
-              data-testid="button-brand-splash-enter"
-              className="w-full py-4 rounded-2xl text-white font-semibold text-base tracking-wide transition-opacity active:opacity-70"
-              style={{
-                border: "1px solid rgba(255,255,255,0.45)",
-                background: "rgba(0,0,0,0.45)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-              }}
-            >
-              {cta}
-            </button>
+            <SplashTapButton
+              testId="button-brand-splash-enter"
+              label={cta}
+              onPress={onDismiss}
+            />
           </motion.div>
         </>
       )}
@@ -799,9 +842,7 @@ export function HomeEntryScreen({ splashInit, onDismiss }: HomeEntryScreenProps)
   const [entryType] = useState<EntryType>(() => getEntryType());
 
   const handleDismiss = () => {
-    clearEntrySplashSessionCommit();
-    markEntryShown();
-    onDismiss();
+    fireSplashDismiss(onDismiss);
   };
 
   return (
