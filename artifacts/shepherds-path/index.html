@@ -600,6 +600,32 @@
         </div>
       </div>
     </div>
+    <script>
+    (function () {
+      if (!window.ReactNativeWebView) return;
+      var splash = document.getElementById("sp-boot-splash");
+      if (splash && splash.remove) splash.remove();
+      function signalNativeReady() {
+        var b = window.ReactNativeWebView;
+        if (!b) return;
+        try {
+          b.postMessage(JSON.stringify({ type: "web_ui_visible", ts: Date.now() }));
+          b.postMessage(JSON.stringify({ type: "app_ready", ts: Date.now() }));
+        } catch (e) {}
+        try {
+          var iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = "shepherdspath://app-ready";
+          document.documentElement.appendChild(iframe);
+          setTimeout(function () {
+            iframe.remove();
+          }, 120);
+        } catch (e2) {}
+      }
+      signalNativeReady();
+      setInterval(signalNativeReady, 2000);
+    })();
+    </script>
     <noscript>
       <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:#0d0612;color:#ede8e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
         <p style="font-size:22px;font-weight:700;margin:0 0 12px;">Shepherd&apos;s Path</p>
@@ -764,6 +790,8 @@
         if (!force && !hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
         spRemoveId("sp-native-recovery");
+        spRemoveId("sp-boot-splash");
+        spRemoveId("sp-fg-cover");
         sent = true;
         // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
         // Only remove covers here as a last-resort fallback (force=true from timeouts).

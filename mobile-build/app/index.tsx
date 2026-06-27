@@ -462,7 +462,12 @@ export default function MainScreen() {
     }
   }, [isSubscribed, isMissionPartner, appReady, syncAppleProToWeb]);
 
+  const entrySessionRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (!entryUrl) return;
+    if (entrySessionRef.current === entryUrl) return;
+    entrySessionRef.current = entryUrl;
     webUiConfirmedRef.current = false;
     readyRef.current = false;
     setAppReady(false);
@@ -519,6 +524,7 @@ export default function MainScreen() {
     setShowBlankRecovery(false);
     readyRef.current = false;
     webUiConfirmedRef.current = false;
+    entrySessionRef.current = null;
     setAppReady(false);
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
