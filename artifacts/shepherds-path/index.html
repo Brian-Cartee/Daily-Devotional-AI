@@ -568,25 +568,6 @@
     (function () {
       if (!window.ReactNativeWebView) return;
       document.documentElement.setAttribute("data-sp-shell", "native");
-      // Block mid-boot reload from old native shells (Pro inject called location.reload).
-      (function () {
-        var bootAt = Date.now();
-        function shouldBlock() {
-          var painted = !!document.querySelector(
-            '[data-testid="card-devotional"],[data-testid="home-threshold-hero"],[data-testid="bottom-nav-for-you"]',
-          );
-          return !painted && Date.now() - bootAt < 45000;
-        }
-        try {
-          var orig = location.reload.bind(location);
-          location.reload = function () {
-            if (shouldBlock()) return;
-            orig();
-          };
-        } catch (e) {
-          /* WKWebView: location.reload is read-only — must not throw or React never mounts. */
-        }
-      })();
     })();
     </script>
     <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;color:#ede8e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">

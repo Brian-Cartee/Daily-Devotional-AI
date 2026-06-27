@@ -52,10 +52,24 @@ export function notifyNativeReactBooted(): void {
   }
 }
 
-/** Tell the App Store iOS shell to hide its loading overlay */
+/** Ask the native shell to enable mic/TTS bridge (Talk It Through). */
+export function requestNativeVoiceBridge(): void {
+  if (!isNativeWebViewShell()) return;
+  try {
+    (
+      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
+    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "sp_request_voice_bridge" }));
+  } catch {
+    /* noop */
+  }
+}
+
 export function notifyNativeShellReady(): void {
   if (typeof window === "undefined") return;
   if (!isNativeShellUiReady()) return;
+  const win = window as Window & { __spNativeShellReadyNotified?: boolean };
+  if (win.__spNativeShellReadyNotified) return;
+  win.__spNativeShellReadyNotified = true;
   try {
     window.dispatchEvent(new Event("sp-app-ready"));
     postNativeAppReady();
