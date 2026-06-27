@@ -38,6 +38,10 @@ installApiFetch();
 
 applyTheme(getStoredTheme());
 
+if (!isNativeWebViewShell()) {
+  removeNativeBootPlaceholder();
+}
+
 if ("serviceWorker" in navigator) {
   if (isNativeWebViewShell()) {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -136,8 +140,7 @@ async function mountApp() {
   reconcileEntryOverlayIdle();
   if (!native) {
     removeNativeBootPlaceholder();
-  }
-  if (native) {
+  } else {
     // Never block first paint on network / IndexedDB — profile is already seeded
     // by native injectedJavaScriptBeforeContentLoaded before this script runs.
     hydrateSubscriberFromUrlParam();

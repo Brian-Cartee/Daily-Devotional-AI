@@ -26,6 +26,7 @@ export function isNativeShellUiReady(): boolean {
 export function removeNativeBootPlaceholder(): void {
   if (typeof document === "undefined") return;
   document.getElementById("sp-boot-splash")?.remove();
+  document.getElementById("sp-native-boot-placeholder")?.remove();
 }
 
 function postNativeAppReady(): void {
