@@ -64,15 +64,10 @@ function swCacheVersionPlugin() {
             );
           }
           html = html.replace(moduleTag[0], "");
-          const bridgeEnd = html.indexOf("<!-- SP_NATIVE_BRIDGE_END -->");
-          if (bridgeEnd >= 0) {
-            html = html.replace(
-              /<!-- SP_NATIVE_BRIDGE_END -->/,
-              `${moduleTag[0]}\n    <!-- SP_NATIVE_BRIDGE_END -->`,
-            );
-          } else {
-            html = html.replace("</body>", `${moduleTag[0]}</body>`);
-          }
+          // Load the app module from <head> so WKWebView starts fetching before the bridge parses.
+          const headInsert =
+            `${moduleTag[0]}  <script>(function(){if(!window.ReactNativeWebView)return;function boot(){if(document.querySelector('script[type=\"module\"]'))return;var links=document.getElementsByTagName('link');for(var i=0;i<links.length;i++){if(links[i].rel==='modulepreload'&&links[i].href&&links[i].href.indexOf('/assets/index-')>=0){var s=document.createElement('script');s.type='module';s.src=links[i].getAttribute('href');document.head.appendChild(s);return;}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();})();</script>\n`;
+          html = html.replace("</head>", `  ${headInsert}</head>`);
         }
         const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
         if (cssTag && !html.includes(cssTag[0] + "</head>")) {

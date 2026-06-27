@@ -16,5 +16,6 @@ export const NATIVE_UI_READY_SELECTORS = [
 export function hasNativeUiReadyElement(): boolean {
   if (typeof document === "undefined") return false;
   if (document.documentElement.dataset.nativeUiReady === "1") return true;
+  if (document.getElementById("sp-native-boot-placeholder")) return false;
   return !!document.querySelector(NATIVE_UI_READY_SELECTORS);
 }

@@ -209,6 +209,7 @@ const PULL_DIAG_JS = `(function(){
 
 const VISIBILITY_PROBE_JS = `(function(){
   try{
+    if(document.getElementById('sp-native-boot-placeholder')){return;}
     var homeSel='[data-testid="landing-home"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
     var splashSel='[data-testid="sp-splash-active"]';
     if(document.querySelector(splashSel)||document.querySelector(homeSel)){
