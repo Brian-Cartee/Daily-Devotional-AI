@@ -933,6 +933,38 @@
         attach(0);
       }
       hookModuleScript();
+
+      // Old TestFlight builds inject #sp-fg-cover on every WebView load — strip it until home paints.
+      (function stripReloadCover() {
+        var ticks = 0;
+        var guard = setInterval(function () {
+          ticks += 1;
+          document.getElementById("sp-fg-cover")?.remove();
+          if (
+            document.querySelector('[data-testid="landing-home"]') ||
+            document.querySelector('[data-testid="card-devotional"]')
+          ) {
+            try {
+              if (window.__spSignalReady) window.__spSignalReady();
+            } catch (e) {}
+            clearInterval(guard);
+          }
+          if (ticks >= 40) clearInterval(guard);
+        }, 500);
+      })();
+
+      // Dismiss native overlay once React has mounted real UI (fallback if components miss __spSignalReady).
+      setTimeout(function () {
+        if (sent) return;
+        if (!hasReactMounted() && !hasVisibleAppUi()) return;
+        try {
+          if (window.__spSignalReady) {
+            window.__spSignalReady();
+            return;
+          }
+          notify(true);
+        } catch (e) {}
+      }, 8000);
       }
 
       function tryStartNativeBridge() {
@@ -979,39 +1011,6 @@
           b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
         } catch (e) {}
       }, 500);
-
-      // Old TestFlight builds inject #sp-fg-cover on every WebView load — strip it until home paints.
-      (function stripReloadCover() {
-        if (!window.ReactNativeWebView) return;
-        var ticks = 0;
-        var guard = setInterval(function () {
-          ticks += 1;
-          document.getElementById("sp-fg-cover")?.remove();
-          if (
-            document.querySelector('[data-testid="landing-home"]') ||
-            document.querySelector('[data-testid="card-devotional"]')
-          ) {
-            try {
-              if (window.__spSignalReady) window.__spSignalReady();
-            } catch (e) {}
-            clearInterval(guard);
-          }
-          if (ticks >= 40) clearInterval(guard);
-        }, 500);
-      })();
-
-      // Stage 2 — only dismiss native overlay once React has mounted real UI.
-      setTimeout(function () {
-        if (sent) return;
-        if (!hasReactMounted() && !hasVisibleAppUi()) return;
-        try {
-          if (window.__spSignalReady) {
-            window.__spSignalReady();
-            return;
-          }
-          notify(true);
-        } catch (e) {}
-      }, 8000);
     })();
     </script>
     <!-- SP_NATIVE_BRIDGE_END -->
