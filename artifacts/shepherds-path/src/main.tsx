@@ -115,29 +115,16 @@ if (!mountEl) {
   rootEl.appendChild(mountEl);
 }
 
-declare const __BUILD_HASH__: string;
-
-async function checkForStaleBuildAndReload(): Promise<void> {
-  try {
-    const r = await fetch("/native-manifest.json", { cache: "no-store" });
-    const j: { builtAt?: string } = await r.json();
-    const serverHash = j.builtAt ?? "";
-    if (!serverHash || serverHash === __BUILD_HASH__) return;
-    // Only reload once per server build — cached JS otherwise loops forever.
-    const reloadKey = "sp_native_reload_for";
-    if (sessionStorage.getItem(reloadKey) === serverHash) return;
-    sessionStorage.setItem(reloadKey, serverHash);
-    window.location.reload();
-  } catch {
-    // network unavailable — skip
-  }
-}
 
 async function mountApp() {
   document.getElementById("sp-safari-link")?.remove();
   document.getElementById("sp-enter-btn")?.remove();
   const native = isNativeWebViewShell();
-  await mergeServerSplashProg();
+  // Never block React mount on splash-prog API — slow/hung fetch = black WebView forever.
+  void Promise.race([
+    mergeServerSplashProg(),
+    new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+  ]).finally(() => reconcileEntryOverlayIdle());
   reconcileEntryOverlayIdle();
   if (!native) {
     removeNativeBootPlaceholder();
@@ -145,7 +132,6 @@ async function mountApp() {
   if (native) {
     // Never block first paint on network / IndexedDB — profile is already seeded
     // by native injectedJavaScriptBeforeContentLoaded before this script runs.
-    void checkForStaleBuildAndReload();
     hydrateSubscriberFromUrlParam();
     hydrateSubscriberStateFromStorage();
     void requestNativeSubscriberBootstrap().then(() => {

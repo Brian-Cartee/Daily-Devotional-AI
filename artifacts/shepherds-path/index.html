@@ -706,7 +706,7 @@
       }
 
       var visibleSelectors =
-        '[data-testid="sp-splash-active"],[data-testid="splash-icebreaker"],[data-testid="splash-icebreaker-callback"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"],[data-testid="night-shepherd"],[data-testid="btn-night-continue-greet"],[data-testid="guidance-page"],[data-testid="salvation-page"],[data-testid="journey-page"],#root>[data-reactroot],#root>div,#root>main';
+        '[data-testid="landing-home"],[data-testid="sp-splash-active"],[data-testid="splash-icebreaker"],[data-testid="splash-icebreaker-callback"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"],[data-testid="night-shepherd"],[data-testid="btn-night-continue-greet"],[data-testid="guidance-page"],[data-testid="salvation-page"],[data-testid="journey-page"],#root>[data-reactroot],#root>div,#root>main';
 
       function hasVisibleAppUi() {
         return !!document.querySelector(visibleSelectors);
@@ -725,8 +725,11 @@
         document.getElementById("sp-native-recovery")?.remove();
         sent = true;
         // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
-        // Only remove it here as a last-resort fallback (force=true from timeouts).
-        if (force) document.getElementById("sp-boot-splash")?.remove();
+        // Only remove covers here as a last-resort fallback (force=true from timeouts).
+        if (force) {
+          document.getElementById("sp-boot-splash")?.remove();
+          document.getElementById("sp-fg-cover")?.remove();
+        }
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
@@ -949,15 +952,39 @@
         } catch (e) {}
       }, 500);
 
-      // Stage 2 — force dismiss the native loading overlay if React is visible.
+      // Old TestFlight builds inject #sp-fg-cover on every WebView load — strip it until home paints.
+      (function stripReloadCover() {
+        if (!window.ReactNativeWebView) return;
+        var ticks = 0;
+        var guard = setInterval(function () {
+          ticks += 1;
+          document.getElementById("sp-fg-cover")?.remove();
+          if (
+            document.querySelector('[data-testid="landing-home"]') ||
+            document.querySelector('[data-testid="card-devotional"]')
+          ) {
+            try {
+              if (window.__spSignalReady) window.__spSignalReady();
+            } catch (e) {}
+            clearInterval(guard);
+          }
+          if (ticks >= 40) clearInterval(guard);
+        }, 500);
+      })();
+
+      // Stage 2 — force dismiss native overlay and any reload black cover.
       setTimeout(function () {
         try {
+          document.getElementById("sp-fg-cover")?.remove();
+          if (window.__spSignalReady) {
+            window.__spSignalReady();
+            return;
+          }
           var b = window.ReactNativeWebView;
           if (!b) return;
+          document.getElementById("sp-boot-splash")?.remove();
           b.postMessage(JSON.stringify({ type: "web_ui_visible", ts: Date.now() }));
           b.postMessage(JSON.stringify({ type: "app_ready", ts: Date.now() }));
-          var splash = document.getElementById("sp-boot-splash");
-          if (splash) splash.remove();
         } catch (e) {}
       }, 8000);
     })();

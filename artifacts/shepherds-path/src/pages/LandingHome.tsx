@@ -775,6 +775,19 @@ function HeartStateLabel() {
 function LandingHomeInner() {
   const sessionId = getSessionId();
   const inNativeApp = isNativeWebViewShell();
+
+  useLayoutEffect(() => {
+    if (!inNativeApp) return;
+    document.getElementById("sp-fg-cover")?.remove();
+    nativeDiag("landing_home_mount");
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
+        markNativeShellUiPainted();
+      });
+    });
+  }, [inNativeApp]);
+
   // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
   // loss never triggers the "step inside" splash when tapping the Home button.
   if (inNativeApp) markIntroFlowComplete();
@@ -942,11 +955,14 @@ function LandingHomeInner() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
   const entrySplashVisible = showEntryScreen && !!entrySplashInit;
-  const blockHomeChrome =
+  const blockHomeOverlays =
     entrySplashVisible || showBeginWalk || showSplash || showWelcomeOverlay;
+  // Native: always paint home underneath — hiding it caused black screens when overlays
+  // desynced or the native shell dismissed its loading sheet early.
+  const blockHomeChrome = inNativeApp ? false : blockHomeOverlays;
   useLayoutEffect(() => {
-    setEntryOverlayActive(blockHomeChrome);
-  }, [blockHomeChrome]);
+    setEntryOverlayActive(blockHomeOverlays);
+  }, [blockHomeOverlays]);
 
   // Never leave the shell on a black screen when splash state desyncs.
   useEffect(() => {
@@ -977,17 +993,19 @@ function LandingHomeInner() {
         markNativeShellUiPainted();
         return;
       }
-      if (blockHomeChrome) {
+      if (blockHomeOverlays) {
         nativeDiag("home_rescue_force_unlock");
         setShowEntryScreen(false);
         setEntrySplashInit(null);
+        setShowBeginWalk(false);
+        setShowSplash(false);
         setEntryOverlayActive(false);
       }
       (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
       markNativeShellUiPainted();
     }, 4000);
     return () => window.clearTimeout(t);
-  }, [blockHomeChrome]);
+  }, [blockHomeOverlays]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
     if (!showWalkthrough) return;

@@ -209,11 +209,12 @@ const PULL_DIAG_JS = `(function(){
 
 const VISIBILITY_PROBE_JS = `(function(){
   try{
-    var homeSel='[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
+    var homeSel='[data-testid="landing-home"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
     var splashSel='[data-testid="sp-splash-active"]';
     if(document.querySelector(splashSel)||document.querySelector(homeSel)){
       document.documentElement.setAttribute('data-native-ui-ready','1');
       document.getElementById('sp-boot-splash')?.remove();
+      document.getElementById('sp-fg-cover')?.remove();
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'web_ui_visible' }));
     }
   }catch(e){}
@@ -307,19 +308,8 @@ export default function MainScreen() {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
       if (prev.match(/inactive|background/) && nextState === "active") {
-        // Black cover until __spSignalReady removes it (splash or home painted).
         webviewRef.current?.injectJavaScript(`(function(){
-          if(document.querySelector('[data-testid="sp-splash-active"]')){
-            try{window.__spSignalReady?.();}catch(e){}
-            try{window.__onAppForeground?.();}catch(e){}
-            return true;
-          }
-          var existing=document.getElementById('sp-fg-cover');
-          if(existing)existing.remove();
-          var c=document.createElement('div');
-          c.id='sp-fg-cover';
-          c.style.cssText='position:fixed;inset:0;z-index:999998;background:#000;pointer-events:none;';
-          document.body.appendChild(c);
+          document.getElementById('sp-fg-cover')?.remove();
           try{window.__onAppForeground?.();}catch(e){}
           true;
         })();`);
@@ -770,6 +760,9 @@ export default function MainScreen() {
               void enablePhilipVoiceBridge();
               hideNativeSplashWhenWebReady();
               setTimeout(() => probeWebReady(), 100);
+              setTimeout(() => {
+                if (!webUiConfirmedRef.current) onWebUiVisible();
+              }, 3500);
             }
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "open_subscription") {
@@ -814,19 +807,9 @@ export default function MainScreen() {
         onLoadStart={() => {
           setError(false);
           pushNativeDiag("onLoadStart", entryUrl);
-          // Black cover hides any flash of home screen before splash renders.
-          // Injected here (not just on AppState) so it also fires after refresh.
+          // Drop any stale reload cover; splashes are disabled on native cold start.
           webviewRef.current?.injectJavaScript(`(function(){
-            if(document.querySelector('[data-testid="sp-splash-active"]')){
-              try{window.__spSignalReady?.();}catch(e){}
-              return true;
-            }
-            var existing=document.getElementById('sp-fg-cover');
-            if(existing)existing.remove();
-            var c=document.createElement('div');
-            c.id='sp-fg-cover';
-            c.style.cssText='position:fixed;inset:0;z-index:999998;background:#000;pointer-events:none;';
-            document.body&&document.body.appendChild(c);
+            document.getElementById('sp-fg-cover')?.remove();
             true;
           })();`);
         }}
