@@ -119,8 +119,10 @@ if (!mountEl) {
 
 
 async function mountApp() {
-  document.getElementById("sp-safari-link")?.remove();
-  document.getElementById("sp-enter-btn")?.remove();
+  var saf = document.getElementById("sp-safari-link");
+  if (saf && saf.remove) saf.remove();
+  var ent = document.getElementById("sp-enter-btn");
+  if (ent && ent.remove) ent.remove();
   const native = isNativeWebViewShell();
   // Never block React mount on splash-prog API — slow/hung fetch = black WebView forever.
   void Promise.race([

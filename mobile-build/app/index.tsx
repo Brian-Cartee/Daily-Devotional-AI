@@ -486,23 +486,27 @@ export default function MainScreen() {
         webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
         setTimeout(() => showDiagAlert("Load stalled"), 400);
       }
-    }, 12000);
+    }, 30000);
     const blankTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) {
         setShowOverlay(false);
         setShowBlankRecovery(true);
         webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
       }
-    }, 15000);
-    const probeInterval = setInterval(() => {
-      if (!webUiConfirmedRef.current) probeWebReady();
-    }, 1500);
+    }, 45000);
+    let probeLoop: ReturnType<typeof setInterval> | undefined;
+    const probeStartTimer = setTimeout(() => {
+      probeLoop = setInterval(() => {
+        if (!webUiConfirmedRef.current) probeWebReady();
+      }, 1500);
+    }, 8000);
 
     return () => {
       clearTimeout(slowTimer);
       clearTimeout(stuckTimer);
       clearTimeout(blankTimer);
-      clearInterval(probeInterval);
+      clearTimeout(probeStartTimer);
+      if (probeLoop) clearInterval(probeLoop);
       clearInterval(diagPullTimer);
     };
   }, [entryUrl, probeWebReady, pushNativeDiag, showDiagAlert]);

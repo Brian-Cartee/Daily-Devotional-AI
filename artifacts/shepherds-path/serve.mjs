@@ -102,7 +102,7 @@ const server = http.createServer((req, res) => {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.writeHead(status, {
         "Content-Type": MIME[ext] || "application/octet-stream",
-        "Cache-Control": isHtml ? "no-cache, must-revalidate" : "public, max-age=3600",
+        "Cache-Control": isHtml ? "no-store, no-cache, must-revalidate" : "public, max-age=3600",
       });
       res.end(data);
     });
