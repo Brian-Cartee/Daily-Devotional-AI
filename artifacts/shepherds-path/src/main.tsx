@@ -29,7 +29,7 @@ if (isNativeWebViewShell()) {
   } catch {
     /* never abort React boot on guard install failure */
   }
-  nativeDiag("react_entry_started");
+  // Do NOT postMessage during module evaluation — WKWebView can sync-inject back into JSC mid-parse.
 }
 
 installApiFetch();
@@ -139,15 +139,8 @@ async function mountApp() {
   if (!native) {
     removeNativeBootPlaceholder();
   } else {
-    // Never block first paint on network / IndexedDB — profile is already seeded
-    // by native injectedJavaScriptBeforeContentLoaded before this script runs.
     hydrateSubscriberFromUrlParam();
     hydrateSubscriberStateFromStorage();
-    void requestNativeSubscriberBootstrap().then(() => {
-      hydrateSubscriberStateFromStorage();
-      void hydrateSubscriberStateFromIndexedDB();
-    });
-    nativeDiag("react_render_called");
   }
 
   createRoot(mountEl!).render(
@@ -159,8 +152,13 @@ async function mountApp() {
   if (typeof window !== "undefined" && native) {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        nativeDiag("react_render_called");
         nativeDiag("react_booted");
         notifyNativeReactBooted();
+        void requestNativeSubscriberBootstrap().then(() => {
+          hydrateSubscriberStateFromStorage();
+          void hydrateSubscriberStateFromIndexedDB();
+        });
       });
     });
   } else {

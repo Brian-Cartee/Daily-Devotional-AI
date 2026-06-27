@@ -63,11 +63,18 @@ function swCacheVersionPlugin() {
               `  <link rel="modulepreload" href="${moduleSrc}">\n</head>`,
             );
           }
+          // Remove Vite's default module tag — re-insert AFTER the native bridge so
+          // window.onerror / __spDiag exist before the bundle evaluates in WKWebView.
           html = html.replace(moduleTag[0], "");
-          // Load the app module from <head> so WKWebView starts fetching before the bridge parses.
-          const headInsert =
-            `${moduleTag[0]}  <script>(function(){if(!window.ReactNativeWebView)return;function boot(){if(document.querySelector('script[type=\"module\"]'))return;var links=document.getElementsByTagName('link');for(var i=0;i<links.length;i++){if(links[i].rel==='modulepreload'&&links[i].href&&links[i].href.indexOf('/assets/index-')>=0){var s=document.createElement('script');s.type='module';s.src=links[i].getAttribute('href');document.head.appendChild(s);return;}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();})();</script>\n`;
-          html = html.replace("</head>", `  ${headInsert}</head>`);
+          const moduleInsert = `${moduleTag[0].trim()}\n`;
+          if (html.includes("<!-- SP_NATIVE_BRIDGE_END -->")) {
+            html = html.replace(
+              "<!-- SP_NATIVE_BRIDGE_END -->",
+              `<!-- SP_NATIVE_BRIDGE_END -->\n  ${moduleInsert}`,
+            );
+          } else {
+            html = html.replace("</body>", `  ${moduleInsert}</body>`);
+          }
         }
         const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
         if (cssTag && !html.includes(cssTag[0] + "</head>")) {

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, type RefObject } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -35,6 +35,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
 import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
+import { ShellWebView, type ShellWebViewHandlers } from "@/components/ShellWebView";
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
@@ -83,18 +84,6 @@ function hostAllowedInWebView(url: string): boolean {
     return false;
   }
 }
-
-const BEFORE_CONTENT_JS = `(function(){
-  document.documentElement.style.backgroundColor='#0d0612';
-  if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
-    document.documentElement.setAttribute('data-sp-shell','native');
-    document.documentElement.setAttribute('data-sp-philip-native-voice','0');
-    window.__SP_PHILIP_NATIVE_VOICE__=false;
-  document.documentElement.setAttribute('data-sp-native-share','1');
-  document.documentElement.classList.add('sp-native-shell','dark');
-  document.documentElement.setAttribute('data-sp-philip-native-voice','0');
-  true;
-})();`;
 
 function buildNativeBootstrapJs(appOrigin: string, mainJs = ""): string {
   const origin = appOrigin.replace(/'/g, "\\'");
@@ -207,16 +196,6 @@ const PULL_DIAG_JS = `(function(){
   true;
 })();`;
 
-function deferInjectWebview(webviewRef: RefObject<WebView | null>, js: string, delayMs = 0): void {
-  setTimeout(() => {
-    try {
-      webviewRef.current?.injectJavaScript(js);
-    } catch {
-      /* noop */
-    }
-  }, delayMs);
-}
-
 export default function MainScreen() {
   const router = useRouter();
   const { isSubscribed, isMissionPartner, tier } = useSubscription();
@@ -237,10 +216,55 @@ export default function MainScreen() {
   const [diagSummary, setDiagSummary] = useState("");
   const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
-  const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
-  const [pullRefreshing, setPullRefreshing] = useState(false);
   const philipVoiceRef = useRef<PhilipNativeVoiceController | null>(null);
+  const shellHandlersRef = useRef<ShellWebViewHandlers>({
+    onMessage: () => {},
+    onShouldStartLoadWithRequest: () => true,
+    onLoadStart: () => {},
+    onLoadProgress: () => {},
+    onLoadEnd: () => {},
+    onError: () => {},
+    onHttpError: () => {},
+    onNavigation: () => {},
+    onContentProcessDidTerminate: () => {},
+  });
   const philipVoiceLoadRef = useRef<Promise<PhilipNativeVoiceController> | null>(null);
+  const webviewSessionStartedAtRef = useRef(0);
+  const loadStartedRef = useRef(false);
+  const bootReloadAttemptedRef = useRef(false);
+
+  const injectDuringBoot = useCallback((js: string, delayMs = 300) => {
+    setTimeout(() => {
+      try {
+        webviewRef.current?.injectJavaScript(js);
+      } catch {
+        /* noop */
+      }
+    }, delayMs);
+  }, []);
+
+  const deferInjectWebview = useCallback(
+    (
+      js: string,
+      delayMs = 100,
+      opts?: { requireUiReady?: boolean; minBootMs?: number },
+    ) => {
+      const requireUiReady = opts?.requireUiReady !== false;
+      const minBootMs = opts?.minBootMs ?? 5000;
+      setTimeout(() => {
+        try {
+          if (requireUiReady && !webUiConfirmedRef.current) return;
+          if (Date.now() - webviewSessionStartedAtRef.current < minBootMs && !webUiConfirmedRef.current) {
+            return;
+          }
+          webviewRef.current?.injectJavaScript(js);
+        } catch {
+          /* noop */
+        }
+      }, delayMs);
+    },
+    [],
+  );
 
   const loadPhilipVoice = useCallback(async (): Promise<PhilipNativeVoiceController | null> => {
     if (philipVoiceRef.current) return philipVoiceRef.current;
@@ -260,41 +284,42 @@ export default function MainScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
-        if (cancelled) return;
-        setBeforeContentJs(
-          `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash, splashProg)}`,
-        );
-        setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
-      },
-    );
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
+      if (cancelled) return;
+      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const injectProfileSeed = useCallback(() => {
-    void prepareNativeUserProfileForWebView().then(
-      ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
-        const seed = buildNativeProfileSeedJs(
-          sessionId,
-          name,
-          prompted,
-          subscriberEmail,
-          emailSubscribed,
-          splashCount,
-          heartLastShown,
-          heartState,
-          dailySplash,
-          splashProg,
-        );
-        webviewRef.current?.injectJavaScript(
-          `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`,
-        );
-      },
-    );
-  }, []);
+  const injectProfileSeed = useCallback(
+    (duringBoot = false) => {
+      void prepareNativeUserProfileForWebView().then(
+        ({ sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
+          const seed = buildNativeProfileSeedJs(
+            sessionId,
+            name,
+            prompted,
+            subscriberEmail,
+            emailSubscribed,
+            splashCount,
+            heartLastShown,
+            heartState,
+            dailySplash,
+            splashProg,
+          );
+          const js = `${seed}try{window.dispatchEvent(new Event('sp-email-subscription-updated'));}catch(e){}${SCRAPE_WEB_SUBSCRIBER_JS}`;
+          if (duringBoot) {
+            injectDuringBoot(js, 400);
+            return;
+          }
+          deferInjectWebview(js, 100);
+        },
+      );
+    },
+    [deferInjectWebview, injectDuringBoot],
+  );
 
   // When iOS brings the app to foreground, tell the WebView to check if a
   // splash screen should be shown. This is the reliable alternative to
@@ -304,12 +329,13 @@ export default function MainScreen() {
       const prev = appStateRef.current;
       appStateRef.current = nextState;
       if (prev.match(/inactive|background/) && nextState === "active") {
-        webviewRef.current?.injectJavaScript(`(function(){
+        if (webUiConfirmedRef.current) {
+          deferInjectWebview(`(function(){
           var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
           try{if(window.__onAppForeground)window.__onAppForeground();}catch(e){}
           true;
-        })();`);
-        // Check if Siri launched us into a specific screen
+        })();`, 50, { requireUiReady: true, minBootMs: 0 });
+        }
         checkSiriLaunchScreen();
       }
     });
@@ -322,13 +348,15 @@ export default function MainScreen() {
     const SpLaunch = NativeModules.SpLaunch;
     if (!SpLaunch?.getLaunchScreen) return;
     SpLaunch.getLaunchScreen((screen: string | null) => {
-      if (screen === "guidance") {
-        webviewRef.current?.injectJavaScript(
+      if (screen === "guidance" && webUiConfirmedRef.current) {
+        deferInjectWebview(
           `(function(){try{window.location.href='/guidance?listen=1';}catch(e){}true;})();`,
+          50,
+          { requireUiReady: true, minBootMs: 0 },
         );
       }
     });
-  }, []);
+  }, [deferInjectWebview]);
 
   // Also check on initial mount (app launched cold by Siri)
   useEffect(() => {
@@ -344,8 +372,29 @@ export default function MainScreen() {
     };
     diagLogsRef.current.push(entry);
     if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-    setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-  }, []);
+    // Avoid setState on every line during boot — re-rendering with a fresh `source`
+    // object was reloading WKWebView before onLoadStart could fire.
+    if (webUiConfirmedRef.current || showStuckHelp || showBlankRecovery) {
+      setDiagSummary(formatDiagLines(diagLogsRef.current, 16));
+    }
+  }, [showStuckHelp, showBlankRecovery]);
+
+  const pushWebDiag = useCallback(
+    (event: string, detail = "", ts = Date.now()) => {
+      const entry: WebViewDiagEntry = {
+        source: "web",
+        event,
+        detail,
+        ts,
+      };
+      diagLogsRef.current.push(entry);
+      if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
+      if (webUiConfirmedRef.current || showStuckHelp || showBlankRecovery) {
+        setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
+      }
+    },
+    [showStuckHelp, showBlankRecovery],
+  );
 
   const enablePhilipVoiceBridge = useCallback(async () => {
     try {
@@ -394,20 +443,6 @@ export default function MainScreen() {
     [],
   );
 
-  const runNativeBootstrap = useCallback(
-    (pageUrl: string) => {
-      if (!shouldBootstrapWebView(pageUrl)) return;
-      const main = mainJsPathRef.current ?? "";
-      deferInjectWebview(webviewRef, buildNativeBootstrapJs(APP_ORIGIN, main), 0);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!mainJsPath) return;
-    runNativeBootstrap(entryUrl);
-  }, [mainJsPath, entryUrl, runNativeBootstrap]);
-
   const onWebUiVisible = useCallback(() => {
     if (webUiConfirmedRef.current) return;
     webUiConfirmedRef.current = true;
@@ -418,13 +453,15 @@ export default function MainScreen() {
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
     hideNativeSplashWhenWebReady();
+    injectProfileSeed();
     setTimeout(() => {
       void enablePhilipVoiceBridge();
     }, 0);
-  }, [enablePhilipVoiceBridge]);
+  }, [enablePhilipVoiceBridge, injectProfileSeed]);
 
   const syncAppleProToWeb = useCallback(
     async (reloadAfterInject = false, currentTier: "pro" | "mission_partner" = "pro") => {
+      if (!webUiConfirmedRef.current) return;
       if (currentTier === "mission_partner") {
         injectAppleMissionPartner(webviewRef);
       } else {
@@ -464,6 +501,9 @@ export default function MainScreen() {
     if (!entryUrl) return;
     if (entrySessionRef.current === entryUrl) return;
     entrySessionRef.current = entryUrl;
+    webviewSessionStartedAtRef.current = Date.now();
+    loadStartedRef.current = false;
+    bootReloadAttemptedRef.current = false;
     webUiConfirmedRef.current = false;
     readyRef.current = false;
     setAppReady(false);
@@ -474,17 +514,30 @@ export default function MainScreen() {
     pushNativeDiag("webview_session_start", entryUrl);
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
-    const diagPullTimer = setInterval(() => {
-      if (!webUiConfirmedRef.current) {
-        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+    const loadWatchdog = setTimeout(() => {
+      if (webUiConfirmedRef.current || loadStartedRef.current) return;
+      pushNativeDiag("load_never_started", entryUrl);
+      if (!bootReloadAttemptedRef.current) {
+        bootReloadAttemptedRef.current = true;
+        pushNativeDiag("load_watchdog_ping");
+        injectDuringBoot(
+          `(function(){try{location.replace('${APP_ORIGIN}/webview-ping.html?_='+Date.now());}catch(e){}true;})();`,
+          0,
+        );
       }
-    }, 2500);
+    }, 10000);
+    const diagPullTimer = setInterval(() => {
+      if (!webUiConfirmedRef.current && Date.now() - webviewSessionStartedAtRef.current >= 8000) {
+        injectDuringBoot(PULL_DIAG_JS, 0);
+      }
+    }, 4000);
 
     const stuckTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) {
         setShowOverlay(false);
         setShowStuckHelp(true);
-        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+        setDiagSummary(formatDiagLines(diagLogsRef.current, 16));
+        injectDuringBoot(PULL_DIAG_JS, 0);
         setTimeout(() => showDiagAlert("Load stalled"), 400);
       }
     }, 30000);
@@ -492,17 +545,19 @@ export default function MainScreen() {
       if (!webUiConfirmedRef.current) {
         setShowOverlay(false);
         setShowBlankRecovery(true);
-        webviewRef.current?.injectJavaScript(PULL_DIAG_JS);
+        setDiagSummary(formatDiagLines(diagLogsRef.current, 16));
+        injectDuringBoot(PULL_DIAG_JS, 0);
       }
     }, 45000);
 
     return () => {
       clearTimeout(slowTimer);
+      clearTimeout(loadWatchdog);
       clearTimeout(stuckTimer);
       clearTimeout(blankTimer);
       clearInterval(diagPullTimer);
     };
-  }, [entryUrl, pushNativeDiag, showDiagAlert]);
+  }, [entryUrl, pushNativeDiag, showDiagAlert, deferInjectWebview, injectDuringBoot]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -517,26 +572,24 @@ export default function MainScreen() {
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId, name, prompted, emailSubscribed, splashCount, dailySplash, splashProg, heartLastShown, heartState }) => {
-      setBeforeContentJs(
-        `${BEFORE_CONTENT_JS}${buildNativeProfileSeedJs(sessionId, name, prompted, subscriberEmail, emailSubscribed, splashCount, heartLastShown, heartState, dailySplash, splashProg)}`,
-      );
-      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
+      const next = shellEntryUrl(subscriberEmail, sessionId);
+      setEntryUrl(next);
+      if (entryUrl === next) {
+        webviewRef.current?.reload();
+      }
     });
-  }, [pushNativeDiag]);
-
-  const onPullRefresh = useCallback(() => {
-    setPullRefreshing(true);
-    pushNativeDiag("pull_refresh");
-    webviewRef.current?.reload();
-  }, [pushNativeDiag]);
+  }, [entryUrl, pushNativeDiag]);
 
   const openInSafari = () => {
     Linking.openURL(`${APP_ORIGIN}/?native=1&enter=1`).catch(() => {});
   };
 
-  const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
+  const onShouldStartLoadWithRequest = useCallback((event: ShouldStartLoadRequest): boolean => {
     const { url, navigationType } = event;
+    if (!webUiConfirmedRef.current && url && url !== "about:blank") {
+      pushNativeDiag("should_load", `${navigationType || ""} ${url}`.trim());
+    }
     if (!url || url === "about:blank") return true;
     if (url.startsWith("shepherdspath://app-ready")) {
       return false;
@@ -558,6 +611,277 @@ export default function MainScreen() {
       Linking.openURL(url).catch(() => {});
     }
     return false;
+  }, [pushNativeDiag]);
+
+  const handleWebViewMessage = useCallback(
+    (data: Record<string, unknown>) => {
+      if (data.type === "sp_user_profile") {
+        const patch: {
+          sessionId?: string;
+          name?: string;
+          prompted?: boolean;
+        } = {};
+        if (typeof data.sessionId === "string" && data.sessionId.trim()) {
+          patch.sessionId = data.sessionId.trim();
+        }
+        if (typeof data.name === "string") patch.name = data.name;
+        if (typeof data.prompted === "boolean") patch.prompted = data.prompted;
+        const subscriberEmail =
+          typeof data.subscriberEmail === "string" ? data.subscriberEmail : "";
+        void mergeNativeUserProfile(patch);
+        if (subscriberEmail.includes("@")) {
+          void saveNativeSubscriberProfile(subscriberEmail);
+        }
+      }
+      if (data.type === "sp_subscriber_profile") {
+        const email = typeof data.email === "string" ? data.email : "";
+        if (email.includes("@") && webUiConfirmedRef.current) {
+          void saveNativeSubscriberProfile(email).then(() => {
+            injectProfileSeed();
+          });
+        }
+      }
+      if (data.type === "sp_request_native_profile") {
+        void prepareNativeUserProfileForWebView().then((profile) => {
+          const payload = JSON.stringify({
+            sessionId: profile.sessionId,
+            subscriberEmail: profile.subscriberEmail,
+            emailSubscribed: profile.emailSubscribed,
+          });
+          deferInjectWebview(
+            `(function(){try{if(window.__spResolveNativeProfile){window.__spResolveNativeProfile(${payload});}}catch(e){}true;})();`,
+            150,
+            { requireUiReady: false, minBootMs: 2500 },
+          );
+        });
+      }
+      if (data.type === "sp_ui_state") {
+        const patch: {
+          splashCount?: number;
+          dailySplash?: {
+            date: string;
+            count: number;
+            featureIdx: number;
+            secondIdx: number | null;
+          } | null;
+          splashProg?: string | null;
+          heartLastShown?: number;
+          heartState?: { weather: string; topic: string | null; ts: number } | null;
+        } = {};
+        if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
+        if (typeof data.splashProg === "string") patch.splashProg = data.splashProg;
+        if (data.dailySplash && typeof data.dailySplash === "object" && typeof data.dailySplash.date === "string") {
+          patch.dailySplash = {
+            date: data.dailySplash.date,
+            count: typeof data.dailySplash.count === "number" ? data.dailySplash.count : 0,
+            featureIdx: typeof data.dailySplash.featureIdx === "number" ? data.dailySplash.featureIdx : 0,
+            secondIdx:
+              typeof data.dailySplash.secondIdx === "number" && !Number.isNaN(data.dailySplash.secondIdx)
+                ? data.dailySplash.secondIdx
+                : null,
+          };
+        }
+        if (typeof data.heartLastShown === "number") patch.heartLastShown = data.heartLastShown;
+        if (
+          data.heartState &&
+          typeof data.heartState === "object" &&
+          typeof data.heartState.weather === "string" &&
+          typeof data.heartState.ts === "number"
+        ) {
+          patch.heartState = {
+            weather: data.heartState.weather,
+            topic: typeof data.heartState.topic === "string" ? data.heartState.topic : null,
+            ts: data.heartState.ts,
+          };
+        }
+        if (Object.keys(patch).length > 0) void saveNativeUiState(patch);
+      }
+      if (data.type === "scroll_home_top") {
+        deferInjectWebview(
+          `(function(){try{var s=document.scrollingElement||document.body;s.scrollTop=0;try{s.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}}catch(e){}true;})();`,
+          50,
+          { requireUiReady: true, minBootMs: 0 },
+        );
+      }
+      if (data.type === "sp_diag" && data.event === "webview_ping_html") {
+        pushNativeDiag("webview_ping_ok");
+        if (entryUrl) {
+          injectDuringBoot(
+            `(function(){try{location.replace(${JSON.stringify(entryUrl)});}catch(e){}true;})();`,
+            800,
+          );
+        }
+      }
+      if (data.type === "sp_diag") {
+        pushWebDiag(
+          String(data.event || ""),
+          String(data.detail || ""),
+          Number(data.ts) || Date.now(),
+        );
+        const ev = String(data.event || "");
+        const isBenignModuleNoise =
+          /module_script_error|module_inject_error_ignored|module_already_in_dom|module_tag_in_html|resource_error.*fonts\.googleapis|resource_error.*fonts\.gstatic/i.test(
+            `${ev}${data.detail || ""}`,
+          );
+        if (
+          !isBenignModuleNoise &&
+          /error|failed/i.test(`${ev}${data.detail || ""}`) &&
+          !webUiConfirmedRef.current
+        ) {
+          showDiagAlert("WebView error");
+        }
+      }
+      if (data.type === "sp_diag_batch" && Array.isArray(data.lines)) {
+        for (const line of data.lines) {
+          const text = String(line || "");
+          if (!text) continue;
+          pushWebDiag(text);
+        }
+      }
+      if (data.type === "sp_request_voice_bridge") {
+        pushNativeDiag("voice_bridge_requested");
+        setTimeout(() => {
+          void enablePhilipVoiceBridge();
+        }, 0);
+      }
+      if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
+        pushNativeDiag(`voice_cmd_${data.type}`);
+        void loadPhilipVoice().then((ctrl) => {
+          if (ctrl) void ctrl.handleCommand(data);
+        });
+      }
+      if (data.type === "react_booted") {
+        pushNativeDiag("web_react_booted");
+        hideNativeSplashWhenWebReady();
+        injectProfileSeed(true);
+        setTimeout(() => onWebUiVisible(), 0);
+      }
+      if (data.type === "web_ui_visible" || data.type === "app_ready") {
+        setTimeout(() => onWebUiVisible(), 0);
+      }
+      if (data.type === "open_subscription") {
+        router.push("/subscription");
+      }
+      if (data.type === "share") {
+        const shareUrl =
+          typeof data.url === "string" && data.url.startsWith("http") ? data.url : APP_ORIGIN;
+        const message =
+          typeof data.text === "string" && data.text.trim() ? String(data.text) : shareUrl;
+        void Share.share(
+          Platform.OS === "ios"
+            ? { message: message.includes(shareUrl) ? message : `${message}\n\n${shareUrl}` }
+            : {
+                title: String(data.title || "Shepherd's Path"),
+                message,
+                url: shareUrl,
+              },
+        ).catch(() => {});
+      }
+      if (data.type === "js_error" && !readyRef.current) {
+        pushNativeDiag("web_js_error", `${data.msg || ""} ${data.detail || ""}`.trim());
+        const msg = String(data.msg || data.detail || "");
+        const benign =
+          /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed|Script error|WebKit|SecurityError|Importing a module/i.test(
+            msg,
+          );
+        if (!benign) {
+          setTimeout(() => {
+            if (!readyRef.current) setShowStuckHelp(true);
+          }, 12000);
+        }
+      }
+    },
+    [
+      deferInjectWebview,
+      enablePhilipVoiceBridge,
+      entryUrl,
+      injectDuringBoot,
+      injectProfileSeed,
+      loadPhilipVoice,
+      onWebUiVisible,
+      pushNativeDiag,
+      pushWebDiag,
+      router,
+      showDiagAlert,
+    ],
+  );
+
+  const handleWebViewLoadStart = useCallback(() => {
+    setError(false);
+    loadStartedRef.current = true;
+    pushNativeDiag("onLoadStart", entryUrl || "");
+  }, [entryUrl, pushNativeDiag]);
+
+  const handleWebViewLoadProgress = useCallback(
+    (progress: number) => {
+      if (progress >= 0.25 && progress < 0.3) {
+        pushNativeDiag("onLoadProgress", `${Math.round(progress * 100)}%`);
+      }
+      if (progress >= 0.99) {
+        pushNativeDiag("onLoadProgress", "100%");
+      }
+    },
+    [pushNativeDiag],
+  );
+
+  const handleWebViewLoadEnd = useCallback(
+    (pageUrl: string) => {
+      loadStartedRef.current = true;
+      pushNativeDiag("onLoadEnd", pageUrl);
+    },
+    [pushNativeDiag],
+  );
+
+  const handleWebViewError = useCallback(
+    (description: string) => {
+      pushNativeDiag("onError", description);
+      setShowOverlay(false);
+      setError(true);
+    },
+    [pushNativeDiag],
+  );
+
+  const handleWebViewHttpError = useCallback(
+    (statusCode: number) => {
+      if (statusCode >= 400) {
+        pushNativeDiag("onHttpError", String(statusCode));
+        setShowOverlay(false);
+        setError(true);
+      }
+    },
+    [pushNativeDiag],
+  );
+
+  const handleWebViewNavigation = useCallback(
+    (loading: boolean, title: string, url: string) => {
+      if (isBlankWebViewUrl(url)) return;
+      if (!webUiConfirmedRef.current) {
+        pushNativeDiag(
+          "navigation",
+          `${loading ? "loading" : "idle"} | ${title || ""} | ${url || ""}`.trim(),
+        );
+      } else if (!loading) {
+        pushNativeDiag("navigation", `${title || ""} | ${url || ""}`.trim());
+      }
+    },
+    [pushNativeDiag],
+  );
+
+  const handleWebViewContentProcessDidTerminate = useCallback(() => {
+    pushNativeDiag("onContentProcessDidTerminate", "reload");
+    reload();
+  }, [pushNativeDiag, reload]);
+
+  shellHandlersRef.current = {
+    onMessage: handleWebViewMessage,
+    onShouldStartLoadWithRequest,
+    onLoadStart: handleWebViewLoadStart,
+    onLoadProgress: handleWebViewLoadProgress,
+    onLoadEnd: handleWebViewLoadEnd,
+    onError: handleWebViewError,
+    onHttpError: handleWebViewHttpError,
+    onNavigation: handleWebViewNavigation,
+    onContentProcessDidTerminate: handleWebViewContentProcessDidTerminate,
   };
 
   if (error) {
@@ -583,7 +907,7 @@ export default function MainScreen() {
     );
   }
 
-  if (!beforeContentJs || !entryUrl) {
+  if (!entryUrl) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar style="light" />
@@ -595,316 +919,41 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <WebView
-        key="sp-main-webview"
-        ref={webviewRef}
-        source={{ uri: entryUrl }}
-        style={styles.webview}
-        originWhitelist={["https://*", "http://*", "shepherdspath://*"]}
-        javaScriptEnabled
-        domStorageEnabled
-        sharedCookiesEnabled
-        allowsBackForwardNavigationGestures={false}
-        pullToRefreshEnabled={Platform.OS === "ios"}
-        refreshing={pullRefreshing}
-        onRefresh={onPullRefresh}
-        scrollEnabled
-        bounces
-        {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-        allowsFullscreenVideo
-        setSupportMultipleWindows={false}
-        cacheEnabled
-        injectedJavaScriptBeforeContentLoaded={beforeContentJs}
-        onLoadEnd={injectProfileSeed}
-        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onMessage={(e) => {
-          try {
-            const data = JSON.parse(e.nativeEvent.data);
-            if (data.type === "sp_user_profile") {
-              const patch: {
-                sessionId?: string;
-                name?: string;
-                prompted?: boolean;
-              } = {};
-              if (typeof data.sessionId === "string" && data.sessionId.trim()) {
-                patch.sessionId = data.sessionId.trim();
-              }
-              if (typeof data.name === "string") patch.name = data.name;
-              if (typeof data.prompted === "boolean") patch.prompted = data.prompted;
-              const subscriberEmail =
-                typeof data.subscriberEmail === "string" ? data.subscriberEmail : "";
-              void mergeNativeUserProfile(patch);
-              if (subscriberEmail.includes("@")) {
-                void saveNativeSubscriberProfile(subscriberEmail);
-              }
-            }
-            if (data.type === "sp_subscriber_profile") {
-              const email = typeof data.email === "string" ? data.email : "";
-              if (email.includes("@")) {
-                void saveNativeSubscriberProfile(email).then(() => {
-                  injectProfileSeed();
-                });
-              }
-            }
-            if (data.type === "sp_request_native_profile") {
-              void prepareNativeUserProfileForWebView().then((profile) => {
-                const payload = JSON.stringify({
-                  sessionId: profile.sessionId,
-                  subscriberEmail: profile.subscriberEmail,
-                  emailSubscribed: profile.emailSubscribed,
-                });
-                webviewRef.current?.injectJavaScript(
-                  `(function(){try{if(window.__spResolveNativeProfile){window.__spResolveNativeProfile(${payload});}}catch(e){}true;})();`,
-                );
-              });
-            }
-            if (data.type === "sp_ui_state") {
-              const patch: {
-                splashCount?: number;
-                dailySplash?: {
-                  date: string;
-                  count: number;
-                  featureIdx: number;
-                  secondIdx: number | null;
-                } | null;
-                splashProg?: string | null;
-                heartLastShown?: number;
-                heartState?: { weather: string; topic: string | null; ts: number } | null;
-              } = {};
-              if (typeof data.splashCount === "number") patch.splashCount = data.splashCount;
-              if (typeof data.splashProg === "string") patch.splashProg = data.splashProg;
-              if (data.dailySplash && typeof data.dailySplash === "object" && typeof data.dailySplash.date === "string") {
-                patch.dailySplash = {
-                  date: data.dailySplash.date,
-                  count: typeof data.dailySplash.count === "number" ? data.dailySplash.count : 0,
-                  featureIdx: typeof data.dailySplash.featureIdx === "number" ? data.dailySplash.featureIdx : 0,
-                  secondIdx:
-                    typeof data.dailySplash.secondIdx === "number" && !Number.isNaN(data.dailySplash.secondIdx)
-                      ? data.dailySplash.secondIdx
-                      : null,
-                };
-              }
-              if (typeof data.heartLastShown === "number") patch.heartLastShown = data.heartLastShown;
-              if (
-                data.heartState &&
-                typeof data.heartState === "object" &&
-                typeof data.heartState.weather === "string" &&
-                typeof data.heartState.ts === "number"
-              ) {
-                patch.heartState = {
-                  weather: data.heartState.weather,
-                  topic: typeof data.heartState.topic === "string" ? data.heartState.topic : null,
-                  ts: data.heartState.ts,
-                };
-              }
-              if (Object.keys(patch).length > 0) void saveNativeUiState(patch);
-            }
-            if (data.type === "scroll_home_top") {
-              webviewRef.current?.injectJavaScript(
-                `(function(){try{var s=document.scrollingElement||document.body;s.scrollTop=0;try{s.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}}catch(e){}true;})();`,
-              );
-            }
-            if (data.type === "sp_diag") {
-              const entry: WebViewDiagEntry = {
-                source: "web",
-                event: String(data.event || ""),
-                detail: String(data.detail || ""),
-                ts: Number(data.ts) || Date.now(),
-              };
-              diagLogsRef.current.push(entry);
-              if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-              setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-              const ev = String(data.event || "");
-              const isBenignModuleNoise =
-                /module_script_error|module_inject_error_ignored|module_already_in_dom|module_tag_in_html|resource_error.*fonts\.googleapis|resource_error.*fonts\.gstatic/i.test(
-                  `${ev}${data.detail || ""}`,
-                );
-              if (
-                !isBenignModuleNoise &&
-                /error|failed/i.test(`${ev}${data.detail || ""}`) &&
-                !webUiConfirmedRef.current
-              ) {
-                showDiagAlert("WebView error");
-              }
-            }
-            if (data.type === "sp_diag_batch" && Array.isArray(data.lines)) {
-              for (const line of data.lines) {
-                const text = String(line || "");
-                if (!text) continue;
-                diagLogsRef.current.push({
-                  source: "web",
-                  event: text,
-                  detail: "",
-                  ts: Date.now(),
-                });
-              }
-              if (diagLogsRef.current.length > 48) {
-                diagLogsRef.current = diagLogsRef.current.slice(-48);
-              }
-              setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
-            }
-            if (data.type === "sp_request_voice_bridge") {
-              pushNativeDiag("voice_bridge_requested");
-              setTimeout(() => {
-                void enablePhilipVoiceBridge();
-              }, 0);
-            }
-            if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
-              pushNativeDiag(`voice_cmd_${data.type}`);
-              void loadPhilipVoice().then((ctrl) => {
-                if (ctrl) void ctrl.handleCommand(data as Record<string, unknown>);
-              });
-            }
-            if (data.type === "react_booted") {
-              pushNativeDiag("web_react_booted");
-              hideNativeSplashWhenWebReady();
-            }
-            if (data.type === "web_ui_visible" || data.type === "app_ready") {
-              setTimeout(() => onWebUiVisible(), 0);
-            }
-            if (data.type === "open_subscription") {
-              router.push("/subscription");
-            }
-            if (data.type === "share") {
-              const shareUrl =
-                typeof data.url === "string" && data.url.startsWith("http")
-                  ? data.url
-                  : APP_ORIGIN;
-              const message =
-                typeof data.text === "string" && data.text.trim()
-                  ? String(data.text)
-                  : shareUrl;
-              void Share.share(
-                Platform.OS === "ios"
-                  ? { message: message.includes(shareUrl) ? message : `${message}\n\n${shareUrl}` }
-                  : {
-                      title: String(data.title || "Shepherd's Path"),
-                      message,
-                      url: shareUrl,
-                    },
-              ).catch(() => {});
-            }
-            if (data.type === "js_error" && !readyRef.current) {
-              pushNativeDiag("web_js_error", `${data.msg || ""} ${data.detail || ""}`.trim());
-              const msg = String(data.msg || data.detail || "");
-              const benign =
-                /ResizeObserver|AbortError|NotAllowedError|play\(\)|interrupted|cancelled|Load failed|Script error|WebKit|SecurityError|Importing a module/i.test(
-                  msg,
-                );
-              if (!benign) {
-                setTimeout(() => {
-                  if (!readyRef.current) setShowStuckHelp(true);
-                }, 12000);
-              }
-            }
-          } catch {
-            /* noop */
-          }
-        }}
-        onLoadStart={() => {
-          setError(false);
-          pushNativeDiag("onLoadStart", entryUrl);
-          // Drop any stale reload cover; splashes are disabled on native cold start.
-          deferInjectWebview(
-            webviewRef,
-            `(function(){
-            var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
-            true;
-          })();`,
-            0,
-          );
-        }}
-        onLoadProgress={({ nativeEvent }) => {
-          if (nativeEvent.progress >= 0.25 && nativeEvent.progress < 0.3) {
-            pushNativeDiag("onLoadProgress", `${Math.round(nativeEvent.progress * 100)}%`);
-          }
-          if (nativeEvent.progress >= 0.99) {
-            pushNativeDiag("onLoadProgress", "100%");
-          }
-        }}
-        startInLoadingState
-        renderLoading={() => <View style={styles.webviewLoading} />}
-        onLoadEnd={(e) => {
-          setPullRefreshing(false);
-          const pageUrl = e.nativeEvent.url || entryUrl;
-          pushNativeDiag("onLoadEnd", pageUrl);
-          if (!shouldBootstrapWebView(pageUrl)) return;
-          runNativeBootstrap(pageUrl);
-        }}
-        onError={(e) => {
-          setPullRefreshing(false);
-          pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));
-          setShowOverlay(false);
-          setError(true);
-        }}
-        onHttpError={(e) => {
-          if (e.nativeEvent.statusCode >= 400) {
-            pushNativeDiag("onHttpError", String(e.nativeEvent.statusCode));
-            setShowOverlay(false);
-            setError(true);
-          }
-        }}
-        onContentProcessDidTerminate={() => {
-          pushNativeDiag("onContentProcessDidTerminate", "reload");
-          reload();
-        }}
-        onNavigationStateChange={(nav) => {
-          if (nav.loading || isBlankWebViewUrl(nav.url || "")) return;
-          pushNativeDiag("navigation", `${nav.title || ""} | ${nav.url || ""}`.trim());
-          if (shouldBootstrapWebView(nav.url || "")) {
-            runNativeBootstrap(nav.url || entryUrl);
-          }
-        }}
-        {...(Platform.OS === "android"
-          ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
-          : {})}
-      />
+      <View style={styles.webviewHost}>
+        <ShellWebView uri={entryUrl} webviewRef={webviewRef} handlersRef={shellHandlersRef} />
+      </View>
+      {showOverlay && showSlowOptions && (
+        <View style={styles.loadingOverlay} pointerEvents="auto">
+          <>
+            <Image
+              source={require("../assets/images/app-icon.png")}
+              style={styles.overlayLogo}
+              resizeMode="contain"
+            />
+            <ActivityIndicator size="large" color="#E8C99B" />
+            <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
+            <Text style={styles.loadingSubhint}>
+              Please wait — the app will open when it&apos;s ready.
+            </Text>
+          </>
 
-      {showOverlay && (
-        <View
-          style={[
-            styles.loadingOverlay,
-            !showSlowOptions && styles.loadingOverlayTransparent,
-          ]}
-          pointerEvents={showSlowOptions ? "auto" : "none"}
-        >
-          {showSlowOptions && (
-            <>
-              <Image
-                source={require("../assets/images/app-icon.png")}
-                style={styles.overlayLogo}
-                resizeMode="contain"
-              />
-              <ActivityIndicator size="large" color="#E8C99B" />
-              <Text style={styles.loadingHint}>Loading Shepherd&apos;s Path…</Text>
-              <Text style={styles.loadingSubhint}>
-                Please wait — the app will open when it&apos;s ready.
-              </Text>
-            </>
-          )}
-
-          {showSlowOptions && (
-            <View style={styles.slowOptions}>
-              <Text style={styles.slowHint}>
-                Taking longer than usual? Refresh or open in Safari.
-              </Text>
-              <Pressable
-                onPress={reload}
-                style={({ pressed }) => [styles.overlayBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.overlayBtnText}>Refresh</Text>
-              </Pressable>
-              <Pressable
-                onPress={openInSafari}
-                style={({ pressed }) => [styles.overlayBtnOutline, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.overlayBtnOutlineText}>Open in Safari</Text>
-              </Pressable>
-            </View>
-          )}
+          <View style={styles.slowOptions}>
+            <Text style={styles.slowHint}>
+              Taking longer than usual? Refresh or open in Safari.
+            </Text>
+            <Pressable
+              onPress={reload}
+              style={({ pressed }) => [styles.overlayBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.overlayBtnText}>Refresh</Text>
+            </Pressable>
+            <Pressable
+              onPress={openInSafari}
+              style={({ pressed }) => [styles.overlayBtnOutline, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.overlayBtnOutlineText}>Open in Safari</Text>
+            </Pressable>
+          </View>
         </View>
       )}
 
@@ -918,7 +967,7 @@ export default function MainScreen() {
             The app didn&apos;t finish loading. Refresh for a clean start, or use Safari.
           </Text>
           <Text style={styles.diagText} selectable>
-            {diagSummary || "Waiting for load diagnostics…"}
+            {formatDiagLines(diagLogsRef.current, 16) || diagSummary || "Waiting for load diagnostics…"}
           </Text>
           <Pressable
             onPress={reload}
@@ -937,6 +986,10 @@ export default function MainScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#0d0612",
+  },
+  webviewHost: {
     flex: 1,
     backgroundColor: "#0d0612",
   },
