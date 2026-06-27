@@ -955,14 +955,14 @@ function LandingHomeInner() {
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
   const entrySplashVisible = showEntryScreen && !!entrySplashInit;
-  const blockHomeOverlays =
+  const homeOverlayActive =
     entrySplashVisible || showBeginWalk || showSplash || showWelcomeOverlay;
   // Native: always paint home underneath — hiding it caused black screens when overlays
   // desynced or the native shell dismissed its loading sheet early.
-  const blockHomeChrome = inNativeApp ? false : blockHomeOverlays;
+  const blockHomeChrome = inNativeApp ? false : homeOverlayActive;
   useLayoutEffect(() => {
-    setEntryOverlayActive(blockHomeOverlays);
-  }, [blockHomeOverlays]);
+    setEntryOverlayActive(homeOverlayActive);
+  }, [homeOverlayActive]);
 
   // Never leave the shell on a black screen when splash state desyncs.
   useEffect(() => {
@@ -993,7 +993,7 @@ function LandingHomeInner() {
         markNativeShellUiPainted();
         return;
       }
-      if (blockHomeOverlays) {
+      if (homeOverlayActive) {
         nativeDiag("home_rescue_force_unlock");
         setShowEntryScreen(false);
         setEntrySplashInit(null);
@@ -1005,7 +1005,7 @@ function LandingHomeInner() {
       markNativeShellUiPainted();
     }, 4000);
     return () => window.clearTimeout(t);
-  }, [blockHomeOverlays]);
+  }, [homeOverlayActive]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
     if (!showWalkthrough) return;
