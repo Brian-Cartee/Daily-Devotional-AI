@@ -450,9 +450,9 @@ export default function MainScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!isSubscribed) return;
-      const firstUnlock = !wasSubscribedRef.current;
       wasSubscribedRef.current = true;
-      syncAppleProToWeb(firstUnlock, isMissionPartner ? "mission_partner" : "pro");
+      // Never reload the WebView for Pro inject — it mid-boot reload caused black screens.
+      syncAppleProToWeb(false, isMissionPartner ? "mission_partner" : "pro");
     }, [isSubscribed, isMissionPartner, syncAppleProToWeb]),
   );
 

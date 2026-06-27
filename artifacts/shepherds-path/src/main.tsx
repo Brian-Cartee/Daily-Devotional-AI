@@ -23,8 +23,10 @@ import {
 } from "@/lib/subscriberState";
 import { mergeServerSplashProg } from "@/lib/entrySplashState";
 import { reconcileEntryOverlayIdle } from "@/lib/entryOverlayState";
+import { installNativeBootGuard } from "@/lib/nativeBootGuard";
 
 if (isNativeWebViewShell()) {
+  installNativeBootGuard();
   nativeDiag("react_entry_started");
 }
 

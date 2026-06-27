@@ -559,6 +559,27 @@
     (function () {
       if (!window.ReactNativeWebView) return;
       document.documentElement.setAttribute("data-sp-shell", "native");
+      // Block mid-boot reload from old native shells (Pro inject called location.reload).
+      (function () {
+        var bootAt = Date.now();
+        var orig = location.reload.bind(location);
+        location.reload = function () {
+          var painted = !!document.querySelector(
+            '[data-testid="card-devotional"],[data-testid="home-threshold-hero"],[data-testid="bottom-nav-for-you"]',
+          );
+          if (!painted && Date.now() - bootAt < 45000) {
+            document.getElementById("sp-boot-splash")?.remove();
+            document.getElementById("sp-fg-cover")?.remove();
+            try {
+              if (window.__spSignalReady) window.__spSignalReady();
+            } catch (e) {}
+            return;
+          }
+          orig();
+        };
+      })();
+      // Black boot cover blocked WKWebView cold start — home signals ready instead.
+      document.getElementById("sp-boot-splash")?.remove();
     })();
     </script>
     <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#000;">
@@ -718,8 +739,20 @@
       }
 
       var sent = false;
+      function notifyAppReadyViaScheme() {
+        try {
+          var iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = "shepherdspath://app-ready";
+          document.documentElement.appendChild(iframe);
+          setTimeout(function () {
+            iframe.remove();
+          }, 120);
+        } catch (e) {}
+      }
+
       function notify(force) {
-        if (sent) return;
+        if (sent && !force) return;
         if (!force && !hasVisibleAppUi()) return;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
         document.getElementById("sp-native-recovery")?.remove();
@@ -734,6 +767,7 @@
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
         } catch (e) {}
+        notifyAppReadyViaScheme();
       }
 
       // Called by React components after double-RAF (guaranteed post-paint).
@@ -870,7 +904,7 @@
       setTimeout(function () {
         if (hasVisibleAppUi()) return;
         showWebReloadScreen();
-      }, 30000);
+      }, 45000);
 
       function hookModuleScript() {
         function attach(attempts) {
@@ -941,6 +975,15 @@
           if (!b) return;
           b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
         } catch (e) {}
+        try {
+          var iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = "shepherdspath://app-ready";
+          document.documentElement.appendChild(iframe);
+          setTimeout(function () {
+            iframe.remove();
+          }, 120);
+        } catch (e2) {}
       })();
       // Belt-and-suspenders: also send at 500 ms in case the bridge initialises
       // slightly after first parse (some WKWebView builds inject it async).
