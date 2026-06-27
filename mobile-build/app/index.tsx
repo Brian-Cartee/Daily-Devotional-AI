@@ -35,7 +35,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
 import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
-import { ShellWebView, type ShellWebViewHandlers } from "@/components/ShellWebView";
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
@@ -60,12 +59,7 @@ function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   return url;
 }
 
-/** Tiny static page — if this cannot load, WKWebView navigation itself is broken. */
-function shellPingUrl(): string {
-  return `${APP_ORIGIN}/webview-ping.html?native=1&nv=${encodeURIComponent(APP_VERSION)}&_=${Date.now()}`;
-}
-
-const SHELL_THEME_JS = `(function(){
+const BEFORE_CONTENT_JS = `(function(){
   document.documentElement.style.backgroundColor='#0d0612';
   if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
   document.documentElement.setAttribute('data-sp-shell','native');
@@ -219,6 +213,7 @@ export default function MainScreen() {
   const wasSubscribedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const [entryUrl, setEntryUrl] = useState<string | null>(null);
+  const [beforeContentJs, setBeforeContentJs] = useState<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSlowOptions, setShowSlowOptions] = useState(false);
   const [showStuckHelp, setShowStuckHelp] = useState(false);
@@ -233,22 +228,10 @@ export default function MainScreen() {
   const [mainJsPath, setMainJsPath] = useState<string | null>(null);
   const mainJsPathRef = useRef<string | null>(null);
   const philipVoiceRef = useRef<PhilipNativeVoiceController | null>(null);
-  const shellHandlersRef = useRef<ShellWebViewHandlers>({
-    onMessage: () => {},
-    onShouldStartLoadWithRequest: () => true,
-    onLoadStart: () => {},
-    onLoadProgress: () => {},
-    onLoadEnd: () => {},
-    onError: () => {},
-    onHttpError: () => {},
-    onNavigation: () => {},
-    onContentProcessDidTerminate: () => {},
-  });
   const philipVoiceLoadRef = useRef<Promise<PhilipNativeVoiceController> | null>(null);
   const webviewSessionStartedAtRef = useRef(0);
   const loadStartedRef = useRef(false);
   const bootReloadAttemptedRef = useRef(false);
-  const finalEntryUrlRef = useRef("");
 
   const injectDuringBoot = useCallback((js: string, delayMs = 300) => {
     setTimeout(() => {
@@ -303,8 +286,8 @@ export default function MainScreen() {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
       if (cancelled) return;
-      finalEntryUrlRef.current = shellEntryUrl(subscriberEmail, sessionId);
-      setEntryUrl(shellPingUrl());
+      setBeforeContentJs(BEFORE_CONTENT_JS);
+      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
     });
     return () => {
       cancelled = true;
@@ -591,8 +574,8 @@ export default function MainScreen() {
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
-      finalEntryUrlRef.current = shellEntryUrl(subscriberEmail, sessionId);
-      const next = shellPingUrl();
+      setBeforeContentJs(BEFORE_CONTENT_JS);
+      const next = shellEntryUrl(subscriberEmail, sessionId);
       setEntryUrl(next);
       if (entryUrl === next) {
         webviewRef.current?.reload();
@@ -722,14 +705,6 @@ export default function MainScreen() {
           { requireUiReady: true, minBootMs: 0 },
         );
       }
-      if (data.type === "sp_diag" && data.event === "webview_ping_html") {
-        pushNativeDiag("webview_ping_ok");
-        const target = finalEntryUrlRef.current || shellEntryUrl();
-        injectDuringBoot(
-          `(function(){try{location.replace(${JSON.stringify(target)});}catch(e){}true;})();`,
-          400,
-        );
-      }
       if (data.type === "sp_diag") {
         pushWebDiag(
           String(data.event || ""),
@@ -846,11 +821,8 @@ export default function MainScreen() {
     (pageUrl: string) => {
       loadStartedRef.current = true;
       pushNativeDiag("onLoadEnd", pageUrl);
-      if (!pageUrl.includes("webview-ping.html")) {
-        injectDuringBoot(SHELL_THEME_JS, 0);
-      }
     },
-    [injectDuringBoot, pushNativeDiag],
+    [pushNativeDiag],
   );
 
   const handleWebViewError = useCallback(
@@ -893,18 +865,6 @@ export default function MainScreen() {
     reload();
   }, [pushNativeDiag, reload]);
 
-  shellHandlersRef.current = {
-    onMessage: handleWebViewMessage,
-    onShouldStartLoadWithRequest,
-    onLoadStart: handleWebViewLoadStart,
-    onLoadProgress: handleWebViewLoadProgress,
-    onLoadEnd: handleWebViewLoadEnd,
-    onError: handleWebViewError,
-    onHttpError: handleWebViewHttpError,
-    onNavigation: handleWebViewNavigation,
-    onContentProcessDidTerminate: handleWebViewContentProcessDidTerminate,
-  };
-
   if (error) {
     return (
       <SafeAreaView style={styles.errorContainer} edges={["top", "bottom"]}>
@@ -928,7 +888,7 @@ export default function MainScreen() {
     );
   }
 
-  if (!entryUrl) {
+  if (!beforeContentJs || !entryUrl) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar style="light" />
@@ -940,9 +900,48 @@ export default function MainScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <View style={styles.webviewHost}>
-        <ShellWebView uri={entryUrl} webviewRef={webviewRef} handlersRef={shellHandlersRef} />
-      </View>
+      <WebView
+        key="sp-main-webview"
+        ref={webviewRef}
+        source={{ uri: entryUrl }}
+        style={styles.webview}
+        originWhitelist={["https://*", "http://*", "shepherdspath://*"]}
+        javaScriptEnabled
+        domStorageEnabled
+        sharedCookiesEnabled
+        allowsBackForwardNavigationGestures={false}
+        pullToRefreshEnabled={false}
+        scrollEnabled
+        bounces
+        {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+        allowsFullscreenVideo
+        setSupportMultipleWindows={false}
+        cacheEnabled
+        injectedJavaScriptBeforeContentLoaded={beforeContentJs}
+        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onMessage={(event) => {
+          try {
+            handleWebViewMessage(JSON.parse(event.nativeEvent.data) as Record<string, unknown>);
+          } catch {
+            /* noop */
+          }
+        }}
+        onLoadStart={handleWebViewLoadStart}
+        onLoadProgress={({ nativeEvent }) => handleWebViewLoadProgress(nativeEvent.progress)}
+        onLoadEnd={(event) => handleWebViewLoadEnd(event.nativeEvent.url || entryUrl)}
+        onError={(event) => handleWebViewError(String(event.nativeEvent.description || "unknown"))}
+        onHttpError={(event) => handleWebViewHttpError(event.nativeEvent.statusCode)}
+        onNavigationStateChange={(nav) =>
+          handleWebViewNavigation(Boolean(nav.loading), nav.title || "", nav.url || "")
+        }
+        onContentProcessDidTerminate={handleWebViewContentProcessDidTerminate}
+        {...(Platform.OS === "android"
+          ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
+          : {})}
+      />
       {showOverlay && showSlowOptions && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <>
