@@ -779,19 +779,14 @@
       }
 
       function notify(force) {
-        if (sent && !force) return;
+        if (window.__spNativeBridgeNotified) return;
         if (!force && !hasVisibleAppUi()) return;
+        window.__spNativeBridgeNotified = true;
         document.documentElement.setAttribute("data-native-ui-ready", "1");
         spRemoveId("sp-native-recovery");
         spRemoveId("sp-boot-splash");
         spRemoveId("sp-fg-cover");
         sent = true;
-        // NOTE: sp-boot-splash is removed by __spSignalReady (called by React after paint).
-        // Only remove covers here as a last-resort fallback (force=true from timeouts).
-        if (force) {
-          spRemoveId("sp-boot-splash");
-          spRemoveId("sp-fg-cover");
-        }
         try {
           bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
           bridge.postMessage(JSON.stringify({ type: "app_ready" }));
@@ -799,12 +794,15 @@
         notifyAppReadyViaScheme();
       }
 
-      // Called by React components after double-RAF (guaranteed post-paint).
-      // Removes the web boot cover and signals the native overlay to drop.
-      window.__spSignalReady = function() {
+      // Called by React after paint — dispatches sp-app-ready; notify() runs once via listener.
+      window.__spSignalReady = function () {
         spRemoveId("sp-boot-splash");
         spRemoveId("sp-fg-cover");
-        notify(true);
+        try {
+          window.dispatchEvent(new Event("sp-app-ready"));
+        } catch (e) {
+          notify(true);
+        }
       };
 
       // Hard fallback: if React has mounted but we still haven't signalled ready
@@ -908,18 +906,8 @@
         });
       }
 
-      function poll() {
-        notify();
-        if (!sent) setTimeout(poll, 200);
-      }
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", poll);
-      } else {
-        poll();
-      }
-
       window.addEventListener("sp-app-ready", function () {
-        notify();
+        notify(true);
       });
 
       setTimeout(function () {
@@ -957,12 +945,6 @@
           function onModuleReady() {
             diag("module_script_loaded", mod.getAttribute("src") || "");
             setBootStatus("Loading app\u2026");
-            setTimeout(function () { poll(); }, 0);
-            setTimeout(function () { poll(); }, 120);
-            setTimeout(function () { poll(); }, 600);
-            setTimeout(function () { poll(); }, 1800);
-            setTimeout(function () { poll(); }, 4000);
-            setTimeout(function () { poll(); }, 8000);
           }
           mod.addEventListener("load", onModuleReady);
           mod.addEventListener("error", function () {

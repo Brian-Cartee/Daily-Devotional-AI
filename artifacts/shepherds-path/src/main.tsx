@@ -9,7 +9,6 @@ import {
   markNativeShellUiPainted,
   notifyNativeReactBooted,
   removeNativeBootPlaceholder,
-  requestNativeVoiceBridge,
 } from "./lib/platform";
 import { nativeDiag } from "./lib/nativeDiag";
 import { syncEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
@@ -161,7 +160,6 @@ async function mountApp() {
     requestAnimationFrame(() => {
       nativeDiag("react_booted");
       notifyNativeReactBooted();
-      requestNativeVoiceBridge();
     });
   } else {
     removeNativeBootPlaceholder();

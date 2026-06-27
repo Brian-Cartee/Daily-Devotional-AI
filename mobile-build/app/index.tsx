@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, type RefObject } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -209,18 +209,24 @@ const PULL_DIAG_JS = `(function(){
 
 const VISIBILITY_PROBE_JS = `(function(){
   try{
-    if(document.getElementById('sp-native-boot-placeholder')){return;}
-    var homeSel='[data-testid="landing-home"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"]';
-    var splashSel='[data-testid="sp-splash-active"]';
-    if(document.querySelector(splashSel)||document.querySelector(homeSel)){
-      document.documentElement.setAttribute('data-native-ui-ready','1');
-      var bs=document.getElementById('sp-boot-splash');if(bs&&bs.remove)bs.remove();
-      var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'web_ui_visible' }));
-    }
+    if(document.getElementById('sp-native-boot-placeholder')){return true;}
+    var homeSel='[data-testid="landing-home"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"]';
+    if(!document.querySelector(homeSel)){return true;}
+    var bs=document.getElementById('sp-boot-splash');if(bs&&bs.remove)bs.remove();
+    var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
   }catch(e){}
   true;
 })();`;
+
+function deferInjectWebview(webviewRef: RefObject<WebView | null>, js: string, delayMs = 0): void {
+  setTimeout(() => {
+    try {
+      webviewRef.current?.injectJavaScript(js);
+    } catch {
+      /* noop */
+    }
+  }, delayMs);
+}
 
 export default function MainScreen() {
   const router = useRouter();
@@ -359,12 +365,14 @@ export default function MainScreen() {
         pushNativeDiag("voice_bridge_load_failed");
         return;
       }
-      injectPhilipVoiceBridgeEnabled(webviewRef);
-      if (ctrl.isBridgeReady()) {
+      setTimeout(() => {
+        injectPhilipVoiceBridgeEnabled(webviewRef);
+        if (!ctrl.isBridgeReady()) {
+          void ctrl.initBridge();
+        }
         injectPhilipVoiceEvent(webviewRef, { type: "PHILIP_VOICE_BRIDGE_READY" });
-        return;
-      }
-      await ctrl.initBridge();
+        pushNativeDiag("voice_bridge_ready_injected");
+      }, 0);
     } catch (err) {
       pushNativeDiag("voice_bridge_init_failed", String(err));
     }
@@ -412,10 +420,13 @@ export default function MainScreen() {
   }, [mainJsPath, entryUrl, runNativeBootstrap]);
 
   const probeWebReady = useCallback(() => {
-    webviewRef.current?.injectJavaScript(VISIBILITY_PROBE_JS);
+    if (webUiConfirmedRef.current) return;
+    deferInjectWebview(webviewRef, VISIBILITY_PROBE_JS, 0);
   }, []);
 
   const onWebUiVisible = useCallback(() => {
+    if (webUiConfirmedRef.current) return;
+    webUiConfirmedRef.current = true;
     readyRef.current = true;
     setAppReady(true);
     setShowOverlay(false);
@@ -423,10 +434,10 @@ export default function MainScreen() {
     setShowStuckHelp(false);
     setShowBlankRecovery(false);
     hideNativeSplashWhenWebReady();
-    if (!webUiConfirmedRef.current) {
-      webUiConfirmedRef.current = true;
-    }
-  }, []);
+    setTimeout(() => {
+      void enablePhilipVoiceBridge();
+    }, 0);
+  }, [enablePhilipVoiceBridge]);
 
   const syncAppleProToWeb = useCallback(
     async (reloadAfterInject = false, currentTier: "pro" | "mission_partner" = "pro") => {
@@ -760,6 +771,12 @@ export default function MainScreen() {
               }
               setDiagSummary(formatDiagLines(diagLogsRef.current, 12));
             }
+            if (data.type === "sp_request_voice_bridge") {
+              pushNativeDiag("voice_bridge_requested");
+              setTimeout(() => {
+                void enablePhilipVoiceBridge();
+              }, 0);
+            }
             if (typeof data.type === "string" && data.type.startsWith("PHILIP_VOICE_")) {
               pushNativeDiag(`voice_cmd_${data.type}`);
               void loadPhilipVoice().then((ctrl) => {
@@ -768,11 +785,11 @@ export default function MainScreen() {
             }
             if (data.type === "react_booted") {
               pushNativeDiag("web_react_booted");
-              void enablePhilipVoiceBridge();
               hideNativeSplashWhenWebReady();
-              setTimeout(() => probeWebReady(), 100);
             }
-            if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
+            if (data.type === "web_ui_visible" || data.type === "app_ready") {
+              setTimeout(() => onWebUiVisible(), 0);
+            }
             if (data.type === "open_subscription") {
               router.push("/subscription");
             }
@@ -816,10 +833,14 @@ export default function MainScreen() {
           setError(false);
           pushNativeDiag("onLoadStart", entryUrl);
           // Drop any stale reload cover; splashes are disabled on native cold start.
-          webviewRef.current?.injectJavaScript(`(function(){
+          deferInjectWebview(
+            webviewRef,
+            `(function(){
             var fg=document.getElementById('sp-fg-cover');if(fg&&fg.remove)fg.remove();
             true;
-          })();`);
+          })();`,
+            0,
+          );
         }}
         onLoadProgress={({ nativeEvent }) => {
           if (nativeEvent.progress >= 0.25 && nativeEvent.progress < 0.3) {
@@ -838,9 +859,9 @@ export default function MainScreen() {
           pushNativeDiag("onLoadEnd", pageUrl);
           if (!shouldBootstrapWebView(pageUrl)) return;
           runNativeBootstrap(pageUrl);
-          [200, 800, 2000].forEach((ms) => {
-            setTimeout(() => probeWebReady(), ms);
-          });
+          if (!webUiConfirmedRef.current) {
+            setTimeout(() => probeWebReady(), 3000);
+          }
         }}
         onError={(e) => {
           setPullRefreshing(false);

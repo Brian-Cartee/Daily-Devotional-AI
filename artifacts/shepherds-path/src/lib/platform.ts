@@ -66,16 +66,11 @@ export function requestNativeVoiceBridge(): void {
 
 export function notifyNativeShellReady(): void {
   if (typeof window === "undefined") return;
-  if (!isNativeShellUiReady()) return;
   const win = window as Window & { __spNativeShellReadyNotified?: boolean };
   if (win.__spNativeShellReadyNotified) return;
   win.__spNativeShellReadyNotified = true;
   try {
     window.dispatchEvent(new Event("sp-app-ready"));
-    postNativeAppReady();
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "web_ui_visible" }));
   } catch {
     /* noop */
   }
@@ -85,7 +80,9 @@ export function notifyNativeShellReady(): void {
 export function markNativeShellUiPainted(): void {
   if (typeof document === "undefined") return;
   if (!isNativeWebViewShell()) return;
-  if (isNativeShellUiReady()) return;
+  const win = window as Window & { __spNativeUiPainted?: boolean };
+  if (win.__spNativeUiPainted) return;
+  win.__spNativeUiPainted = true;
   document.documentElement.dataset.nativeUiReady = "1";
   removeNativeBootPlaceholder();
   void import("./nativeDiag").then(({ nativeDiag }) => nativeDiag("app_ready_sent"));

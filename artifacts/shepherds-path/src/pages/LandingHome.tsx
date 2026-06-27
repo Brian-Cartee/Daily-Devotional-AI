@@ -782,7 +782,6 @@ function LandingHomeInner() {
     nativeDiag("landing_home_mount");
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
         markNativeShellUiPainted();
       });
     });
