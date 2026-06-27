@@ -26,7 +26,11 @@ import { reconcileEntryOverlayIdle } from "@/lib/entryOverlayState";
 import { installNativeBootGuard } from "@/lib/nativeBootGuard";
 
 if (isNativeWebViewShell()) {
-  installNativeBootGuard();
+  try {
+    installNativeBootGuard();
+  } catch {
+    /* never abort React boot on guard install failure */
+  }
   nativeDiag("react_entry_started");
 }
 

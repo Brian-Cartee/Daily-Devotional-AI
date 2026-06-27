@@ -671,7 +671,7 @@ export default function MainScreen() {
                   emailSubscribed: profile.emailSubscribed,
                 });
                 webviewRef.current?.injectJavaScript(
-                  `(function(){try{if(window.__spResolveNativeProfile){window.__spResolveNativeProfile(${payload});}}catch(e){}}true;)();`,
+                  `(function(){try{if(window.__spResolveNativeProfile){window.__spResolveNativeProfile(${payload});}}catch(e){}true;})();`,
                 );
               });
             }
