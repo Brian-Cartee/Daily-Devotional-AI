@@ -60,6 +60,22 @@ function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   return url;
 }
 
+/** Tiny static page — if this cannot load, WKWebView navigation itself is broken. */
+function shellPingUrl(): string {
+  return `${APP_ORIGIN}/webview-ping.html?native=1&nv=${encodeURIComponent(APP_VERSION)}&_=${Date.now()}`;
+}
+
+const SHELL_THEME_JS = `(function(){
+  document.documentElement.style.backgroundColor='#0d0612';
+  if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
+  document.documentElement.setAttribute('data-sp-shell','native');
+  document.documentElement.setAttribute('data-sp-philip-native-voice','0');
+  window.__SP_PHILIP_NATIVE_VOICE__=false;
+  document.documentElement.setAttribute('data-sp-native-share','1');
+  document.documentElement.classList.add('sp-native-shell','dark');
+  true;
+})();`;
+
 const IN_APP_HOST_SUFFIXES = [
   "shepherdspathai.com",
   "youtube.com",
@@ -232,6 +248,7 @@ export default function MainScreen() {
   const webviewSessionStartedAtRef = useRef(0);
   const loadStartedRef = useRef(false);
   const bootReloadAttemptedRef = useRef(false);
+  const finalEntryUrlRef = useRef("");
 
   const injectDuringBoot = useCallback((js: string, delayMs = 300) => {
     setTimeout(() => {
@@ -286,7 +303,8 @@ export default function MainScreen() {
     let cancelled = false;
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
       if (cancelled) return;
-      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+      finalEntryUrlRef.current = shellEntryUrl(subscriberEmail, sessionId);
+      setEntryUrl(shellPingUrl());
     });
     return () => {
       cancelled = true;
@@ -557,7 +575,7 @@ export default function MainScreen() {
       clearTimeout(blankTimer);
       clearInterval(diagPullTimer);
     };
-  }, [entryUrl, pushNativeDiag, showDiagAlert, deferInjectWebview, injectDuringBoot]);
+  }, [entryUrl, showDiagAlert, injectDuringBoot]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -573,7 +591,8 @@ export default function MainScreen() {
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
     void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
-      const next = shellEntryUrl(subscriberEmail, sessionId);
+      finalEntryUrlRef.current = shellEntryUrl(subscriberEmail, sessionId);
+      const next = shellPingUrl();
       setEntryUrl(next);
       if (entryUrl === next) {
         webviewRef.current?.reload();
@@ -705,12 +724,11 @@ export default function MainScreen() {
       }
       if (data.type === "sp_diag" && data.event === "webview_ping_html") {
         pushNativeDiag("webview_ping_ok");
-        if (entryUrl) {
-          injectDuringBoot(
-            `(function(){try{location.replace(${JSON.stringify(entryUrl)});}catch(e){}true;})();`,
-            800,
-          );
-        }
+        const target = finalEntryUrlRef.current || shellEntryUrl();
+        injectDuringBoot(
+          `(function(){try{location.replace(${JSON.stringify(target)});}catch(e){}true;})();`,
+          400,
+        );
       }
       if (data.type === "sp_diag") {
         pushWebDiag(
@@ -828,8 +846,11 @@ export default function MainScreen() {
     (pageUrl: string) => {
       loadStartedRef.current = true;
       pushNativeDiag("onLoadEnd", pageUrl);
+      if (!pageUrl.includes("webview-ping.html")) {
+        injectDuringBoot(SHELL_THEME_JS, 0);
+      }
     },
-    [pushNativeDiag],
+    [injectDuringBoot, pushNativeDiag],
   );
 
   const handleWebViewError = useCallback(

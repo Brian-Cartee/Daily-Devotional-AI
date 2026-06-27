@@ -3,17 +3,6 @@ import { Platform, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import type { ShouldStartLoadRequest, WebViewMessageEvent } from "react-native-webview/lib/WebViewTypes";
 
-const BEFORE_CONTENT_JS = `(function(){
-  document.documentElement.style.backgroundColor='#0d0612';
-  if(document.body){document.body.style.backgroundColor='#0d0612';document.body.style.color='#ede8e0';}
-  document.documentElement.setAttribute('data-sp-shell','native');
-  document.documentElement.setAttribute('data-sp-philip-native-voice','0');
-  window.__SP_PHILIP_NATIVE_VOICE__=false;
-  document.documentElement.setAttribute('data-sp-native-share','1');
-  document.documentElement.classList.add('sp-native-shell','dark');
-  true;
-})();`;
-
 export type ShellWebViewHandlers = {
   onMessage: (data: Record<string, unknown>) => void;
   onShouldStartLoadWithRequest: (event: ShouldStartLoadRequest) => boolean;
@@ -60,7 +49,6 @@ export const ShellWebView = React.memo(function ShellWebView({
       allowsFullscreenVideo
       setSupportMultipleWindows={false}
       cacheEnabled
-      injectedJavaScriptBeforeContentLoaded={BEFORE_CONTENT_JS}
       onShouldStartLoadWithRequest={(event) =>
         handlersRef.current?.onShouldStartLoadWithRequest(event) ?? true
       }
@@ -90,7 +78,7 @@ export const ShellWebView = React.memo(function ShellWebView({
 
 const styles = StyleSheet.create({
   webview: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: "#0d0612",
   },
 });
