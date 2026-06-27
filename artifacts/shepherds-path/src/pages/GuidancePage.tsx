@@ -86,6 +86,7 @@ import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference } from "@/lib/listenFirst";
+import { isNativeWebViewShell } from "@/lib/platform";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
@@ -527,6 +528,23 @@ export default function GuidancePage() {
       if (ev.type === "PHILIP_VOICE_BRIDGE_READY") setPhilipNativeVoiceReady(true);
     });
   }, [philipNativeVoiceReady]);
+
+  // Native shell: voice bridge never connected — offer typing instead of a silent dead-end.
+  useEffect(() => {
+    if (!isNativeWebViewShell() || philipNativeVoiceReady) return;
+    if (situation.trim() || !witnessReady || !isPhilipMode()) return;
+    if (showHeartTypeFallback) return;
+
+    const t = window.setTimeout(() => {
+      if (philipNativeVoiceReady) return;
+      setShowHeartTypeFallback(true);
+      setShowThresholdOverlay(false);
+      setGreetingFallbackText("Voice isn't available right now — you can still type what's on your heart.");
+      convo.dispatch({ type: "ENTRY_OPEN" });
+    }, 8000);
+
+    return () => window.clearTimeout(t);
+  }, [philipNativeVoiceReady, situation, witnessReady, showHeartTypeFallback, convo]);
   const framework = getTodayFramework();
   const queryClient = useQueryClient();
   const { data: dailyVerse } = useDailyVerse();
@@ -1825,6 +1843,20 @@ export default function GuidancePage() {
   const startHeartListeningRef = useRef(startHeartListening);
   startHeartListeningRef.current = startHeartListening;
 
+  // Native shell: if Philip spoke before the bridge was ready, open mic once it connects.
+  useEffect(() => {
+    if (!isNativeWebViewShell() || !philipNativeVoiceReady) return;
+    if (situation.trim() || !witnessReady || !isPhilipMode()) return;
+    if (heartSubmittingRef.current || processingBridge) return;
+    if (entryMicLive || micArming || heartVoiceRef.current?.isActive()) return;
+    if (!greetingEngagedRef.current || autoMicStartedRef.current) return;
+
+    autoMicStartedRef.current = true;
+    voiceSessionRef.current.startSession("handsFree");
+    voiceSessionRef.current.onListening();
+    startHeartListeningRef.current(true);
+  }, [philipNativeVoiceReady, situation, witnessReady, entryMicLive, micArming, processingBridge]);
+
   const toggleHeartVoice = () => {
     if (isPhilipMode()) return;
     if (heartListening) {
@@ -2319,6 +2351,8 @@ export default function GuidancePage() {
     if (!isPhilipMode()) return;
     if (greetingEngagedRef.current || autoMicStartedRef.current) return;
     if (heartListening || heartSubmittingRef.current || processingBridge) return;
+    // In the App Store shell, wait for native mic/TTS — WebView capture is disabled there.
+    if (isNativeWebViewShell() && !philipNativeVoiceReady) return;
 
     let cancelled = false;
     let dwellTimer: number | undefined;
@@ -3256,9 +3290,7 @@ export default function GuidancePage() {
               {/* One orb — speaker when Philip talks, mic when you talk */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
                 {philipHandsFreeVoice ? (
-                  !(entryMicLive || micArming) ? (
-                    <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
-                  ) : null
+                  <VoiceSessionOrb mode={philipOrbMode ?? "idle"} dark key={philipOrbMode ?? "idle"} />
                 ) : webMicEnabled ? (
                   <VoiceSessionOrb
                     mode={entryMicLive || micArming ? "listen" : "idle"}
@@ -3266,6 +3298,35 @@ export default function GuidancePage() {
                     onClick={toggleHeartVoice}
                     disabled={micArming}
                   />
+                ) : isNativeWebViewShell() && !philipVoiceInputEnabled ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        maxWidth: "260px",
+                        textAlign: "center",
+                        fontSize: "13px",
+                        lineHeight: 1.5,
+                        color: "rgba(255,255,255,0.45)",
+                        letterSpacing: "0.03em",
+                      }}
+                    >
+                      {philipNativeVoiceReady ? "Voice is ready — Philip will speak in a moment." : "Preparing voice…"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={dismissThresholdForTyping}
+                      className="border-0 bg-transparent cursor-pointer touch-manipulation"
+                      style={{
+                        fontSize: "12px",
+                        color: "rgba(255,255,255,0.35)",
+                        letterSpacing: "0.06em",
+                        padding: "4px 0",
+                      }}
+                    >
+                      type instead
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
@@ -3518,7 +3579,7 @@ export default function GuidancePage() {
                       </button>
                     )}
 
-                    {(showHeartTypeFallback || !hasSpeechSupport) && !philipHandsFreeVoice && (
+                    {(showHeartTypeFallback || !hasSpeechSupport) && (
                       <>
                         {showHeartTypeFallback && (
                         <motion.p

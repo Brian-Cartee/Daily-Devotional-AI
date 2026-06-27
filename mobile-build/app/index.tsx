@@ -368,12 +368,12 @@ export default function MainScreen() {
         pushNativeDiag("voice_bridge_load_failed");
         return;
       }
+      injectPhilipVoiceBridgeEnabled(webviewRef);
       if (ctrl.isBridgeReady()) {
-        injectPhilipVoiceBridgeEnabled(webviewRef);
+        injectPhilipVoiceEvent(webviewRef, { type: "PHILIP_VOICE_BRIDGE_READY" });
         return;
       }
       await ctrl.initBridge();
-      injectPhilipVoiceBridgeEnabled(webviewRef);
     } catch (err) {
       pushNativeDiag("voice_bridge_init_failed", String(err));
     }
