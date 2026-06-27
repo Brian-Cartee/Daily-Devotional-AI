@@ -122,9 +122,12 @@ async function checkForStaleBuildAndReload(): Promise<void> {
     const r = await fetch("/native-manifest.json", { cache: "no-store" });
     const j: { builtAt?: string } = await r.json();
     const serverHash = j.builtAt ?? "";
-    if (serverHash && serverHash !== __BUILD_HASH__) {
-      window.location.reload();
-    }
+    if (!serverHash || serverHash === __BUILD_HASH__) return;
+    // Only reload once per server build — cached JS otherwise loops forever.
+    const reloadKey = "sp_native_reload_for";
+    if (sessionStorage.getItem(reloadKey) === serverHash) return;
+    sessionStorage.setItem(reloadKey, serverHash);
+    window.location.reload();
   } catch {
     // network unavailable — skip
   }

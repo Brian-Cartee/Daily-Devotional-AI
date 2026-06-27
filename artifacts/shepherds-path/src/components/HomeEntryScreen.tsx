@@ -153,6 +153,10 @@ function resolveBrandSplashInit(): BrandSplashInit {
 
 /** Reserve and return the next entry splash — call once per cold open before mounting UI. */
 export function commitEntrySplash(): BrandSplashInit | null {
+  // App Store shell: entry splashes block cold start (WKWebView tap layer). Home first.
+  if (typeof document !== "undefined" && document.documentElement.dataset.spShell === "native") {
+    return null;
+  }
   if (hasDismissedEntrySplashThisSession()) return null;
   if (hasCommittedEntrySplashThisSession()) return null;
   if (!canShowEntrySplash()) return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
-import { isIOS, isAndroid, isNativeWebViewShell } from "@/lib/platform";
+import { isIOS, isAndroid, isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, BookMarked, HandHeart } from "lucide-react";
@@ -941,10 +941,52 @@ function LandingHomeInner() {
   const welcomeOverlayEnabled = homeReturnOverlay === "welcome";
   const { show: showWelcome, dismiss: dismissWelcome } = useWelcomeOverlay(welcomeOverlayEnabled);
   const showWelcomeOverlay = welcomeOverlayEnabled && showWelcome;
+  const entrySplashVisible = showEntryScreen && !!entrySplashInit;
   const blockHomeChrome =
-    showEntryScreen || showBeginWalk || showSplash || showWelcomeOverlay;
+    entrySplashVisible || showBeginWalk || showSplash || showWelcomeOverlay;
   useLayoutEffect(() => {
     setEntryOverlayActive(blockHomeChrome);
+  }, [blockHomeChrome]);
+
+  // Never leave the shell on a black screen when splash state desyncs.
+  useEffect(() => {
+    if (!showEntryScreen || entrySplashInit) return;
+    setShowEntryScreen(false);
+    setEntryOverlayActive(false);
+  }, [showEntryScreen, entrySplashInit]);
+
+  useEffect(() => {
+    if (!isNativeWebViewShell()) return;
+    if (entrySplashVisible || showBeginWalk || showSplash || showWelcomeOverlay) return;
+    requestAnimationFrame(() => {
+      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
+      markNativeShellUiPainted();
+    });
+  }, [entrySplashVisible, showBeginWalk, showSplash, showWelcomeOverlay]);
+
+  // Rescue: if overlays cleared but home never painted, force native shell open.
+  useEffect(() => {
+    if (!isNativeWebViewShell()) return;
+    const t = window.setTimeout(() => {
+      const splash = document.querySelector('[data-testid="sp-splash-active"]');
+      const home = document.querySelector(
+        '[data-testid="card-devotional"],[data-testid="home-threshold-hero"]',
+      );
+      if (splash || home) {
+        (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
+        markNativeShellUiPainted();
+        return;
+      }
+      if (blockHomeChrome) {
+        nativeDiag("home_rescue_force_unlock");
+        setShowEntryScreen(false);
+        setEntrySplashInit(null);
+        setEntryOverlayActive(false);
+      }
+      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
+      markNativeShellUiPainted();
+    }, 4000);
+    return () => window.clearTimeout(t);
   }, [blockHomeChrome]);
   const [showWalkthrough, setShowWalkthrough] = useState(() => homeReturnOverlay === "walkthrough");
   useEffect(() => {
@@ -1143,13 +1185,8 @@ function LandingHomeInner() {
         }}
       />
 
-      <div
-        aria-hidden={blockHomeChrome}
-        style={{
-          visibility: blockHomeChrome ? "hidden" : "visible",
-          pointerEvents: blockHomeChrome ? "none" : "auto",
-        }}
-      >
+      {!blockHomeChrome && (
+      <>
       <ThresholdHero onPresenceContextChange={onPresenceContextChange} />
 
       {/* "You stepped inside" message and Gentle Start card removed —
@@ -2101,7 +2138,8 @@ function LandingHomeInner() {
           </div>
         </motion.div>
       </div>
-      </div>
+      </>
+      )}
 
     </div>
   );
