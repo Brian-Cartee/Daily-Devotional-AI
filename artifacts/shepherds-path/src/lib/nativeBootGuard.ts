@@ -16,9 +16,6 @@ export function installNativeBootGuard(): void {
     const elapsed = Date.now() - bootAt;
     if (!painted && elapsed < 45_000) {
       nativeDiag("blocked_reload_before_paint", `${elapsed}ms`);
-      document.getElementById("sp-boot-splash")?.remove();
-      document.getElementById("sp-fg-cover")?.remove();
-      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
       return;
     }
     origReload(...args);

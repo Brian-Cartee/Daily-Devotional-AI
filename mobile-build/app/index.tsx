@@ -760,9 +760,6 @@ export default function MainScreen() {
               void enablePhilipVoiceBridge();
               hideNativeSplashWhenWebReady();
               setTimeout(() => probeWebReady(), 100);
-              setTimeout(() => {
-                if (!webUiConfirmedRef.current) onWebUiVisible();
-              }, 3500);
             }
             if (data.type === "web_ui_visible" || data.type === "app_ready") onWebUiVisible();
             if (data.type === "open_subscription") {

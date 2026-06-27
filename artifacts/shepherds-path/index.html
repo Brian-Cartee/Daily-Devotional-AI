@@ -568,22 +568,16 @@
             '[data-testid="card-devotional"],[data-testid="home-threshold-hero"],[data-testid="bottom-nav-for-you"]',
           );
           if (!painted && Date.now() - bootAt < 45000) {
-            document.getElementById("sp-boot-splash")?.remove();
-            document.getElementById("sp-fg-cover")?.remove();
-            try {
-              if (window.__spSignalReady) window.__spSignalReady();
-            } catch (e) {}
             return;
           }
           orig();
         };
       })();
-      // Black boot cover blocked WKWebView cold start — home signals ready instead.
-      document.getElementById("sp-boot-splash")?.remove();
     })();
     </script>
-    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#000;">
-      <p id="sp-boot-splash-status" style="display:none;"></p>
+    <div id="sp-boot-splash" style="position:fixed;inset:0;z-index:99999;background:#0d0612;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;color:#ede8e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+      <p style="font-size:20px;font-weight:700;margin:0 0 10px;">Shepherd&apos;s Path</p>
+      <p id="sp-boot-splash-status" style="opacity:0.75;font-size:14px;line-height:1.45;margin:0;max-width:280px;">Loading&hellip;</p>
       <button type="button" id="sp-enter-btn" style="display:none;">Continue</button>
       <a id="sp-safari-link" href="https://www.shepherdspathai.com/?native=1&amp;enter=1" style="display:none;">Open in Safari instead</a>
     </div>
@@ -727,15 +721,15 @@
       }
 
       var visibleSelectors =
-        '[data-testid="landing-home"],[data-testid="sp-splash-active"],[data-testid="splash-icebreaker"],[data-testid="splash-icebreaker-callback"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"],[data-testid="night-shepherd"],[data-testid="btn-night-continue-greet"],[data-testid="guidance-page"],[data-testid="salvation-page"],[data-testid="journey-page"],#root>[data-reactroot],#root>div,#root>main';
+        '[data-testid="landing-home"],[data-testid="sp-splash-active"],[data-testid="splash-icebreaker"],[data-testid="splash-icebreaker-callback"],[data-testid="card-devotional"],[data-testid="bottom-nav-for-you"],[data-testid="home-threshold-hero"],#sp-home-top,[data-testid="text-threshold-welcome"],[data-testid="threshold-arrival"],[data-testid="btn-threshold-enter"],[data-testid="night-shepherd"],[data-testid="btn-night-continue-greet"],[data-testid="guidance-page"],[data-testid="salvation-page"],[data-testid="journey-page"]';
 
       function hasVisibleAppUi() {
         return !!document.querySelector(visibleSelectors);
       }
 
       function hasReactMounted() {
-        var root = document.getElementById("root");
-        return !!(root && root.firstElementChild);
+        var mount = document.getElementById("sp-app-mount");
+        return !!(mount && mount.firstElementChild);
       }
 
       var sent = false;
@@ -789,11 +783,13 @@
         }
       }, 7000);
 
-      // After 15 s, force unconditionally — covers JS errors / slow devices.
+      // After 15 s, show recovery UI if real screens never painted.
       setTimeout(function () {
-        if (sent) return;
+        if (sent || hasVisibleAppUi()) return;
         diag("force_ui_visible_15s", "timeout_fallback");
-        notify(true);
+        document.getElementById("sp-boot-splash")?.remove();
+        document.getElementById("sp-fg-cover")?.remove();
+        showWebReloadScreen();
       }, 15000);
 
       function setBootStatus(text) {
@@ -965,25 +961,14 @@
       // Two-stage: hide Expo splash fast (1.5 s), then force overlay off (8 s).
       // Fires regardless of startNativeBridge so even a broken bridge unblocks.
 
-      // Stage 1 — hide the Expo native splash ASAP (it shows as pure black).
-      // react_booted triggers SplashScreen.hideAsync() in the native shell.
-      // Fire immediately (0 ms) — the App Store binary waits 3.5 s for fonts
-      // before the WebView even renders, so every ms of extra delay matters.
+      // Stage 1 — hide the Expo native splash (purple cross). Do NOT dismiss the
+      // native loading overlay here — wait until real UI paints via notify().
       (function () {
         try {
           var b = window.ReactNativeWebView;
           if (!b) return;
           b.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
         } catch (e) {}
-        try {
-          var iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = "shepherdspath://app-ready";
-          document.documentElement.appendChild(iframe);
-          setTimeout(function () {
-            iframe.remove();
-          }, 120);
-        } catch (e2) {}
       })();
       // Belt-and-suspenders: also send at 500 ms in case the bridge initialises
       // slightly after first parse (some WKWebView builds inject it async).
@@ -1015,19 +1000,16 @@
         }, 500);
       })();
 
-      // Stage 2 — force dismiss native overlay and any reload black cover.
+      // Stage 2 — only dismiss native overlay once React has mounted real UI.
       setTimeout(function () {
+        if (sent) return;
+        if (!hasReactMounted() && !hasVisibleAppUi()) return;
         try {
-          document.getElementById("sp-fg-cover")?.remove();
           if (window.__spSignalReady) {
             window.__spSignalReady();
             return;
           }
-          var b = window.ReactNativeWebView;
-          if (!b) return;
-          document.getElementById("sp-boot-splash")?.remove();
-          b.postMessage(JSON.stringify({ type: "web_ui_visible", ts: Date.now() }));
-          b.postMessage(JSON.stringify({ type: "app_ready", ts: Date.now() }));
+          notify(true);
         } catch (e) {}
       }, 8000);
     })();
