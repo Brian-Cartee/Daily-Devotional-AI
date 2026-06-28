@@ -85,9 +85,15 @@ function swCacheVersionPlugin() {
       }catch(e2){}
     });
   }
-  function schedule(){setTimeout(start,0);}
+  function schedule(){setTimeout(start,50);}
+  window.__spScheduleMainModuleBoot=schedule;
   if(document.readyState==="complete")schedule();
-  else window.addEventListener("load",schedule,{once:true});
+  else{
+    window.addEventListener("load",schedule,{once:true});
+    document.addEventListener("DOMContentLoaded",schedule,{once:true});
+  }
+  setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},600);
+  setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},2000);
 })();
 </script>`;
           const moduleInsert = `${loaderScript}\n`;

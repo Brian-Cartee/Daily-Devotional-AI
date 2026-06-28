@@ -1013,6 +1013,14 @@
       }
       hookModuleScript();
 
+      setTimeout(function () {
+        try {
+          if (typeof window.__spScheduleMainModuleBoot === "function") {
+            window.__spScheduleMainModuleBoot();
+          }
+        } catch (e) {}
+      }, 400);
+
       // Dismiss native overlay once React has mounted real UI (fallback if components miss __spSignalReady).
       setTimeout(function () {
         if (sent) return;
