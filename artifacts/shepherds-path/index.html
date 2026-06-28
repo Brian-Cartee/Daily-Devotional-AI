@@ -94,8 +94,15 @@
           if (!bridge) return;
           var msg = typeof payload === "string" ? payload : JSON.stringify(payload);
           if (window.__spDeferNativePostMessage) {
-            window.__spNativePostQueue.push(msg);
-            return;
+            var allowDiag = false;
+            try {
+              var o = typeof payload === "string" ? JSON.parse(payload) : payload;
+              if (o && o.type === "sp_diag" && !window.__spModuleEvaluating) allowDiag = true;
+            } catch (e) {}
+            if (!allowDiag) {
+              window.__spNativePostQueue.push(msg);
+              return;
+            }
           }
           if (window.__spNativePostRaw) {
             window.__spNativePostRaw(msg);
@@ -123,6 +130,14 @@
       window.ReactNativeWebView.postMessage = function (msg) {
         try {
           if (!window.__spDeferNativePostMessage) {
+            return _spNativePostRaw(msg);
+          }
+          var allowDiag = false;
+          try {
+            var o = typeof msg === "string" ? JSON.parse(msg) : msg;
+            if (o && o.type === "sp_diag" && !window.__spModuleEvaluating) allowDiag = true;
+          } catch (e) {}
+          if (allowDiag) {
             return _spNativePostRaw(msg);
           }
           window.__spNativePostQueue.push(typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -894,6 +909,12 @@
         if (sent) return;
         if (hasReactMounted()) {
           diag("force_ui_visible", "react_mounted_no_selector_match");
+          try {
+            if (window.__spNativePostRaw) {
+              window.__spNativePostRaw(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+            }
+            if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+          } catch (e) {}
           notify(true);
         }
       }, 7000);
@@ -1018,17 +1039,12 @@
 
       function hookModuleScript() {
         function attach(attempts) {
-          var mod = document.querySelector('script[type="module"]');
+          var mod = document.querySelector('script[type="module"][data-sp-main="1"]');
           if (!mod) {
-            if (attempts < 80) setTimeout(function () { attach(attempts + 1); }, 50);
+            if (attempts < 120) setTimeout(function () { attach(attempts + 1); }, 50);
             return;
           }
           diag("module_script_seen", mod.getAttribute("src") || "");
-          function onModuleReady() {
-            diag("module_script_loaded", mod.getAttribute("src") || "");
-            setBootStatus("Loading app\u2026");
-          }
-          mod.addEventListener("load", onModuleReady);
           mod.addEventListener("error", function () {
             diag("module_script_error", mod.getAttribute("src") || "");
             setBootStatus("Could not load app\u2026");
@@ -1039,9 +1055,6 @@
               }
             }, 400);
           });
-          if (document.readyState === "complete") {
-            onModuleReady();
-          }
         }
         attach(0);
       }
