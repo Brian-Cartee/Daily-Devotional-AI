@@ -68,7 +68,59 @@ function swCacheVersionPlugin() {
           // Remove Vite's default module tag — load the bundle AFTER window load so
           // WKWebView onLoadEnd native inject cannot re-enter JS mid-module-eval (build 200).
           html = html.replace(moduleTag[0], "");
-          const loaderScript = `<script type="module" data-sp-boot-marker="1">/* defer main bundle — boot in startNativeBridge */</script>\n`;
+          const loaderScript = `<script type="module" data-sp-boot-marker="1">
+async function bootLog(evt, detail) {
+  try {
+    var entry = { type: "sp_diag", event: evt, detail: String(detail || "").slice(0, 500), ts: Date.now() };
+    window.__spDiagLogs = window.__spDiagLogs || [];
+    window.__spDiagLogs.push(entry);
+    if (window.__spNativePostRaw) window.__spNativePostRaw(JSON.stringify(entry));
+    else if (window.__spPostToNative) window.__spPostToNative(entry);
+  } catch (e) {}
+}
+async function waitMs(ms) {
+  var end = performance.now() + ms;
+  while (performance.now() < end) {
+    await new Promise(function (resolve) { requestAnimationFrame(resolve); });
+  }
+}
+var src = ${JSON.stringify(moduleSrc)};
+try {
+  if (window.ReactNativeWebView) {
+    await bootLog("boot_import_wait", "4000");
+    if (document.readyState !== "complete") {
+      await new Promise(function (resolve) {
+        window.addEventListener("load", resolve, { once: true });
+      });
+    }
+    await waitMs(4000);
+  }
+  if (window.__spMainModuleLoading) {
+    await bootLog("boot_import_skip", "busy");
+  } else {
+    window.__spMainModuleLoading = true;
+    await bootLog("module_load_start", src);
+    window.__spModuleEvaluating = true;
+    await import(src);
+    window.__spModuleEvaluating = false;
+    await bootLog("module_script_loaded", src);
+    await waitMs(800);
+    var mount = document.getElementById("sp-app-mount");
+    if (mount && mount.firstElementChild && !window.__spNativeBridgeNotified) {
+      try {
+        var msg = JSON.stringify({ type: "react_booted", ts: Date.now() });
+        if (window.__spNativePostRaw) window.__spNativePostRaw(msg);
+        else if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+        if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+      } catch (e) {}
+      try { if (window.__spSignalReady) window.__spSignalReady(); } catch (e2) {}
+    }
+  }
+} catch (err) {
+  window.__spModuleEvaluating = false;
+  await bootLog("module_script_error", String((err && err.message) || err));
+}
+</script>\n`;
           const moduleInsert = `${loaderScript}\n`;
           if (html.includes("<!-- SP_NATIVE_BRIDGE_END -->")) {
             html = html.replace(
