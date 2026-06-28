@@ -86,7 +86,7 @@ import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
 import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference } from "@/lib/listenFirst";
-import { isNativeWebViewShell } from "@/lib/platform";
+import { isNativeWebViewShell, requestNativeVoiceBridge } from "@/lib/platform";
 import { canStartGuidanceChain, canUseListenFirstAuto, LISTEN_LIMIT_COPY } from "@/lib/listenPolicy";
 import { markReturningHome } from "@/lib/introState";
 import { markSacredSessionQuiet } from "@/lib/sacredSession";
@@ -529,6 +529,17 @@ export default function GuidancePage() {
     });
   }, [philipNativeVoiceReady]);
 
+  // Native shell: repeatedly ask for voice bridge until ready or fallback timeout.
+  useEffect(() => {
+    if (!isNativeWebViewShell() || philipNativeVoiceReady) return;
+    requestNativeVoiceBridge();
+    const pulse = window.setInterval(() => {
+      if (philipNativeVoiceReady) return;
+      requestNativeVoiceBridge();
+    }, 2500);
+    return () => window.clearInterval(pulse);
+  }, [philipNativeVoiceReady]);
+
   // Native shell: voice bridge never connected — offer typing instead of a silent dead-end.
   useEffect(() => {
     if (!isNativeWebViewShell() || philipNativeVoiceReady) return;
@@ -541,7 +552,7 @@ export default function GuidancePage() {
       setShowThresholdOverlay(false);
       setGreetingFallbackText("Voice isn't available right now — you can still type what's on your heart.");
       convo.dispatch({ type: "ENTRY_OPEN" });
-    }, 8000);
+    }, 15000);
 
     return () => window.clearTimeout(t);
   }, [philipNativeVoiceReady, situation, witnessReady, showHeartTypeFallback, convo]);

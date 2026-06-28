@@ -139,7 +139,8 @@ const server = http.createServer((req, res) => {
   const sendFile = (filePath, status = 200) => {
     const ext = path.extname(filePath).toLowerCase();
     const isHtml = ext === ".html" || ext === "";
-    const isBootLoader = path.basename(filePath) === "boot-native.mjs";
+    const isBootLoader =
+      path.basename(filePath) === "boot-native.mjs" || path.basename(filePath) === "boot-native.js";
     fs.readFile(filePath, (err, data) => {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.writeHead(status, {
@@ -153,13 +154,36 @@ const server = http.createServer((req, res) => {
     });
   };
 
+  function sendHtml(filePath, status = 200) {
+    fs.readFile(filePath, "utf-8", (err, raw) => {
+      if (err) {
+        sendFile(filePath, status);
+        return;
+      }
+      let html = raw;
+      const qs = (req.url || "").split("?")[1] || "";
+      if (qs.includes("native=1") && !html.includes('src="/boot-native.js"')) {
+        html = html.replace(
+          "<head>",
+          '<head>\n  <script src="/boot-native.js" data-sp-boot-marker="1"></script>',
+        );
+      }
+      res.writeHead(status, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+      });
+      res.end(html);
+    });
+  }
+
   const stat = statFile(candidate);
 
   if (stat && stat.isFile()) {
     sendFile(candidate);
   } else if (stat && stat.isDirectory()) {
     const idx = path.join(candidate, "index.html");
-    statFile(idx) ? sendFile(idx) : sendFile(indexPath);
+    statFile(idx) ? sendHtml(idx) : sendHtml(indexPath);
   } else {
     const ext = path.extname(urlPath).toLowerCase();
     if (ASSET_EXTENSIONS.has(ext)) {
@@ -167,7 +191,7 @@ const server = http.createServer((req, res) => {
       res.end("Not found");
       return;
     }
-    sendFile(indexPath);
+    sendHtml(indexPath);
   }
 });
 
