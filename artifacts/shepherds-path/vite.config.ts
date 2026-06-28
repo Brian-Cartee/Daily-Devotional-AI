@@ -127,6 +127,7 @@ function swCacheVersionPlugin() {
       return;
     }
     stripStaleModuleTags();
+    window.__spModuleSrc = abs;
     window.__spMainModuleLoading = true;
     bootLog("module_load_start", abs);
     window.__spModuleEvaluating = true;
@@ -141,36 +142,10 @@ function swCacheVersionPlugin() {
         bootLog("module_script_error", String((err && err.message) || err));
       });
   }
-  function scheduleImport(abs) {
-    function kick() {
-      stripStaleModuleTags();
-      kickImport(abs);
-    }
-    if (document.readyState === "complete") {
-      bootLog("boot_kick", "complete");
-      kick();
-      return;
-    }
-    window.addEventListener(
-      "load",
-      function () {
-        bootLog("boot_kick", "load");
-        kick();
-      },
-      { once: true },
-    );
-    var polls = 0;
-    var pollTimer = setInterval(function () {
-      polls += 1;
-      if (document.readyState === "complete") {
-        clearInterval(pollTimer);
-        bootLog("boot_kick", "poll");
-        kick();
-      }
-      if (polls >= 400) clearInterval(pollTimer);
-    }, 25);
-  }
-  function runBoot() {
+  window.__spKickNativeBundle = function () {
+    if (window.__spKickNativeBundleDone) return;
+    if (!window.ReactNativeWebView) return;
+    window.__spKickNativeBundleDone = true;
     bootLog("boot_cb", location.search || "");
     stripStaleModuleTags();
     var src = resolveSrc();
@@ -180,23 +155,14 @@ function swCacheVersionPlugin() {
     }
     var abs = absUrl(src);
     bootLog("boot_native_loader", src);
+    bootLog("boot_kick", "bridge");
+    kickImport(abs);
+  };
+  if (window.ReactNativeWebView) {
     var stripN = 0;
     var stripTimer = setInterval(function () {
       stripStaleModuleTags();
-      if (++stripN >= 160) clearInterval(stripTimer);
-    }, 25);
-    scheduleImport(abs);
-  }
-  function tryBoot() {
-    if (!window.ReactNativeWebView) return false;
-    runBoot();
-    return true;
-  }
-  if (!tryBoot()) {
-    var n = 0;
-    var t = setInterval(function () {
-      n += 1;
-      if (tryBoot() || n >= 400) clearInterval(t);
+      if (++stripN >= 200) clearInterval(stripTimer);
     }, 25);
   }
 })();

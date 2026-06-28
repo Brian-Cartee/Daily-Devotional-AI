@@ -43,6 +43,35 @@
     </script>
     <script>
     (function () {
+      if (!window.ReactNativeWebView) return;
+      function stripDecoyModule(node) {
+        if (!node || node.tagName !== "SCRIPT" || node.type !== "module") return;
+        var src = node.getAttribute("src") || "";
+        if (node.getAttribute("data-sp-main") === "1") return;
+        if (src.indexOf("/assets/index-") >= 0) return;
+        if (node.parentNode) node.parentNode.removeChild(node);
+      }
+      function stripAllDecoyModules() {
+        var scripts = document.getElementsByTagName("script");
+        var i;
+        for (i = scripts.length - 1; i >= 0; i--) stripDecoyModule(scripts[i]);
+      }
+      stripAllDecoyModules();
+      try {
+        new MutationObserver(function (mutations) {
+          var i;
+          var j;
+          for (i = 0; i < mutations.length; i++) {
+            for (j = 0; j < mutations[i].addedNodes.length; j++) {
+              stripDecoyModule(mutations[i].addedNodes[j]);
+            }
+          }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      } catch (e) {}
+    })();
+    </script>
+    <script>
+    (function () {
       // ── MINIMUM NATIVE VERSION GATE ──────────────────────────────────────
       // Native binary sends ?nv=X.X.X in the URL (added in v2.1.6+).
       // If the version is below MIN_NATIVE_VERSION, replace the page with a
@@ -803,6 +832,9 @@
       }
 
       diag("html_loaded", location.pathname + location.search);
+      try {
+        if (window.__spKickNativeBundle) window.__spKickNativeBundle();
+      } catch (e) {}
 
       function isBenignShellError(msg) {
         var s = String(msg || "");
