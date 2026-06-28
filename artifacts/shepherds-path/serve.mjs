@@ -139,11 +139,15 @@ const server = http.createServer((req, res) => {
   const sendFile = (filePath, status = 200) => {
     const ext = path.extname(filePath).toLowerCase();
     const isHtml = ext === ".html" || ext === "";
+    const isBootLoader = path.basename(filePath) === "boot-native.mjs";
     fs.readFile(filePath, (err, data) => {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.writeHead(status, {
         "Content-Type": MIME[ext] || "application/octet-stream",
-        "Cache-Control": isHtml ? "no-store, no-cache, must-revalidate" : "public, max-age=3600",
+        "Cache-Control":
+          isHtml || isBootLoader
+            ? "no-store, no-cache, must-revalidate"
+            : "public, max-age=3600",
       });
       res.end(data);
     });
