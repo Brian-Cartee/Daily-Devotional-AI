@@ -95,9 +95,7 @@ function swCacheVersionPlugin() {
     for (i = scripts.length - 1; i >= 0; i--) {
       var s = scripts[i];
       if (s.type !== "module") continue;
-      var src = s.getAttribute("src") || "";
       if (s.getAttribute("data-sp-main") === "1") continue;
-      if (src.indexOf("/assets/index-") >= 0) continue;
       if (s.parentNode) s.parentNode.removeChild(s);
     }
   }
@@ -159,14 +157,33 @@ function swCacheVersionPlugin() {
     }
     var abs = absUrl(src);
     bootLog("boot_native_loader", src);
-    bootLog("boot_kick", "bridge");
-    kickImport(abs);
+    function doKick() {
+      bootLog("boot_kick", document.readyState);
+      kickImport(abs);
+    }
+    if (document.readyState === "complete") {
+      doKick();
+    } else {
+      window.addEventListener("load", doKick, { once: true });
+    }
   };
+  function tryKickFromHead() {
+    if (!window.ReactNativeWebView) return false;
+    if (window.__spKickNativeBundle) window.__spKickNativeBundle();
+    return true;
+  }
   if (window.ReactNativeWebView) {
     var stripN = 0;
     var stripTimer = setInterval(function () {
       stripStaleModuleTags();
       if (++stripN >= 200) clearInterval(stripTimer);
+    }, 25);
+  }
+  if (!tryKickFromHead()) {
+    var kn = 0;
+    var kt = setInterval(function () {
+      kn += 1;
+      if (tryKickFromHead() || kn >= 400) clearInterval(kt);
     }, 25);
   }
 })();

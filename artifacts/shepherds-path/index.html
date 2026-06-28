@@ -46,9 +46,7 @@
       if (!window.ReactNativeWebView) return;
       function stripDecoyModule(node) {
         if (!node || node.tagName !== "SCRIPT" || node.type !== "module") return;
-        var src = node.getAttribute("src") || "";
         if (node.getAttribute("data-sp-main") === "1") return;
-        if (src.indexOf("/assets/index-") >= 0) return;
         if (node.parentNode) node.parentNode.removeChild(node);
       }
       function stripAllDecoyModules() {
