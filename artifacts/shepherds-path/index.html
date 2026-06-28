@@ -1133,6 +1133,7 @@
     (function () {
       function ensureModuleFromPreload() {
         if (window.ReactNativeWebView) return;
+        if ((location.search || "").indexOf("native=1") >= 0) return;
         var scripts = document.getElementsByTagName("script");
         var i;
         for (i = 0; i < scripts.length; i++) {
