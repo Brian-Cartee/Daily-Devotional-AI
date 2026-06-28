@@ -85,7 +85,9 @@
     <meta charset="UTF-8" />
     <script>
     (function () {
-      if (!window.ReactNativeWebView) return;
+      function initNativeDeferQueue() {
+        if (window.__spNativeDeferInited || !window.ReactNativeWebView) return;
+        window.__spNativeDeferInited = true;
       window.__spDeferNativePostMessage = true;
       window.__spNativePostQueue = [];
       window.__spPostToNative = function (payload) {
@@ -156,31 +158,40 @@
         window.__spDiagLogs.push(entry);
         if (window.__spDiagLogs.length > 48) window.__spDiagLogs.shift();
         try {
-          if (window.__spNativePostRaw) window.__spNativePostRaw(JSON.stringify(entry));
+          if (window.__spNativePostRaw) {
+            window.__spNativePostRaw(JSON.stringify(entry));
+          } else if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify(entry));
+          }
         } catch (e) {}
       }
 
       function resolveMainModuleSrcEarly(done) {
-        var src = null;
+        var meta = document.querySelector('meta[name="sp-main-js"]');
+        if (meta && meta.getAttribute("content")) {
+          bootDiag("boot_src_meta", meta.getAttribute("content"));
+          done(meta.getAttribute("content"));
+          return;
+        }
+        var link = document.querySelector('link[rel="modulepreload"][href*="/assets/index-"]');
+        if (link) {
+          var href = link.getAttribute("href") || link.href || "";
+          if (href.indexOf("/assets/index-") !== -1) {
+            bootDiag("boot_src_preload", href);
+            done(href);
+            return;
+          }
+        }
         var links = document.getElementsByTagName("link");
         var i;
         for (i = 0; i < links.length; i++) {
-          if (links[i].rel === "modulepreload" && (links[i].href || "").indexOf("/assets/index-") !== -1) {
-            src = links[i].getAttribute("href");
-            break;
+          var rel = String(links[i].rel || "");
+          var h = links[i].href || links[i].getAttribute("href") || "";
+          if (rel.indexOf("modulepreload") !== -1 && h.indexOf("/assets/index-") !== -1) {
+            bootDiag("boot_src_preload", h);
+            done(links[i].getAttribute("href") || h);
+            return;
           }
-        }
-        if (src) {
-          bootDiag("boot_src_preload", src);
-          done(src);
-          return;
-        }
-        var meta = document.querySelector('meta[name="sp-main-js"]');
-        if (meta && meta.getAttribute("content")) {
-          src = meta.getAttribute("content");
-          bootDiag("boot_src_meta", src);
-          done(src);
-          return;
         }
         var origin =
           location.protocol === "http:" || location.protocol === "https:"
@@ -208,7 +219,6 @@
 
       function scheduleNativeMainBundleBoot() {
         if (window.__spMainBundleBootScheduled) return;
-        window.__spMainBundleBootScheduled = true;
         bootDiag("boot_schedule", "head");
         var nativeDelay = 3000;
         resolveMainModuleSrcEarly(function (src) {
@@ -216,15 +226,18 @@
             bootDiag("boot_src_missing", "no bundle url");
             return;
           }
+          if (window.__spMainBundleBootScheduled) return;
+          window.__spMainBundleBootScheduled = true;
           function appendMainModule() {
             if (window.__spMainModuleLoading) return;
             if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
             window.__spMainModuleLoading = true;
-            bootDiag("module_load_start", src);
+            var absSrc = src.indexOf("http") === 0 ? src : (location.origin || "https://www.shepherdspathai.com") + src;
+            bootDiag("module_load_start", absSrc);
             window.__spModuleEvaluating = true;
             var s = document.createElement("script");
             s.type = "module";
-            s.src = src;
+            s.src = absSrc;
             s.setAttribute("data-sp-main", "1");
             s.addEventListener("load", function () {
               window.__spModuleEvaluating = false;
@@ -276,6 +289,15 @@
       bootDiag("boot_head_ready", "");
       window.__spScheduleMainModuleBoot = scheduleNativeMainBundleBoot;
       scheduleNativeMainBundleBoot();
+      }
+
+      initNativeDeferQueue();
+      var deferAttempts = 0;
+      var deferTimer = setInterval(function () {
+        deferAttempts += 1;
+        initNativeDeferQueue();
+        if (window.__spNativeDeferInited || deferAttempts >= 400) clearInterval(deferTimer);
+      }, 25);
     })();
     </script>
     <script>
@@ -1194,47 +1216,77 @@
       hookModuleScript();
 
       function resolveMainModuleSrc(done) {
-        var src = null;
+        var meta = document.querySelector('meta[name="sp-main-js"]');
+        if (meta && meta.getAttribute("content")) {
+          diag("boot_src_meta", meta.getAttribute("content"));
+          done(meta.getAttribute("content"));
+          return;
+        }
+        var link = document.querySelector('link[rel="modulepreload"][href*="/assets/index-"]');
+        if (link) {
+          var href = link.getAttribute("href") || link.href || "";
+          if (href.indexOf("/assets/index-") !== -1) {
+            diag("boot_src_preload", href);
+            done(link.getAttribute("href") || href);
+            return;
+          }
+        }
         var links = document.getElementsByTagName("link");
         var i;
         for (i = 0; i < links.length; i++) {
-          if (links[i].rel === "modulepreload" && (links[i].href || "").indexOf("/assets/index-") !== -1) {
-            src = links[i].getAttribute("href");
-            break;
+          var rel = String(links[i].rel || "");
+          var h = links[i].href || links[i].getAttribute("href") || "";
+          if (rel.indexOf("modulepreload") !== -1 && h.indexOf("/assets/index-") !== -1) {
+            diag("boot_src_preload", h);
+            done(links[i].getAttribute("href") || h);
+            return;
           }
-        }
-        if (src) {
-          done(src);
-          return;
         }
         var origin =
           location.protocol === "http:" || location.protocol === "https:"
             ? location.origin
             : "https://www.shepherdspathai.com";
+        diag("boot_src_fetch", "manifest");
         fetch(origin + "/native-manifest.json", { cache: "no-store" })
           .then(function (r) {
             return r.json();
           })
           .then(function (j) {
-            if (j && j.mainJs) done(j.mainJs);
+            if (j && j.mainJs) {
+              diag("boot_src_manifest", j.mainJs);
+              done(j.mainJs);
+            } else {
+              diag("boot_src_manifest_empty", "");
+              done(null);
+            }
           })
-          .catch(function () {});
+          .catch(function (e) {
+            diag("boot_src_manifest_fail", String(e));
+            done(null);
+          });
       }
 
       function scheduleMainBundleBoot() {
         if (window.__spMainBundleBootScheduled) return;
-        window.__spMainBundleBootScheduled = true;
+        diag("boot_schedule", "bridge");
         resolveMainModuleSrc(function (src) {
+          if (!src) {
+            diag("boot_src_missing", "no bundle url");
+            return;
+          }
+          if (window.__spMainBundleBootScheduled) return;
+          window.__spMainBundleBootScheduled = true;
           var nativeDelay = 2800;
           function appendMainModule() {
             if (window.__spMainModuleLoading) return;
             if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
             window.__spMainModuleLoading = true;
-            diag("module_load_start", src);
+            var absSrc = src.indexOf("http") === 0 ? src : (location.origin || "https://www.shepherdspathai.com") + src;
+            diag("module_load_start", absSrc);
             window.__spModuleEvaluating = true;
             var s = document.createElement("script");
             s.type = "module";
-            s.src = src;
+            s.src = absSrc;
             s.setAttribute("data-sp-main", "1");
             s.addEventListener("load", function () {
               window.__spModuleEvaluating = false;
