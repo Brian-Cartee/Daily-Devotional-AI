@@ -24,6 +24,25 @@
   <head>
     <script>
     (function () {
+      if (!window.ReactNativeWebView) return;
+      try {
+        var u = new URL(location.href);
+        if (u.searchParams.has("_cb")) return;
+        fetch(location.origin + "/native-manifest.json", { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (!j || !j.builtAt) return;
+            u.searchParams.set("_cb", j.builtAt);
+            location.replace(u.toString());
+          })
+          .catch(function () {});
+      } catch (e) {}
+    })();
+    </script>
+    <script>
+    (function () {
       // ── MINIMUM NATIVE VERSION GATE ──────────────────────────────────────
       // Native binary sends ?nv=X.X.X in the URL (added in v2.1.6+).
       // If the version is below MIN_NATIVE_VERSION, replace the page with a

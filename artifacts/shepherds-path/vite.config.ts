@@ -65,8 +65,8 @@ function swCacheVersionPlugin() {
           } else if (moduleSrc && !html.includes('meta name="sp-main-js"')) {
             html = html.replace("</head>", `  <meta name="sp-main-js" content="${moduleSrc}">\n</head>`);
           }
-          // Remove Vite's default module tag — classic boot script loads the bundle after onLoadEnd.
-          html = html.replace(moduleTag[0], "");
+          // Remove every module script tag — stale boot-native.mjs tags block native inject on old binaries.
+          html = html.replace(/<script[^>]*\stype=["']module["'][^>]*>\s*<\/script>\s*/gi, "");
           const bootScript = `<script data-sp-boot-marker="1">
 (function () {
   var SRC = ${JSON.stringify(moduleSrc)};
@@ -178,11 +178,8 @@ function swCacheVersionPlugin() {
 })();
 </script>
 `;
-          if (moduleSrc && !html.includes("SP_NATIVE_BOOT_START")) {
-            html = html.replace(
-              "<!-- SP_NATIVE_BRIDGE_END -->",
-              `${bootScript}<!-- SP_NATIVE_BRIDGE_END -->\n<!-- SP_NATIVE_BOOT_START -->`,
-            );
+          if (moduleSrc && !html.includes("SP_NATIVE_BOOT_HEAD")) {
+            html = html.replace("</head>", `${bootScript}\n<!-- SP_NATIVE_BOOT_HEAD -->\n</head>`);
           }
         }
         const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
