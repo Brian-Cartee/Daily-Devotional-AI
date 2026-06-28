@@ -21,6 +21,7 @@ import {
 } from "@/lib/subscriberState";
 import { mergeServerSplashProg } from "@/lib/entrySplashState";
 import { reconcileEntryOverlayIdle } from "@/lib/entryOverlayState";
+import { flushNativePostMessageQueue } from "@/lib/nativePostMessage";
 import { installNativeBootGuard } from "@/lib/nativeBootGuard";
 
 if (isNativeWebViewShell()) {
@@ -152,9 +153,10 @@ async function mountApp() {
   if (typeof window !== "undefined" && native) {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        notifyNativeReactBooted();
+        flushNativePostMessageQueue();
         nativeDiag("react_render_called");
         nativeDiag("react_booted");
-        notifyNativeReactBooted();
         void requestNativeSubscriberBootstrap().then(() => {
           hydrateSubscriberStateFromStorage();
           void hydrateSubscriberStateFromIndexedDB();

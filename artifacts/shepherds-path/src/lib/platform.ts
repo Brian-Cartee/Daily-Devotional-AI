@@ -1,3 +1,5 @@
+import { postToNativeShell, postToNativeShellImmediate } from "./nativePostMessage";
+
 export function isAndroid(): boolean {
   if (typeof navigator === "undefined") return false;
   return /android/i.test(navigator.userAgent);
@@ -30,38 +32,19 @@ export function removeNativeBootPlaceholder(): void {
 }
 
 function postNativeAppReady(): void {
-  const payload = JSON.stringify({ type: "app_ready" });
-  try {
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(payload);
-  } catch {
-    /* noop */
-  }
+  postToNativeShell({ type: "app_ready" });
 }
 
 /** React mounted — hide purple cross; keep web splash until home paints */
 export function notifyNativeReactBooted(): void {
   if (typeof window === "undefined" || !isNativeWebViewShell()) return;
-  try {
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "react_booted" }));
-  } catch {
-    /* noop */
-  }
+  postToNativeShellImmediate({ type: "react_booted" });
 }
 
 /** Ask the native shell to enable mic/TTS bridge (Talk It Through). */
 export function requestNativeVoiceBridge(): void {
   if (!isNativeWebViewShell()) return;
-  try {
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(JSON.stringify({ type: "sp_request_voice_bridge" }));
-  } catch {
-    /* noop */
-  }
+  postToNativeShell({ type: "sp_request_voice_bridge" });
 }
 
 export function notifyNativeShellReady(): void {

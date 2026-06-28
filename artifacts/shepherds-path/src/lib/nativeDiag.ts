@@ -1,4 +1,6 @@
 /** TestFlight / WebView milestone + error logging (posts to React Native shell). */
+import { postToNativeShell } from "./nativePostMessage";
+
 export function nativeDiag(event: string, detail = ""): void {
   if (typeof window === "undefined") return;
 
@@ -21,7 +23,7 @@ export function nativeDiag(event: string, detail = ""): void {
   win.__spDiagLogs = logs;
 
   try {
-    win.ReactNativeWebView?.postMessage(JSON.stringify(entry));
+    postToNativeShell(entry);
   } catch {
     /* noop */
   }

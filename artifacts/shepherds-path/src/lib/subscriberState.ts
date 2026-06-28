@@ -1,5 +1,6 @@
-import { getUserName, hasBeenPrompted } from "@/lib/userName";
+import { postToNativeShell } from "./nativePostMessage";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { getUserName, hasBeenPrompted } from "@/lib/userName";
 import { getSessionId } from "@/lib/session";
 import { writeSubscriberCookie } from "@/lib/subscriberCookie";
 import { setConfirmedSubscriberEmail } from "@/lib/dailyEmailState";
@@ -127,27 +128,20 @@ async function readIdbProfile(): Promise<{ email?: string; subscribed?: boolean 
 function notifyNativeSubscriberProfile(email: string): void {
   if (!isNativeWebViewShell()) return;
   try {
-    const bridge = (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView;
-    if (!bridge) return;
     const sessionId = getSessionId();
-    const payload = JSON.stringify({
+    postToNativeShell({
       type: "sp_subscriber_profile",
       sessionId,
       email,
       subscribed: true,
     });
-    bridge.postMessage(payload);
-    bridge.postMessage(
-      JSON.stringify({
-        type: "sp_user_profile",
-        sessionId,
-        name: getUserName() ?? "",
-        prompted: hasBeenPrompted(),
-        subscriberEmail: email,
-      }),
-    );
+    postToNativeShell({
+      type: "sp_user_profile",
+      sessionId,
+      name: getUserName() ?? "",
+      prompted: hasBeenPrompted(),
+      subscriberEmail: email,
+    });
   } catch {
     /* ignore */
   }
@@ -179,7 +173,7 @@ export function requestNativeSubscriberBootstrap(): Promise<void> {
       resolve();
     };
     try {
-      win.ReactNativeWebView?.postMessage(JSON.stringify({ type: "sp_request_native_profile" }));
+      postToNativeShell({ type: "sp_request_native_profile" });
     } catch {
       resolve();
     }

@@ -85,6 +85,39 @@
     <meta charset="UTF-8" />
     <script>
     (function () {
+      if (!window.ReactNativeWebView) return;
+      window.__spDeferNativePostMessage = true;
+      window.__spNativePostQueue = [];
+      window.__spPostToNative = function (payload) {
+        try {
+          var bridge = window.ReactNativeWebView;
+          if (!bridge) return;
+          var msg = typeof payload === "string" ? payload : JSON.stringify(payload);
+          if (window.__spDeferNativePostMessage) {
+            window.__spNativePostQueue.push(msg);
+            return;
+          }
+          bridge.postMessage(msg);
+        } catch (e) {}
+      };
+      window.__spFlushNativePostQueue = function () {
+        if (window.__spNativePostQueueFlushed) return;
+        window.__spNativePostQueueFlushed = true;
+        window.__spDeferNativePostMessage = false;
+        var bridge = window.ReactNativeWebView;
+        if (!bridge) return;
+        var q = window.__spNativePostQueue || [];
+        window.__spNativePostQueue = [];
+        for (var i = 0; i < q.length; i++) {
+          try {
+            bridge.postMessage(q[i]);
+          } catch (e) {}
+        }
+      };
+    })();
+    </script>
+    <script>
+    (function () {
       function readCookie(name) {
         try {
           var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
@@ -149,6 +182,15 @@
       function notifyNativeEmail(email) {
         try {
           if (!window.ReactNativeWebView || !email || email.indexOf("@") < 1) return;
+          if (window.__spPostToNative) {
+            window.__spPostToNative({ type: "sp_subscriber_profile", email: email });
+            window.__spPostToNative({
+              type: "sp_user_profile",
+              subscriberEmail: email,
+              sessionId: localStorage.getItem("sp_session_id") || readCookie("sp_session_id") || "",
+            });
+            return;
+          }
           window.ReactNativeWebView.postMessage(
             JSON.stringify({ type: "sp_subscriber_profile", email: email }),
           );
@@ -234,7 +276,13 @@
         if (sid) {
           window.__SP_SESSION_BOOT__ = sid;
           try {
-            window.ReactNativeWebView &&
+            if (window.__spPostToNative) {
+              window.__spPostToNative({
+                type: "sp_user_profile",
+                sessionId: sid,
+                subscriberEmail: em || "",
+              });
+            } else if (window.ReactNativeWebView) {
               window.ReactNativeWebView.postMessage(
                 JSON.stringify({
                   type: "sp_user_profile",
@@ -242,6 +290,7 @@
                   subscriberEmail: em || "",
                 }),
               );
+            }
           } catch (e) {}
         }
       } catch (e) {}
@@ -653,8 +702,13 @@
         if (window.__spDiagLogs.length > 48) window.__spDiagLogs.shift();
         var posted = false;
         try {
-          bridge.postMessage(JSON.stringify(entry));
-          posted = true;
+          if (window.__spPostToNative) {
+            window.__spPostToNative(entry);
+            posted = true;
+          } else {
+            bridge.postMessage(JSON.stringify(entry));
+            posted = true;
+          }
         } catch (e) {}
         if (!posted) diagViaScheme(entry.event, entry.detail);
         if (debugPanel) updateDebugPanel();
@@ -702,7 +756,11 @@
         diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
         if (isBenignShellError(text) || isBenignShellError(extra)) return;
         try {
-          bridge.postMessage(JSON.stringify({ type: "js_error", msg: text, detail: extra }));
+          if (window.__spPostToNative) {
+            window.__spPostToNative({ type: "js_error", msg: text, detail: extra });
+          } else {
+            bridge.postMessage(JSON.stringify({ type: "js_error", msg: text, detail: extra }));
+          }
         } catch (e) {}
       }
 
@@ -770,8 +828,13 @@
         spRemoveId("sp-fg-cover");
         sent = true;
         try {
-          bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
-          bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+          if (window.__spPostToNative) {
+            window.__spPostToNative({ type: "web_ui_visible" });
+            window.__spPostToNative({ type: "app_ready" });
+          } else {
+            bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
+            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+          }
         } catch (e) {}
       }
 
