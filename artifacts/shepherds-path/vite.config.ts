@@ -131,16 +131,20 @@ function swCacheVersionPlugin() {
     window.__spMainModuleLoading = true;
     bootLog("module_load_start", abs);
     window.__spModuleEvaluating = true;
-    import(abs)
-      .then(function () {
-        window.__spModuleEvaluating = false;
-        bootLog("module_script_loaded", abs);
-        signalReactBooted();
-      })
-      .catch(function (err) {
-        window.__spModuleEvaluating = false;
-        bootLog("module_script_error", String((err && err.message) || err));
-      });
+    var s = document.createElement("script");
+    s.type = "module";
+    s.src = abs;
+    s.setAttribute("data-sp-main", "1");
+    s.addEventListener("load", function () {
+      window.__spModuleEvaluating = false;
+      bootLog("module_script_loaded", abs);
+      signalReactBooted();
+    });
+    s.addEventListener("error", function () {
+      window.__spModuleEvaluating = false;
+      bootLog("module_script_error", abs);
+    });
+    (document.head || document.documentElement).appendChild(s);
   }
   window.__spKickNativeBundle = function () {
     if (window.__spKickNativeBundleDone) return;
