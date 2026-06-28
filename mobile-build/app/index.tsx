@@ -40,7 +40,7 @@ import { StableWebView, type StableWebViewHandlers } from "@/components/StableWe
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
 // Update this every release — must match app.json version string.
-const APP_VERSION = "2.2.4";
+const APP_VERSION = "2.2.5";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
 function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
@@ -635,6 +635,11 @@ export default function MainScreen() {
       loadStartedRef.current = true;
       const pageUrl = e.nativeEvent.url || entryUrl;
       pushNativeDiag("onLoadEnd", pageUrl);
+      if (shouldBootstrapWebView(pageUrl) && !webUiConfirmedRef.current) {
+        webviewRef.current?.injectJavaScript(
+          `(function(){try{if(window.__spKickNativeBundleDone)return;var s=document.createElement('script');s.src='${APP_ORIGIN}/boot-native.js?t='+Date.now();document.head.appendChild(s);}catch(e){}true;})();`,
+        );
+      }
     },
     onError: (e) => {
       setPullRefreshing(false);
