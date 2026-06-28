@@ -223,10 +223,16 @@
         if (window.__spBundleAppendPlanned) return;
         window.__spBundleAppendPlanned = true;
         bootDiag("boot_src_ready", String(source || "head") + " " + src);
-        var nativeDelay = 3500;
+        var nativeDelay = 2000;
         function appendMainModule() {
-          if (window.__spMainModuleLoading) return;
-          if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
+          if (window.__spMainModuleLoading) {
+            bootDiag("boot_append_skip", "already_loading");
+            return;
+          }
+          if (document.querySelector('script[type="module"][data-sp-main="1"]')) {
+            bootDiag("boot_append_skip", "script_in_dom");
+            return;
+          }
           window.__spMainModuleLoading = true;
           var absSrc = src.indexOf("http") === 0 ? src : (location.origin || "https://www.shepherdspathai.com") + src;
           bootDiag("module_load_start", absSrc);
@@ -258,13 +264,27 @@
             window.__spModuleEvaluating = false;
             bootDiag("module_script_error", absSrc);
           });
-          (document.head || document.documentElement).appendChild(s);
+          try {
+            (document.head || document.documentElement).appendChild(s);
+            bootDiag("boot_append_script_tag", absSrc);
+          } catch (e) {
+            window.__spMainModuleLoading = false;
+            window.__spModuleEvaluating = false;
+            bootDiag("boot_append_dom_fail", String(e));
+          }
         }
         function kick() {
           var loadAt = window.__spPageLoadAt || 0;
           var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
           bootDiag("boot_wait_ms", String(wait));
+          bootDiag("boot_append_timer_set", String(wait));
           setTimeout(appendMainModule, wait);
+          setTimeout(function () {
+            if (!document.querySelector('script[type="module"][data-sp-main="1"]') && !window.__spMainModuleLoading) {
+              bootDiag("boot_append_fallback", "force");
+              appendMainModule();
+            }
+          }, wait + 2500);
         }
         if (document.readyState === "complete") {
           if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
@@ -1292,7 +1312,7 @@
           }
           if (window.__spBundleAppendPlanned) return;
           window.__spBundleAppendPlanned = true;
-          var nativeDelay = 3500;
+          var nativeDelay = 2000;
           function appendMainModule() {
             if (window.__spMainModuleLoading) return;
             if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
