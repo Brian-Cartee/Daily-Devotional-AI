@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useLayoutEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -35,7 +36,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { WebView } from "react-native-webview";
 import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
-import { StableWebView, type StableWebViewHandlers } from "@/components/StableWebView";
 
 const APP_ORIGIN = "https://www.shepherdspathai.com";
 // Sent as ?nv= param so the web page can enforce a minimum version.
@@ -43,13 +43,13 @@ const APP_ORIGIN = "https://www.shepherdspathai.com";
 const APP_VERSION = "2.2.5";
 
 /** Open the live app directly — pass saved session + email so WebView can restore subscription state. */
-function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
+function shellEntryUrl(subscriberEmail?: string, sessionId?: string, cacheBust?: string): string {
   let url = `${APP_ORIGIN}/?native=1&enter=1`;
   // Always send the native binary version so the web page can enforce a
   // minimum version requirement and show "Please update" instead of
   // silently breaking on incompatible old binaries.
   url += `&nv=${encodeURIComponent(APP_VERSION)}`;
-  url += `&_cb=${Date.now()}`;
+  url += `&_cb=${encodeURIComponent(cacheBust || String(Date.now()))}`;
   const sid = sessionId?.trim();
   if (sid) {
     url += `&ssid=${encodeURIComponent(sid)}`;
@@ -60,6 +60,9 @@ function shellEntryUrl(subscriberEmail?: string, sessionId?: string): string {
   }
   return url;
 }
+
+const BLANK_BOOT_HTML =
+  '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="background:#0d0612;margin:0"></body></html>';
 
 const IN_APP_HOST_SUFFIXES = [
   "shepherdspathai.com",
@@ -236,15 +239,18 @@ const VISIBILITY_PROBE_JS = `(function(){
 function SubscriptionWebSync({
   webviewRef,
   appReady,
+  webUiConfirmedRef,
 }: {
   webviewRef: React.RefObject<WebView | null>;
   appReady: boolean;
+  webUiConfirmedRef: React.RefObject<boolean>;
 }) {
   const { isSubscribed, isMissionPartner } = useSubscription();
   const wasSubscribedRef = useRef(false);
 
   const syncAppleProToWeb = useCallback(
     async (reloadAfterInject = false, currentTier: "pro" | "mission_partner" = "pro") => {
+      if (!webUiConfirmedRef.current) return;
       if (currentTier === "mission_partner") {
         injectAppleMissionPartner(webviewRef);
       } else {
@@ -294,6 +300,9 @@ export default function MainScreen() {
   const readyRef = useRef(false);
   const webUiConfirmedRef = useRef(false);
   const loadStartedRef = useRef(false);
+  const blankBootReadyRef = useRef(false);
+  const liveNavAttemptedRef = useRef(false);
+  const loadProgressBucketRef = useRef(-1);
   const reloadCountRef = useRef(0);
   const diagLogsRef = useRef<WebViewDiagEntry[]>([]);
   const [diagSummary, setDiagSummary] = useState("");
@@ -303,8 +312,6 @@ export default function MainScreen() {
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const philipVoiceRef = useRef<PhilipNativeVoiceController | null>(null);
   const philipVoiceLoadRef = useRef<Promise<PhilipNativeVoiceController> | null>(null);
-  const webViewHandlersRef = useRef<StableWebViewHandlers>({});
-
   const loadPhilipVoice = useCallback(async (): Promise<PhilipNativeVoiceController | null> => {
     if (philipVoiceRef.current) return philipVoiceRef.current;
     if (!philipVoiceLoadRef.current) {
@@ -323,13 +330,52 @@ export default function MainScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    void prepareNativeUserProfileForWebView().then(({ sessionId, subscriberEmail }) => {
+    void Promise.all([
+      prepareNativeUserProfileForWebView(),
+      fetch(`${APP_ORIGIN}/native-manifest.json`, { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => null),
+    ]).then(([profile, manifest]) => {
       if (cancelled) return;
-      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+      const builtAt =
+        manifest && typeof manifest.builtAt === "string" ? manifest.builtAt : undefined;
+      if (builtAt && manifest?.mainJs) mainJsPathRef.current = manifest.mainJs;
+      setEntryUrl(shellEntryUrl(profile.subscriberEmail, profile.sessionId, builtAt));
     });
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const injectProfileSeedDuringBoot = useCallback(() => {
+    void prepareNativeUserProfileForWebView().then(
+      ({
+        sessionId,
+        name,
+        prompted,
+        subscriberEmail,
+        emailSubscribed,
+        splashCount,
+        dailySplash,
+        splashProg,
+        heartLastShown,
+        heartState,
+      }) => {
+        const seed = buildNativeProfileSeedJs(
+          sessionId,
+          name,
+          prompted,
+          subscriberEmail,
+          emailSubscribed,
+          splashCount,
+          heartLastShown,
+          heartState,
+          dailySplash,
+          splashProg,
+        );
+        webviewRef.current?.injectJavaScript(`${seed}true;`);
+      },
+    );
   }, []);
 
   const injectProfileSeed = useCallback(() => {
@@ -408,7 +454,11 @@ export default function MainScreen() {
       };
       diagLogsRef.current.push(entry);
       if (diagLogsRef.current.length > 48) diagLogsRef.current.shift();
-      if (showStuckHelpRef.current || showBlankRecoveryRef.current || __DEV__) {
+      const bootEvent =
+        /webview_session_start|webview_ref_null|webview_mount|blank_boot_ready|boot_timer_scheduled|boot_reload|boot_navigate|should_load|load_kick|onLoadStart|onLoadProgress|onLoadEnd|onError|onHttpError|stuck_timeout|reload/i.test(
+          event,
+        );
+      if (showStuckHelpRef.current || showBlankRecoveryRef.current || bootEvent || __DEV__) {
         flushDiagSummary();
       }
     },
@@ -474,39 +524,90 @@ export default function MainScreen() {
     }
   }, []);
 
+  const pushNativeDiagRef = useRef(pushNativeDiag);
+  pushNativeDiagRef.current = pushNativeDiag;
+
   const entrySessionRef = useRef<string | null>(null);
+
+  const navigateToLiveUrl = useCallback(
+    (label: string) => {
+      if (!entryUrl || !webviewRef.current) return;
+      if (liveNavAttemptedRef.current && loadStartedRef.current) return;
+      liveNavAttemptedRef.current = true;
+      loadStartedRef.current = false;
+      const safeUrl = entryUrl.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      pushNativeDiag("boot_navigate", label);
+      webviewRef.current.injectJavaScript(
+        `(function(){try{window.location.replace('${safeUrl}');}catch(e){}true;})();`,
+      );
+    },
+    [entryUrl, pushNativeDiag],
+  );
+
+  useLayoutEffect(() => {
+    if (!entryUrl) return;
+    pushNativeDiagRef.current("webview_mount", webviewRef.current ? "ref_ok" : "ref_null");
+
+    const isNewSession = entrySessionRef.current !== entryUrl;
+    if (isNewSession) {
+      entrySessionRef.current = entryUrl;
+      loadStartedRef.current = false;
+      blankBootReadyRef.current = false;
+      liveNavAttemptedRef.current = false;
+      loadProgressBucketRef.current = -1;
+      webUiConfirmedRef.current = false;
+      readyRef.current = false;
+      setAppReady(false);
+      setShowOverlay(true);
+      setShowSlowOptions(false);
+      setShowStuckHelp(false);
+      setShowBlankRecovery(false);
+      pushNativeDiagRef.current("webview_session_start", entryUrl);
+    }
+    pushNativeDiagRef.current("boot_timer_scheduled", "");
+  }, [entryUrl]);
 
   useEffect(() => {
     if (!entryUrl) return;
-    if (entrySessionRef.current === entryUrl) return;
-    entrySessionRef.current = entryUrl;
-    webUiConfirmedRef.current = false;
-    readyRef.current = false;
-    setAppReady(false);
-    setShowOverlay(true);
-    setShowSlowOptions(false);
-    setShowStuckHelp(false);
-    setShowBlankRecovery(false);
-    pushNativeDiag("webview_session_start", entryUrl);
 
-    const kickTimer = setTimeout(() => {
-      if (!loadStartedRef.current && webviewRef.current) {
-        pushNativeDiag("load_kick", "reload");
-        webviewRef.current.reload();
+    const tryReloadBlank = (label: string) => {
+      if (blankBootReadyRef.current) return;
+      if (loadStartedRef.current) return;
+      if (!webviewRef.current) {
+        pushNativeDiagRef.current("webview_ref_null", label);
+        return;
       }
-    }, 3000);
+      pushNativeDiagRef.current("boot_reload", label);
+      webviewRef.current.reload();
+    };
+
+    const tryNavigateLive = (label: string) => {
+      if (!blankBootReadyRef.current || webUiConfirmedRef.current) return;
+      if (loadStartedRef.current) return;
+      liveNavAttemptedRef.current = false;
+      navigateToLiveUrl(label);
+    };
+
+    const reload100 = setTimeout(() => tryReloadBlank("t100"), 100);
+    const reload500 = setTimeout(() => tryReloadBlank("t500"), 500);
+    const navigate1500 = setTimeout(() => tryNavigateLive("t1500"), 1500);
+    const kickTimer = setTimeout(() => tryNavigateLive("t3000"), 3000);
 
     const slowTimer = setTimeout(() => setShowSlowOptions(true), 8000);
 
     const stuckTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) {
+        pushNativeDiagRef.current(
+          "stuck_timeout",
+          `events=${diagLogsRef.current.length} load=${loadStartedRef.current} blank=${blankBootReadyRef.current}`,
+        );
         setShowOverlay(false);
         showStuckHelpRef.current = true;
         setShowStuckHelp(true);
         flushDiagSummary();
         setTimeout(() => showDiagAlert("Load stalled"), 400);
       }
-    }, 30000);
+    }, 60000);
     const blankTimer = setTimeout(() => {
       if (!webUiConfirmedRef.current) {
         setShowOverlay(false);
@@ -517,12 +618,15 @@ export default function MainScreen() {
     }, 45000);
 
     return () => {
+      clearTimeout(reload100);
+      clearTimeout(reload500);
+      clearTimeout(navigate1500);
       clearTimeout(kickTimer);
       clearTimeout(slowTimer);
       clearTimeout(stuckTimer);
       clearTimeout(blankTimer);
     };
-  }, [entryUrl, pushNativeDiag, showDiagAlert, flushDiagSummary]);
+  }, [entryUrl, navigateToLiveUrl]);
 
   const reload = useCallback(() => {
     setError(false);
@@ -535,13 +639,23 @@ export default function MainScreen() {
     readyRef.current = false;
     webUiConfirmedRef.current = false;
     loadStartedRef.current = false;
+    blankBootReadyRef.current = false;
+    liveNavAttemptedRef.current = false;
+    loadProgressBucketRef.current = -1;
     entrySessionRef.current = null;
     setAppReady(false);
     webviewRef.current?.clearCache?.(true);
     reloadCountRef.current += 1;
     pushNativeDiag("reload", `count=${reloadCountRef.current}`);
-    void prepareNativeUserProfileForWebView().then(({ subscriberEmail, sessionId }) => {
-      setEntryUrl(shellEntryUrl(subscriberEmail, sessionId));
+    void Promise.all([
+      prepareNativeUserProfileForWebView(),
+      fetch(`${APP_ORIGIN}/native-manifest.json`, { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => null),
+    ]).then(([profile, manifest]) => {
+      const builtAt =
+        manifest && typeof manifest.builtAt === "string" ? manifest.builtAt : undefined;
+      setEntryUrl(shellEntryUrl(profile.subscriberEmail, profile.sessionId, builtAt));
     });
   }, [pushNativeDiag]);
 
@@ -557,6 +671,9 @@ export default function MainScreen() {
 
   const onShouldStartLoadWithRequest = (event: ShouldStartLoadRequest): boolean => {
     const { url, navigationType } = event;
+    if (!loadStartedRef.current && url && url !== "about:blank") {
+      pushNativeDiag("should_load", url.slice(0, 140));
+    }
     if (!url || url === "about:blank") return true;
     if (url.startsWith("shepherdspath://app-ready")) {
       onWebUiVisible();
@@ -581,90 +698,10 @@ export default function MainScreen() {
     return false;
   };
 
-  if (error) {
-    return (
-      <SafeAreaView style={styles.errorContainer} edges={["top", "bottom"]}>
-        <StatusBar style="light" />
-        <Text style={styles.errorIcon}>🙏</Text>
-        <Text style={styles.errorTitle}>Unable to Connect</Text>
-        <Text style={styles.errorMessage}>
-          Shepherd&apos;s Path couldn&apos;t load. Check your connection, then try again — or open
-          the site in Safari.
-        </Text>
-        <Pressable
-          onPress={reload}
-          style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Text style={styles.primaryButtonText}>Try Again</Text>
-        </Pressable>
-        <Pressable onPress={openInSafari} style={styles.secondaryButton}>
-          <Text style={styles.secondaryText}>Open in Safari</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
 
-  if (!entryUrl) {
-    return (
-      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <StatusBar style="light" />
-        <View style={styles.webviewLoading} />
-      </SafeAreaView>
-    );
-  }
-
-  webViewHandlersRef.current = {
-    onShouldStartLoadWithRequest,
-    onRefresh: onPullRefresh,
-    renderLoading: () => <View style={styles.webviewLoading} />,
-    onLoadStart: () => {
-      setError(false);
-      loadStartedRef.current = true;
-      pushNativeDiag("onLoadStart", entryUrl);
-    },
-    onLoadProgress: ({ nativeEvent }) => {
-      if (nativeEvent.progress >= 0.25 && nativeEvent.progress < 0.3) {
-        pushNativeDiag("onLoadProgress", `${Math.round(nativeEvent.progress * 100)}%`);
-      }
-      if (nativeEvent.progress >= 0.99) {
-        pushNativeDiag("onLoadProgress", "100%");
-      }
-    },
-    onLoadEnd: (e) => {
-      setPullRefreshing(false);
-      loadStartedRef.current = true;
-      const pageUrl = e.nativeEvent.url || entryUrl;
-      pushNativeDiag("onLoadEnd", pageUrl);
-      if (shouldBootstrapWebView(pageUrl) && !webUiConfirmedRef.current) {
-        webviewRef.current?.injectJavaScript(
-          `(function(){try{if(window.__spKickNativeBundleDone)return;var s=document.createElement('script');s.src='${APP_ORIGIN}/boot-native.js?t='+Date.now();document.head.appendChild(s);}catch(e){}true;})();`,
-        );
-      }
-    },
-    onError: (e) => {
-      setPullRefreshing(false);
-      pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));
-      setShowOverlay(false);
-      setError(true);
-    },
-    onHttpError: (e) => {
-      if (e.nativeEvent.statusCode >= 400) {
-        pushNativeDiag("onHttpError", String(e.nativeEvent.statusCode));
-        setShowOverlay(false);
-        setError(true);
-      }
-    },
-    onContentProcessDidTerminate: () => {
-      pushNativeDiag("onContentProcessDidTerminate", "reload");
-      reload();
-    },
-    onNavigationStateChange: (nav) => {
-      if (nav.loading || isBlankWebViewUrl(nav.url || "")) return;
-      pushNativeDiag("navigation", `${nav.title || ""} | ${nav.url || ""}`.trim());
-    },
-    onMessage: (e) => {
-          try {
-            const data = JSON.parse(e.nativeEvent.data);
+  const handleWebViewMessage = useCallback((data: Record<string, unknown>) => {
+    try {
+            
             if (data.type === "sp_user_profile") {
               const patch: {
                 sessionId?: string;
@@ -844,29 +881,74 @@ export default function MainScreen() {
                 }, 12000);
               }
             }
-          } catch {
-            /* noop */
-          }
-    },
-  };
+          
+    } catch {
+      /* noop */
+    }
+  }, [
+    enablePhilipVoiceBridge,
+    injectProfileSeed,
+    loadPhilipVoice,
+    onWebUiVisible,
+    pushNativeDiag,
+    router,
+    showDiagAlert,
+    flushDiagSummary,
+  ]);
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.errorContainer} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <Text style={styles.errorIcon}>🙏</Text>
+        <Text style={styles.errorTitle}>Unable to Connect</Text>
+        <Text style={styles.errorMessage}>
+          Shepherd&apos;s Path couldn&apos;t load. Check your connection, then try again — or open
+          the site in Safari.
+        </Text>
+        <Pressable
+          onPress={reload}
+          style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={styles.primaryButtonText}>Try Again</Text>
+        </Pressable>
+        <Pressable onPress={openInSafari} style={styles.secondaryButton}>
+          <Text style={styles.secondaryText}>Open in Safari</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!entryUrl) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.webviewLoading} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <SubscriptionWebSync webviewRef={webviewRef} appReady={appReady} />
-      <StableWebView
-        key="sp-main-webview"
+      {appReady && (
+        <SubscriptionWebSync
+          webviewRef={webviewRef}
+          appReady={appReady}
+          webUiConfirmedRef={webUiConfirmedRef}
+        />
+      )}
+      <WebView
+        key="sp-native-blank-boot"
         ref={webviewRef}
-        uri={entryUrl}
-        handlersRef={webViewHandlersRef}
+        source={{ html: BLANK_BOOT_HTML, baseUrl: APP_ORIGIN }}
         style={styles.webview}
-        originWhitelist={["https://*", "http://*", "shepherdspath://*"]}
+        originWhitelist={["https://*", "http://*", "about://*", "shepherdspath://*"]}
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
         allowsBackForwardNavigationGestures={false}
-        pullToRefreshEnabled={Platform.OS === "ios"}
-        refreshing={pullRefreshing}
+        pullToRefreshEnabled={false}
         scrollEnabled
         bounces
         {...(Platform.OS === "ios" ? { decelerationRate: "normal" as const } : { overScrollMode: "always" as const })}
@@ -875,7 +957,70 @@ export default function MainScreen() {
         mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
         allowsFullscreenVideo
         setSupportMultipleWindows={false}
-        cacheEnabled={false}
+        cacheEnabled
+        onMessage={(e) => {
+          try {
+            handleWebViewMessage(JSON.parse(e.nativeEvent.data) as Record<string, unknown>);
+          } catch {
+            /* noop */
+          }
+        }}
+        onLoadStart={(e) => {
+          setError(false);
+          loadStartedRef.current = true;
+          pushNativeDiag("onLoadStart", e.nativeEvent.url || entryUrl || "blank");
+        }}
+        onLoadProgress={({ nativeEvent }) => {
+          const pct = Math.round(nativeEvent.progress * 100);
+          const bucket =
+            pct >= 99 ? 100 : pct >= 75 ? 75 : pct >= 50 ? 50 : pct >= 25 ? 25 : pct > 0 ? 1 : 0;
+          if (bucket !== loadProgressBucketRef.current) {
+            loadProgressBucketRef.current = bucket;
+            pushNativeDiag("onLoadProgress", `${pct}%`);
+          }
+        }}
+        renderLoading={() => <View style={styles.webviewLoading} />}
+        onLoadEnd={(e) => {
+          setPullRefreshing(false);
+          const pageUrl = e.nativeEvent.url || "";
+          pushNativeDiag("onLoadEnd", pageUrl);
+
+          if (!blankBootReadyRef.current) {
+            blankBootReadyRef.current = true;
+            pushNativeDiag("blank_boot_ready", pageUrl || "blank");
+            navigateToLiveUrl("blank_ready");
+            return;
+          }
+
+          loadStartedRef.current = true;
+          injectProfileSeedDuringBoot();
+          if (shouldBootstrapWebView(pageUrl) && !webUiConfirmedRef.current) {
+            webviewRef.current?.injectJavaScript(
+              `(function(){try{if(window.__spKickNativeBundleDone)return;var s=document.createElement('script');s.src='${APP_ORIGIN}/boot-native.js?t='+Date.now();document.head.appendChild(s);}catch(e){}true;})();`,
+            );
+          }
+        }}
+        onError={(e) => {
+          setPullRefreshing(false);
+          pushNativeDiag("onError", String(e.nativeEvent.description || "unknown"));
+          setShowOverlay(false);
+          setError(true);
+        }}
+        onHttpError={(e) => {
+          if (e.nativeEvent.statusCode >= 400) {
+            pushNativeDiag("onHttpError", String(e.nativeEvent.statusCode));
+            setShowOverlay(false);
+            setError(true);
+          }
+        }}
+        onContentProcessDidTerminate={() => {
+          pushNativeDiag("onContentProcessDidTerminate", "reload");
+          reload();
+        }}
+        onNavigationStateChange={(nav) => {
+          if (nav.loading || isBlankWebViewUrl(nav.url || "")) return;
+          pushNativeDiag("navigation", `${nav.title || ""} | ${nav.url || ""}`.trim());
+        }}
         {...(Platform.OS === "android"
           ? { thirdPartyCookiesEnabled: true, mixedContentMode: "compatibility" as const }
           : {})}
@@ -931,13 +1076,26 @@ export default function MainScreen() {
           style={[styles.stuckSheet, styles.stuckSheetOverWebview]}
           pointerEvents="auto"
         >
-          <Text style={styles.stuckTitle}>Having trouble loading?</Text>
+          <Pressable
+            onLongPress={() => router.push("/webview-test")}
+            delayLongPress={600}
+          >
+            <Text style={styles.stuckTitle}>Having trouble loading?</Text>
+          </Pressable>
           <Text style={styles.stuckText}>
             The app didn&apos;t finish loading. Refresh for a clean start, or use Safari.
           </Text>
-          <Text style={styles.diagText} selectable>
-            {diagSummary || "Waiting for load diagnostics…"}
-          </Text>
+          <ScrollView
+            style={styles.diagScroll}
+            contentContainerStyle={styles.diagText}
+            nestedScrollEnabled
+          >
+            <Text style={styles.diagLine} selectable>
+              {diagSummary ||
+                formatDiagLines(diagLogsRef.current, 24) ||
+                "Waiting for load diagnostics…"}
+            </Text>
+          </ScrollView>
           <Pressable
             onPress={reload}
             style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.85 : 1 }]}
@@ -946,6 +1104,12 @@ export default function MainScreen() {
           </Pressable>
           <Pressable onPress={openInSafari} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Open in Safari</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/webview-test")}
+            style={styles.secondaryButton}
+          >
+            <Text style={styles.secondaryText}>Run WebView test</Text>
           </Pressable>
         </View>
       )}
@@ -1067,19 +1231,23 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 8,
   },
+  diagScroll: {
+    width: "100%",
+    maxWidth: 320,
+    maxHeight: 160,
+    marginBottom: 8,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 8,
+  },
   diagText: {
+    padding: 10,
+  },
+  diagLine: {
     fontSize: 10,
     lineHeight: 14,
     color: "#a89ab0",
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     textAlign: "left",
-    width: "100%",
-    maxWidth: 320,
-    maxHeight: 140,
-    marginBottom: 8,
-    padding: 10,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    borderRadius: 8,
   },
   primaryButton: {
     width: "100%",
