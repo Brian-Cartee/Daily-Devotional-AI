@@ -60,8 +60,10 @@ function swCacheVersionPlugin() {
           if (moduleSrc && !html.includes(`modulepreload" href="${moduleSrc}"`)) {
             html = html.replace(
               "</head>",
-              `  <link rel="modulepreload" href="${moduleSrc}">\n</head>`,
+              `  <link rel="modulepreload" href="${moduleSrc}">\n  <meta name="sp-main-js" content="${moduleSrc}">\n</head>`,
             );
+          } else if (moduleSrc && !html.includes('meta name="sp-main-js"')) {
+            html = html.replace("</head>", `  <meta name="sp-main-js" content="${moduleSrc}">\n</head>`);
           }
           // Remove Vite's default module tag — load the bundle AFTER window load so
           // WKWebView onLoadEnd native inject cannot re-enter JS mid-module-eval (build 200).

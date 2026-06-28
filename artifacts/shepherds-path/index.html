@@ -143,6 +143,139 @@
           window.__spNativePostQueue.push(typeof msg === "string" ? msg : JSON.stringify(msg));
         } catch (e) {}
       };
+
+      // Gate A: load main bundle from HEAD — do not wait for bottom bridge script (build 200).
+      function bootDiag(event, detail) {
+        var entry = {
+          type: "sp_diag",
+          event: String(event || ""),
+          detail: String(detail || "").slice(0, 500),
+          ts: Date.now(),
+        };
+        window.__spDiagLogs = window.__spDiagLogs || [];
+        window.__spDiagLogs.push(entry);
+        if (window.__spDiagLogs.length > 48) window.__spDiagLogs.shift();
+        try {
+          if (window.__spNativePostRaw) window.__spNativePostRaw(JSON.stringify(entry));
+        } catch (e) {}
+      }
+
+      function resolveMainModuleSrcEarly(done) {
+        var src = null;
+        var links = document.getElementsByTagName("link");
+        var i;
+        for (i = 0; i < links.length; i++) {
+          if (links[i].rel === "modulepreload" && (links[i].href || "").indexOf("/assets/index-") !== -1) {
+            src = links[i].getAttribute("href");
+            break;
+          }
+        }
+        if (src) {
+          bootDiag("boot_src_preload", src);
+          done(src);
+          return;
+        }
+        var meta = document.querySelector('meta[name="sp-main-js"]');
+        if (meta && meta.getAttribute("content")) {
+          src = meta.getAttribute("content");
+          bootDiag("boot_src_meta", src);
+          done(src);
+          return;
+        }
+        var origin =
+          location.protocol === "http:" || location.protocol === "https:"
+            ? location.origin
+            : "https://www.shepherdspathai.com";
+        bootDiag("boot_src_fetch", "manifest");
+        fetch(origin + "/native-manifest.json", { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (j && j.mainJs) {
+              bootDiag("boot_src_manifest", j.mainJs);
+              done(j.mainJs);
+            } else {
+              bootDiag("boot_src_manifest_empty", "");
+              done(null);
+            }
+          })
+          .catch(function (e) {
+            bootDiag("boot_src_manifest_fail", String(e));
+            done(null);
+          });
+      }
+
+      function scheduleNativeMainBundleBoot() {
+        if (window.__spMainBundleBootScheduled) return;
+        window.__spMainBundleBootScheduled = true;
+        bootDiag("boot_schedule", "head");
+        var nativeDelay = 3000;
+        resolveMainModuleSrcEarly(function (src) {
+          if (!src) {
+            bootDiag("boot_src_missing", "no bundle url");
+            return;
+          }
+          function appendMainModule() {
+            if (window.__spMainModuleLoading) return;
+            if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
+            window.__spMainModuleLoading = true;
+            bootDiag("module_load_start", src);
+            window.__spModuleEvaluating = true;
+            var s = document.createElement("script");
+            s.type = "module";
+            s.src = src;
+            s.setAttribute("data-sp-main", "1");
+            s.addEventListener("load", function () {
+              window.__spModuleEvaluating = false;
+              bootDiag("module_script_loaded", src);
+              setTimeout(function () {
+                var mount = document.getElementById("sp-app-mount");
+                if (!mount || !mount.firstElementChild || window.__spNativeBridgeNotified) return;
+                try {
+                  window.__spNativePostRaw(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+                  if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+                } catch (e) {}
+                try {
+                  if (window.__spSignalReady) window.__spSignalReady();
+                } catch (e2) {}
+              }, 800);
+            });
+            s.addEventListener("error", function () {
+              window.__spModuleEvaluating = false;
+              bootDiag("module_script_error", src);
+            });
+            (document.head || document.documentElement).appendChild(s);
+          }
+          function runAfterDelay() {
+            var loadAt = window.__spPageLoadAt || 0;
+            var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
+            bootDiag("boot_wait_ms", String(wait));
+            setTimeout(appendMainModule, wait);
+          }
+          if (document.readyState === "complete") {
+            if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
+            runAfterDelay();
+          } else {
+            window.addEventListener(
+              "load",
+              function () {
+                window.__spPageLoadAt = Date.now();
+                bootDiag("boot_page_load", "");
+                runAfterDelay();
+              },
+              { once: true },
+            );
+          }
+          setTimeout(function () {
+            if (!window.__spMainModuleLoading) runAfterDelay();
+          }, nativeDelay + 800);
+        });
+      }
+
+      bootDiag("boot_head_ready", "");
+      window.__spScheduleMainModuleBoot = scheduleNativeMainBundleBoot;
+      scheduleNativeMainBundleBoot();
     })();
     </script>
     <script>
@@ -1189,7 +1322,7 @@
         var bridgeAttempts = 0;
         var bridgeTimer = setInterval(function () {
           bridgeAttempts += 1;
-          if (tryStartNativeBridge() || bridgeAttempts >= 120) {
+          if (tryStartNativeBridge() || bridgeAttempts >= 600) {
             clearInterval(bridgeTimer);
           }
         }, 50);
