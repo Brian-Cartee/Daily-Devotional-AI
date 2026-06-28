@@ -9,6 +9,36 @@ const PORT = process.env.PORT || "3000";
 const distDir = path.join(__dirname, "dist/public");
 const indexPath = path.join(distDir, "index.html");
 const nativeShellPath = path.join(distDir, "native-shell.html");
+const manifestPath = path.join(distDir, "native-manifest.json");
+
+function readManifest() {
+  try {
+    return JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+/** 302 native app entry to ?_cb=builtAt so WKWebView cannot serve stale cached HTML. */
+function nativeCacheBustRedirect(reqUrl) {
+  const raw = reqUrl || "/";
+  const qmark = raw.indexOf("?");
+  const pathOnly = qmark >= 0 ? raw.slice(0, qmark) : raw;
+  const qs = qmark >= 0 ? raw.slice(qmark + 1) : "";
+  if (pathOnly !== "/" && pathOnly !== "/index.html") return null;
+  if (!qs.includes("native=1")) return null;
+
+  const manifest = readManifest();
+  const builtAt = manifest?.builtAt;
+  if (!builtAt) return null;
+
+  const params = new URLSearchParams(qs);
+  if (params.get("_cb") === builtAt) return null;
+
+  params.set("_cb", builtAt);
+  const base = pathOnly === "/index.html" ? "/index.html" : "/";
+  return `${base}?${params.toString()}`;
+}
 
 function wantsNativeBootstrap(url) {
   const q = (url || "").split("?")[1] || "";
@@ -77,6 +107,17 @@ function statFile(p) {
 }
 
 const server = http.createServer((req, res) => {
+  const bustTarget = nativeCacheBustRedirect(req.url);
+  if (bustTarget && bustTarget !== req.url) {
+    res.writeHead(302, {
+      Location: bustTarget,
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+    });
+    res.end();
+    return;
+  }
+
   if (wantsNativeBootstrap(req.url) && fs.existsSync(nativeShellPath)) {
     const sendFile = (filePath, status = 200) => {
       fs.readFile(filePath, (err, data) => {
