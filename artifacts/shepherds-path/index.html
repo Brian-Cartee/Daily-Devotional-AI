@@ -756,8 +756,12 @@
         diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
         if (isBenignShellError(text) || isBenignShellError(extra)) return;
         try {
-          if (window.__spPostToNative) {
+          if (window.__spPostToNative && !window.__spDeferNativePostMessage) {
             window.__spPostToNative({ type: "js_error", msg: text, detail: extra });
+          } else if (window.__spPostToNative && window.__spDeferNativePostMessage) {
+            window.__spDeferNativePostMessage = false;
+            window.__spPostToNative({ type: "js_error", msg: text, detail: extra });
+            window.__spDeferNativePostMessage = true;
           } else {
             bridge.postMessage(JSON.stringify({ type: "js_error", msg: text, detail: extra }));
           }

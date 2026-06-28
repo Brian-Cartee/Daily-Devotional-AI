@@ -63,10 +63,34 @@ function swCacheVersionPlugin() {
               `  <link rel="modulepreload" href="${moduleSrc}">\n</head>`,
             );
           }
-          // Remove Vite's default module tag — re-insert AFTER the native bridge so
-          // window.onerror / __spDiag exist before the bundle evaluates in WKWebView.
+          // Remove Vite's default module tag — load the bundle AFTER window load so
+          // WKWebView onLoadEnd native inject cannot re-enter JS mid-module-eval (build 200).
           html = html.replace(moduleTag[0], "");
-          const moduleInsert = `${moduleTag[0].trim()}\n`;
+          const loaderScript = `<script type="module">
+(function(){
+  var src=${JSON.stringify(moduleSrc)};
+  function start(){
+    if(window.__spMainModuleLoading)return;
+    window.__spMainModuleLoading=true;
+    try{window.__spDiag&&window.__spDiag("module_load_start",src);}catch(e){}
+    import(src).then(function(){
+      try{window.__spDiag&&window.__spDiag("module_script_loaded",src);}catch(e){}
+    }).catch(function(err){
+      var msg=String((err&&err.message)||err||"import failed");
+      try{window.__spDiag&&window.__spDiag("module_script_error",src+" "+msg);}catch(e){}
+      try{
+        if(window.ReactNativeWebView){
+          window.ReactNativeWebView.postMessage(JSON.stringify({type:"js_error",msg:msg,detail:src}));
+        }
+      }catch(e2){}
+    });
+  }
+  function schedule(){setTimeout(start,0);}
+  if(document.readyState==="complete")schedule();
+  else window.addEventListener("load",schedule,{once:true});
+})();
+</script>`;
+          const moduleInsert = `${loaderScript}\n`;
           if (html.includes("<!-- SP_NATIVE_BRIDGE_END -->")) {
             html = html.replace(
               "<!-- SP_NATIVE_BRIDGE_END -->",
