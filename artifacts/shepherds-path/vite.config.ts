@@ -84,55 +84,84 @@ function swCacheVersionPlugin() {
     if (path.indexOf("http") === 0) return path;
     return (location.origin || "https://www.shepherdspathai.com") + path;
   }
-  function waitMs(ms, cb) {
-    var end = performance.now() + ms;
-    function tick() {
-      if (performance.now() >= end) { cb(); return; }
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }
   function resolveSrc() {
     var meta = document.querySelector('meta[name="sp-main-js"]');
     if (meta && meta.getAttribute("content")) return meta.getAttribute("content");
     return SRC;
   }
+  function signalReactBooted() {
+    var attempts = 0;
+    var t = setInterval(function () {
+      attempts += 1;
+      var mount = document.getElementById("sp-app-mount");
+      if (mount && mount.firstElementChild && !window.__spNativeBridgeNotified) {
+        clearInterval(t);
+        try {
+          var msg = JSON.stringify({ type: "react_booted", ts: Date.now() });
+          if (window.__spNativePostRaw) window.__spNativePostRaw(msg);
+          else if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+          if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+        } catch (e) {}
+        try {
+          if (window.__spSignalReady) window.__spSignalReady();
+        } catch (e2) {}
+      }
+      if (attempts >= 160) clearInterval(t);
+    }, 50);
+  }
+  function doImport(abs) {
+    if (window.__spMainModuleLoading) {
+      bootLog("boot_import_skip", "busy");
+      return;
+    }
+    window.__spMainModuleLoading = true;
+    bootLog("boot_kick", document.readyState);
+    bootLog("module_load_start", abs);
+    window.__spModuleEvaluating = true;
+    var s = document.createElement("script");
+    s.type = "module";
+    s.src = abs;
+    s.setAttribute("data-sp-main", "1");
+    s.addEventListener("load", function () {
+      window.__spModuleEvaluating = false;
+      bootLog("module_script_loaded", abs);
+      signalReactBooted();
+    });
+    s.addEventListener("error", function () {
+      window.__spModuleEvaluating = false;
+      bootLog("module_script_error", abs);
+    });
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function scheduleImport(abs) {
+    function kick() {
+      if (!window.__spMainModuleLoading) doImport(abs);
+    }
+    if (document.readyState === "complete") {
+      kick();
+      return;
+    }
+    window.addEventListener("load", kick, { once: true });
+    var polls = 0;
+    var pollTimer = setInterval(function () {
+      polls += 1;
+      if (document.readyState === "complete") {
+        clearInterval(pollTimer);
+        kick();
+      }
+      if (polls >= 400) clearInterval(pollTimer);
+    }, 25);
+  }
   function runBoot() {
     var src = resolveSrc();
-    if (!src) { bootLog("boot_src_missing", ""); return; }
+    if (!src) {
+      bootLog("boot_src_missing", "");
+      return;
+    }
     var abs = absUrl(src);
     window.__spModuleSrc = abs;
     bootLog("boot_native_loader", src);
-    bootLog("boot_import_wait", "4000");
-    function kick() {
-      waitMs(4000, function () {
-        if (window.__spMainModuleLoading) { bootLog("boot_import_skip", "busy"); return; }
-        window.__spMainModuleLoading = true;
-        bootLog("module_load_start", abs);
-        window.__spModuleEvaluating = true;
-        import(abs).then(function () {
-          window.__spModuleEvaluating = false;
-          bootLog("module_script_loaded", abs);
-          waitMs(800, function () {
-            var mount = document.getElementById("sp-app-mount");
-            if (mount && mount.firstElementChild && !window.__spNativeBridgeNotified) {
-              try {
-                var msg = JSON.stringify({ type: "react_booted", ts: Date.now() });
-                if (window.__spNativePostRaw) window.__spNativePostRaw(msg);
-                else if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
-                if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
-              } catch (e) {}
-              try { if (window.__spSignalReady) window.__spSignalReady(); } catch (e2) {}
-            }
-          });
-        }).catch(function (err) {
-          window.__spModuleEvaluating = false;
-          bootLog("module_script_error", String((err && err.message) || err));
-        });
-      });
-    }
-    if (document.readyState === "complete") kick();
-    else window.addEventListener("load", kick, { once: true });
+    scheduleImport(abs);
   }
   function tryBoot() {
     if (!window.ReactNativeWebView) return false;
