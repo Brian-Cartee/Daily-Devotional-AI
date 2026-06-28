@@ -6,6 +6,7 @@ type NativePostWindow = Window & {
   __spNativePostQueueFlushed?: boolean;
   __spPostToNative?: (payload: string | Record<string, unknown>) => void;
   __spFlushNativePostQueue?: () => void;
+  __spNativePostRaw?: (msg: string) => void;
   ReactNativeWebView?: { postMessage: (s: string) => void };
 };
 
@@ -40,7 +41,12 @@ export function postToNativeShellImmediate(payload: string | Record<string, unkn
   if (typeof window === "undefined") return;
   try {
     const win = window as NativePostWindow;
-    win.ReactNativeWebView?.postMessage(serializePayload(payload));
+    const msg = serializePayload(payload);
+    if (win.__spNativePostRaw) {
+      win.__spNativePostRaw(msg);
+      return;
+    }
+    win.ReactNativeWebView?.postMessage(msg);
   } catch {
     /* noop */
   }

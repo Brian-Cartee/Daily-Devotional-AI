@@ -1,5 +1,6 @@
 import { getSessionId } from "./session";
 import { isNativeWebViewShell } from "./platform";
+import { postToNativeShell } from "./nativePostMessage";
 
 const USER_NAME_KEY = "sp_user_name";
 const NAME_PROMPTED_KEY = "sp_name_prompted";
@@ -48,20 +49,12 @@ function writeSessionMirror(key: string, value: string): void {
 
 function notifyNativeUserProfile(name: string | null, prompted: boolean): void {
   if (!isNativeWebViewShell()) return;
-  try {
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(
-      JSON.stringify({
-        type: "sp_user_profile",
-        sessionId: getSessionId(),
-        name: name ?? "",
-        prompted,
-      }),
-    );
-  } catch {
-    /* noop */
-  }
+  postToNativeShell({
+    type: "sp_user_profile",
+    sessionId: getSessionId(),
+    name: name ?? "",
+    prompted,
+  });
 }
 
 export function getUserName(): string | null {

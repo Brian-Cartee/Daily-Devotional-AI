@@ -1,3 +1,4 @@
+import { postToNativeShell } from "./nativePostMessage";
 import { isNativeWebViewShell } from "@/lib/platform";
 import { randomId } from "@/lib/randomId";
 
@@ -68,15 +69,7 @@ function writeSessionMirror(id: string): void {
 
 function notifyNativeSessionId(id: string): void {
   if (!isNativeWebViewShell()) return;
-  try {
-    (
-      window as Window & { ReactNativeWebView?: { postMessage: (s: string) => void } }
-    ).ReactNativeWebView?.postMessage(
-      JSON.stringify({ type: "sp_user_profile", sessionId: id, subscriberEmail: "" }),
-    );
-  } catch {
-    /* ignore */
-  }
+  postToNativeShell({ type: "sp_user_profile", sessionId: id, subscriberEmail: "" });
 }
 
 function persistSessionId(id: string): void {

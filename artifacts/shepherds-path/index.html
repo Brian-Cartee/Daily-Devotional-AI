@@ -104,6 +104,10 @@
             window.__spNativePostQueue.push(msg);
             return;
           }
+          if (window.__spNativePostRaw) {
+            window.__spNativePostRaw(msg);
+            return;
+          }
           bridge.postMessage(msg);
         } catch (e) {}
       };
@@ -117,9 +121,29 @@
         window.__spNativePostQueue = [];
         for (var i = 0; i < q.length; i++) {
           try {
-            bridge.postMessage(q[i]);
+            _spNativePostRaw(q[i]);
           } catch (e) {}
         }
+      };
+      var _spNativePostRaw = window.ReactNativeWebView.postMessage.bind(window.ReactNativeWebView);
+      window.__spNativePostRaw = _spNativePostRaw;
+      window.ReactNativeWebView.postMessage = function (msg) {
+        try {
+          if (!window.__spDeferNativePostMessage) {
+            return _spNativePostRaw(msg);
+          }
+          var o = null;
+          try {
+            o = typeof msg === "string" ? JSON.parse(msg) : msg;
+          } catch (e) {}
+          if (o && o.type === "react_booted") {
+            return _spNativePostRaw(msg);
+          }
+          if (o && (o.type === "sp_diag" || o.type === "js_error")) {
+            return _spNativePostRaw(msg);
+          }
+          window.__spNativePostQueue.push(typeof msg === "string" ? msg : JSON.stringify(msg));
+        } catch (e) {}
       };
     })();
     </script>
