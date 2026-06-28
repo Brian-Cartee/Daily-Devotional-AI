@@ -121,10 +121,14 @@ function swCacheVersionPlugin() {
       if (attempts >= 160) clearInterval(t);
     }, 50);
   }
-  function fallbackImport(abs) {
-    if (window.__spMainModuleLoading || window.__spBootstrapDone) return;
+  function kickImport(abs) {
+    if (window.__spMainModuleLoading || window.__spBootstrapDone) {
+      bootLog("boot_import_skip", window.__spBootstrapDone ? "bootstrap_done" : "busy");
+      return;
+    }
+    stripStaleModuleTags();
     window.__spMainModuleLoading = true;
-    bootLog("boot_fallback_import", abs);
+    bootLog("module_load_start", abs);
     window.__spModuleEvaluating = true;
     import(abs)
       .then(function () {
@@ -137,6 +141,35 @@ function swCacheVersionPlugin() {
         bootLog("module_script_error", String((err && err.message) || err));
       });
   }
+  function scheduleImport(abs) {
+    function kick() {
+      stripStaleModuleTags();
+      kickImport(abs);
+    }
+    if (document.readyState === "complete") {
+      bootLog("boot_kick", "complete");
+      kick();
+      return;
+    }
+    window.addEventListener(
+      "load",
+      function () {
+        bootLog("boot_kick", "load");
+        kick();
+      },
+      { once: true },
+    );
+    var polls = 0;
+    var pollTimer = setInterval(function () {
+      polls += 1;
+      if (document.readyState === "complete") {
+        clearInterval(pollTimer);
+        bootLog("boot_kick", "poll");
+        kick();
+      }
+      if (polls >= 400) clearInterval(pollTimer);
+    }, 25);
+  }
   function runBoot() {
     bootLog("boot_cb", location.search || "");
     stripStaleModuleTags();
@@ -147,16 +180,12 @@ function swCacheVersionPlugin() {
     }
     var abs = absUrl(src);
     bootLog("boot_native_loader", src);
-    bootLog("boot_defer_native", "bootstrap");
     var stripN = 0;
     var stripTimer = setInterval(function () {
       stripStaleModuleTags();
-      if (++stripN >= 120) clearInterval(stripTimer);
+      if (++stripN >= 160) clearInterval(stripTimer);
     }, 25);
-    setTimeout(function () {
-      if (window.__spMainModuleLoading || window.__spBootstrapDone) return;
-      fallbackImport(abs);
-    }, 8000);
+    scheduleImport(abs);
   }
   function tryBoot() {
     if (!window.ReactNativeWebView) return false;
