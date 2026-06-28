@@ -93,7 +93,14 @@
           var bridge = window.ReactNativeWebView;
           if (!bridge) return;
           var msg = typeof payload === "string" ? payload : JSON.stringify(payload);
+          var bypassQueue = false;
           if (window.__spDeferNativePostMessage) {
+            try {
+              var o = typeof payload === "string" ? JSON.parse(payload) : payload;
+              if (o && (o.type === "sp_diag" || o.type === "js_error")) bypassQueue = true;
+            } catch (e) {}
+          }
+          if (window.__spDeferNativePostMessage && !bypassQueue) {
             window.__spNativePostQueue.push(msg);
             return;
           }
