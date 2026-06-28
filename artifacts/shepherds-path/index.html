@@ -217,72 +217,85 @@
           });
       }
 
+      function planNativeBundleAppend(src, source) {
+        if (!src || window.__spMainModuleLoading) return;
+        if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
+        if (window.__spBundleAppendPlanned) return;
+        window.__spBundleAppendPlanned = true;
+        bootDiag("boot_src_ready", String(source || "head") + " " + src);
+        var nativeDelay = 3500;
+        function appendMainModule() {
+          if (window.__spMainModuleLoading) return;
+          if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
+          window.__spMainModuleLoading = true;
+          var absSrc = src.indexOf("http") === 0 ? src : (location.origin || "https://www.shepherdspathai.com") + src;
+          bootDiag("module_load_start", absSrc);
+          window.__spModuleEvaluating = true;
+          var s = document.createElement("script");
+          s.type = "module";
+          s.src = absSrc;
+          s.setAttribute("data-sp-main", "1");
+          s.addEventListener("load", function () {
+            window.__spModuleEvaluating = false;
+            bootDiag("module_script_loaded", absSrc);
+            setTimeout(function () {
+              var mount = document.getElementById("sp-app-mount");
+              if (!mount || !mount.firstElementChild || window.__spNativeBridgeNotified) return;
+              try {
+                if (window.__spNativePostRaw) {
+                  window.__spNativePostRaw(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+                } else if (window.ReactNativeWebView) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+                }
+                if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+              } catch (e) {}
+              try {
+                if (window.__spSignalReady) window.__spSignalReady();
+              } catch (e2) {}
+            }, 800);
+          });
+          s.addEventListener("error", function () {
+            window.__spModuleEvaluating = false;
+            bootDiag("module_script_error", absSrc);
+          });
+          (document.head || document.documentElement).appendChild(s);
+        }
+        function kick() {
+          var loadAt = window.__spPageLoadAt || 0;
+          var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
+          bootDiag("boot_wait_ms", String(wait));
+          setTimeout(appendMainModule, wait);
+        }
+        if (document.readyState === "complete") {
+          if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
+          kick();
+        } else {
+          window.addEventListener(
+            "load",
+            function () {
+              window.__spPageLoadAt = Date.now();
+              bootDiag("boot_page_load", "");
+              kick();
+            },
+            { once: true },
+          );
+        }
+        setTimeout(function () {
+          if (!window.__spMainModuleLoading) kick();
+        }, nativeDelay + 1200);
+      }
+      window.__spPlanNativeBundleAppend = planNativeBundleAppend;
+
       function scheduleNativeMainBundleBoot() {
-        if (window.__spMainBundleBootScheduled) return;
+        if (window.__spBundleBootKickStarted) return;
+        window.__spBundleBootKickStarted = true;
         bootDiag("boot_schedule", "head");
-        var nativeDelay = 3000;
         resolveMainModuleSrcEarly(function (src) {
           if (!src) {
             bootDiag("boot_src_missing", "no bundle url");
             return;
           }
-          if (window.__spMainBundleBootScheduled) return;
-          window.__spMainBundleBootScheduled = true;
-          function appendMainModule() {
-            if (window.__spMainModuleLoading) return;
-            if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
-            window.__spMainModuleLoading = true;
-            var absSrc = src.indexOf("http") === 0 ? src : (location.origin || "https://www.shepherdspathai.com") + src;
-            bootDiag("module_load_start", absSrc);
-            window.__spModuleEvaluating = true;
-            var s = document.createElement("script");
-            s.type = "module";
-            s.src = absSrc;
-            s.setAttribute("data-sp-main", "1");
-            s.addEventListener("load", function () {
-              window.__spModuleEvaluating = false;
-              bootDiag("module_script_loaded", src);
-              setTimeout(function () {
-                var mount = document.getElementById("sp-app-mount");
-                if (!mount || !mount.firstElementChild || window.__spNativeBridgeNotified) return;
-                try {
-                  window.__spNativePostRaw(JSON.stringify({ type: "react_booted", ts: Date.now() }));
-                  if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
-                } catch (e) {}
-                try {
-                  if (window.__spSignalReady) window.__spSignalReady();
-                } catch (e2) {}
-              }, 800);
-            });
-            s.addEventListener("error", function () {
-              window.__spModuleEvaluating = false;
-              bootDiag("module_script_error", src);
-            });
-            (document.head || document.documentElement).appendChild(s);
-          }
-          function runAfterDelay() {
-            var loadAt = window.__spPageLoadAt || 0;
-            var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
-            bootDiag("boot_wait_ms", String(wait));
-            setTimeout(appendMainModule, wait);
-          }
-          if (document.readyState === "complete") {
-            if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
-            runAfterDelay();
-          } else {
-            window.addEventListener(
-              "load",
-              function () {
-                window.__spPageLoadAt = Date.now();
-                bootDiag("boot_page_load", "");
-                runAfterDelay();
-              },
-              { once: true },
-            );
-          }
-          setTimeout(function () {
-            if (!window.__spMainModuleLoading) runAfterDelay();
-          }, nativeDelay + 800);
+          planNativeBundleAppend(src, "head");
         });
       }
 
@@ -1267,16 +1280,19 @@
       }
 
       function scheduleMainBundleBoot() {
-        if (window.__spMainBundleBootScheduled) return;
         diag("boot_schedule", "bridge");
         resolveMainModuleSrc(function (src) {
           if (!src) {
             diag("boot_src_missing", "no bundle url");
             return;
           }
-          if (window.__spMainBundleBootScheduled) return;
-          window.__spMainBundleBootScheduled = true;
-          var nativeDelay = 2800;
+          if (window.__spPlanNativeBundleAppend) {
+            window.__spPlanNativeBundleAppend(src, "bridge");
+            return;
+          }
+          if (window.__spBundleAppendPlanned) return;
+          window.__spBundleAppendPlanned = true;
+          var nativeDelay = 3500;
           function appendMainModule() {
             if (window.__spMainModuleLoading) return;
             if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
@@ -1293,7 +1309,7 @@
               try {
                 if (window.__spInstallShellErrorHandlers) window.__spInstallShellErrorHandlers();
               } catch (e) {}
-              diag("module_script_loaded", src);
+              diag("module_script_loaded", absSrc);
               setBootStatus("Loading app\u2026");
               setTimeout(function () {
                 if (!hasReactMounted() || window.__spNativeBridgeNotified) return;
@@ -1310,36 +1326,33 @@
             });
             s.addEventListener("error", function () {
               window.__spModuleEvaluating = false;
-              diag("module_script_error", src);
+              diag("module_script_error", absSrc);
               setBootStatus("Could not load app\u2026");
             });
             (document.head || document.documentElement).appendChild(s);
           }
-          function runAfterDelay() {
+          function kick() {
             var loadAt = window.__spPageLoadAt || 0;
             var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
+            diag("boot_wait_ms", String(wait));
             setTimeout(appendMainModule, wait);
-          }
-          if (!window.ReactNativeWebView) {
-            appendMainModule();
-            return;
           }
           if (document.readyState === "complete") {
             if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
-            runAfterDelay();
+            kick();
           } else {
             window.addEventListener(
               "load",
               function () {
                 window.__spPageLoadAt = Date.now();
-                runAfterDelay();
+                kick();
               },
               { once: true },
             );
           }
           setTimeout(function () {
-            if (!window.__spMainModuleLoading) runAfterDelay();
-          }, nativeDelay + 500);
+            if (!window.__spMainModuleLoading) kick();
+          }, nativeDelay + 1200);
         });
       }
 
