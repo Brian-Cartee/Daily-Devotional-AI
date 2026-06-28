@@ -1,5 +1,4 @@
 (function () {
-  if (!window.ReactNativeWebView) return;
   if (window.__spKickNativeBundleDone) return;
 
   function bootLog(evt, detail) {
@@ -110,7 +109,20 @@
       });
   }
 
-  bootLog("boot_cb", location.search || "");
-  if (document.readyState === "complete") run();
-  else window.addEventListener("load", run, { once: true });
+  function startBoot() {
+    if (window.__spKickNativeBundleDone) return true;
+    if (!window.ReactNativeWebView) return false;
+    bootLog("boot_cb", location.search || "");
+    if (document.readyState === "complete") run();
+    else window.addEventListener("load", run, { once: true });
+    return true;
+  }
+
+  if (startBoot()) return;
+  var polls = 0;
+  var pollTimer = setInterval(function () {
+    polls += 1;
+    startBoot();
+    if (window.__spKickNativeBundleDone || polls >= 400) clearInterval(pollTimer);
+  }, 25);
 })();
