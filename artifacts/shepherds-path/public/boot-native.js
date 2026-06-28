@@ -141,6 +141,7 @@
       window.__spModuleEvaluating = false;
       window.__spBootstrapDone = true;
       bootLog("module_script_loaded", abs);
+      if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
       signalReactBooted();
     });
     s.addEventListener("error", function () {

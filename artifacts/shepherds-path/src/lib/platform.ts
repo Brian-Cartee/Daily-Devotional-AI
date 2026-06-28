@@ -69,6 +69,8 @@ export function markNativeShellUiPainted(): void {
   document.documentElement.dataset.nativeUiReady = "1";
   removeNativeBootPlaceholder();
   void import("./nativeDiag").then(({ nativeDiag }) => nativeDiag("app_ready_sent"));
+  postToNativeShellImmediate({ type: "web_ui_visible" });
+  postToNativeShellImmediate({ type: "app_ready" });
   notifyNativeShellReady();
 }
 

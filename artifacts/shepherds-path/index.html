@@ -858,13 +858,7 @@
           var text = String(msg || "");
           var extra = String(detail || "");
           if (/Maximum call stack size exceeded/i.test(text + extra)) {
-            window.__spDiagLogs = window.__spDiagLogs || [];
-            window.__spDiagLogs.push({
-              type: "sp_diag",
-              event: eventName || "js_error",
-              detail: (text + (extra ? " | " + extra : "")).slice(0, 500),
-              ts: Date.now(),
-            });
+            diag(eventName || "stack_overflow", (text + (extra ? " | " + extra : "")).slice(0, 500));
             return;
           }
           diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
@@ -953,12 +947,20 @@
         spRemoveId("sp-fg-cover");
         sent = true;
         try {
-          if (window.__spPostToNative) {
+          if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+          var readyMsgs = [
+            JSON.stringify({ type: "web_ui_visible" }),
+            JSON.stringify({ type: "app_ready" }),
+          ];
+          if (window.__spNativePostRaw) {
+            window.__spNativePostRaw(readyMsgs[0]);
+            window.__spNativePostRaw(readyMsgs[1]);
+          } else if (window.__spPostToNative) {
             window.__spPostToNative({ type: "web_ui_visible" });
             window.__spPostToNative({ type: "app_ready" });
           } else {
-            bridge.postMessage(JSON.stringify({ type: "web_ui_visible" }));
-            bridge.postMessage(JSON.stringify({ type: "app_ready" }));
+            bridge.postMessage(readyMsgs[0]);
+            bridge.postMessage(readyMsgs[1]);
           }
         } catch (e) {}
       }
