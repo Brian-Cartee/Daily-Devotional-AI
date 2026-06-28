@@ -1060,13 +1060,106 @@
       }
       hookModuleScript();
 
-      setTimeout(function () {
-        try {
-          if (typeof window.__spScheduleMainModuleBoot === "function") {
-            window.__spScheduleMainModuleBoot();
+      function resolveMainModuleSrc(done) {
+        var src = null;
+        var links = document.getElementsByTagName("link");
+        var i;
+        for (i = 0; i < links.length; i++) {
+          if (links[i].rel === "modulepreload" && (links[i].href || "").indexOf("/assets/index-") !== -1) {
+            src = links[i].getAttribute("href");
+            break;
           }
-        } catch (e) {}
-      }, 400);
+        }
+        if (src) {
+          done(src);
+          return;
+        }
+        var origin =
+          location.protocol === "http:" || location.protocol === "https:"
+            ? location.origin
+            : "https://www.shepherdspathai.com";
+        fetch(origin + "/native-manifest.json", { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (j && j.mainJs) done(j.mainJs);
+          })
+          .catch(function () {});
+      }
+
+      function scheduleMainBundleBoot() {
+        if (window.__spMainBundleBootScheduled) return;
+        window.__spMainBundleBootScheduled = true;
+        resolveMainModuleSrc(function (src) {
+          var nativeDelay = 2800;
+          function appendMainModule() {
+            if (window.__spMainModuleLoading) return;
+            if (document.querySelector('script[type="module"][data-sp-main="1"]')) return;
+            window.__spMainModuleLoading = true;
+            diag("module_load_start", src);
+            window.__spModuleEvaluating = true;
+            var s = document.createElement("script");
+            s.type = "module";
+            s.src = src;
+            s.setAttribute("data-sp-main", "1");
+            s.addEventListener("load", function () {
+              window.__spModuleEvaluating = false;
+              try {
+                if (window.__spInstallShellErrorHandlers) window.__spInstallShellErrorHandlers();
+              } catch (e) {}
+              diag("module_script_loaded", src);
+              setBootStatus("Loading app\u2026");
+              setTimeout(function () {
+                if (!hasReactMounted() || window.__spNativeBridgeNotified) return;
+                try {
+                  if (window.__spNativePostRaw) {
+                    window.__spNativePostRaw(JSON.stringify({ type: "react_booted", ts: Date.now() }));
+                  }
+                  if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+                } catch (e2) {}
+                try {
+                  if (window.__spSignalReady) window.__spSignalReady();
+                } catch (e3) {}
+              }, 800);
+            });
+            s.addEventListener("error", function () {
+              window.__spModuleEvaluating = false;
+              diag("module_script_error", src);
+              setBootStatus("Could not load app\u2026");
+            });
+            (document.head || document.documentElement).appendChild(s);
+          }
+          function runAfterDelay() {
+            var loadAt = window.__spPageLoadAt || 0;
+            var wait = loadAt ? Math.max(0, nativeDelay - (Date.now() - loadAt)) : nativeDelay;
+            setTimeout(appendMainModule, wait);
+          }
+          if (!window.ReactNativeWebView) {
+            appendMainModule();
+            return;
+          }
+          if (document.readyState === "complete") {
+            if (!window.__spPageLoadAt) window.__spPageLoadAt = Date.now();
+            runAfterDelay();
+          } else {
+            window.addEventListener(
+              "load",
+              function () {
+                window.__spPageLoadAt = Date.now();
+                runAfterDelay();
+              },
+              { once: true },
+            );
+          }
+          setTimeout(function () {
+            if (!window.__spMainModuleLoading) runAfterDelay();
+          }, nativeDelay + 500);
+        });
+      }
+
+      scheduleMainBundleBoot();
+      window.__spScheduleMainModuleBoot = scheduleMainBundleBoot;
 
       // Dismiss native overlay once React has mounted real UI (fallback if components miss __spSignalReady).
       setTimeout(function () {
@@ -1110,9 +1203,12 @@
     <script>
     (function () {
       function ensureModuleFromPreload() {
+        if (window.ReactNativeWebView) return;
         var scripts = document.getElementsByTagName("script");
         var i;
         for (i = 0; i < scripts.length; i++) {
+          if (scripts[i].getAttribute("data-sp-boot-marker") === "1") continue;
+          if (scripts[i].getAttribute("data-sp-main") === "1") return;
           if (scripts[i].type === "module") return;
         }
         var src = null;
