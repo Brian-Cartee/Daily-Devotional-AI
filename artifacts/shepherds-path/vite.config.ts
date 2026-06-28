@@ -65,11 +65,95 @@ function swCacheVersionPlugin() {
           } else if (moduleSrc && !html.includes('meta name="sp-main-js"')) {
             html = html.replace("</head>", `  <meta name="sp-main-js" content="${moduleSrc}">\n</head>`);
           }
-          // Remove Vite's default module tag — boot-native.mjs loads the bundle after onLoadEnd.
+          // Remove Vite's default module tag — classic boot script loads the bundle after onLoadEnd.
           html = html.replace(moduleTag[0], "");
-          const bootTag = `  <script type="module" src="/boot-native.mjs" data-sp-boot-marker="1"></script>\n`;
-          if (moduleSrc && !html.includes('src="/boot-native.mjs"')) {
-            html = html.replace("</head>", `${bootTag}</head>`);
+          const bootScript = `<script data-sp-boot-marker="1">
+(function () {
+  var SRC = ${JSON.stringify(moduleSrc)};
+  function bootLog(evt, detail) {
+    try {
+      var entry = { type: "sp_diag", event: evt, detail: String(detail || "").slice(0, 500), ts: Date.now() };
+      window.__spDiagLogs = window.__spDiagLogs || [];
+      window.__spDiagLogs.push(entry);
+      if (window.__spNativePostRaw) window.__spNativePostRaw(JSON.stringify(entry));
+      else if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(entry));
+    } catch (e) {}
+  }
+  function absUrl(path) {
+    if (!path) return "";
+    if (path.indexOf("http") === 0) return path;
+    return (location.origin || "https://www.shepherdspathai.com") + path;
+  }
+  function waitMs(ms, cb) {
+    var end = performance.now() + ms;
+    function tick() {
+      if (performance.now() >= end) { cb(); return; }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function resolveSrc() {
+    var meta = document.querySelector('meta[name="sp-main-js"]');
+    if (meta && meta.getAttribute("content")) return meta.getAttribute("content");
+    return SRC;
+  }
+  function runBoot() {
+    var src = resolveSrc();
+    if (!src) { bootLog("boot_src_missing", ""); return; }
+    var abs = absUrl(src);
+    window.__spModuleSrc = abs;
+    bootLog("boot_native_loader", src);
+    bootLog("boot_import_wait", "4000");
+    function kick() {
+      waitMs(4000, function () {
+        if (window.__spMainModuleLoading) { bootLog("boot_import_skip", "busy"); return; }
+        window.__spMainModuleLoading = true;
+        bootLog("module_load_start", abs);
+        window.__spModuleEvaluating = true;
+        import(abs).then(function () {
+          window.__spModuleEvaluating = false;
+          bootLog("module_script_loaded", abs);
+          waitMs(800, function () {
+            var mount = document.getElementById("sp-app-mount");
+            if (mount && mount.firstElementChild && !window.__spNativeBridgeNotified) {
+              try {
+                var msg = JSON.stringify({ type: "react_booted", ts: Date.now() });
+                if (window.__spNativePostRaw) window.__spNativePostRaw(msg);
+                else if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+                if (window.__spFlushNativePostQueue) window.__spFlushNativePostQueue();
+              } catch (e) {}
+              try { if (window.__spSignalReady) window.__spSignalReady(); } catch (e2) {}
+            }
+          });
+        }).catch(function (err) {
+          window.__spModuleEvaluating = false;
+          bootLog("module_script_error", String((err && err.message) || err));
+        });
+      });
+    }
+    if (document.readyState === "complete") kick();
+    else window.addEventListener("load", kick, { once: true });
+  }
+  function tryBoot() {
+    if (!window.ReactNativeWebView) return false;
+    runBoot();
+    return true;
+  }
+  if (!tryBoot()) {
+    var n = 0;
+    var t = setInterval(function () {
+      n += 1;
+      if (tryBoot() || n >= 400) clearInterval(t);
+    }, 25);
+  }
+})();
+</script>
+`;
+          if (moduleSrc && !html.includes("SP_NATIVE_BOOT_START")) {
+            html = html.replace(
+              "<!-- SP_NATIVE_BRIDGE_END -->",
+              `${bootScript}<!-- SP_NATIVE_BRIDGE_END -->\n<!-- SP_NATIVE_BOOT_START -->`,
+            );
           }
         }
         const cssTag = html.match(/<link rel="stylesheet"[^>]*>\s*/i);
