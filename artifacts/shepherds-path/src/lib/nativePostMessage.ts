@@ -18,21 +18,11 @@ function serializePayload(payload: string | Record<string, unknown>): string {
 export function postToNativeShell(payload: string | Record<string, unknown>): void {
   if (typeof window === "undefined") return;
   const win = window as NativePostWindow;
-  if (win.__spDeferNativePostMessage) {
-    try {
-      const o = typeof payload === "string" ? (JSON.parse(payload) as Record<string, unknown>) : payload;
-      if (o?.type === "sp_diag" || o?.type === "js_error") {
-        postToNativeShellImmediate(payload);
-        return;
-      }
-    } catch {
-      /* fall through to queue */
-    }
-  }
   if (win.__spPostToNative) {
     win.__spPostToNative(payload);
     return;
   }
+  if (win.__spDeferNativePostMessage) return;
   postToNativeShellImmediate(payload);
 }
 

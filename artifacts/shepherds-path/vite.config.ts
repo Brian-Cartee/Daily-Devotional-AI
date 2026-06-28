@@ -69,55 +69,74 @@ function swCacheVersionPlugin() {
           const loaderScript = `<script type="module">
 (function(){
   var src=${JSON.stringify(moduleSrc)};
-  // Build 200 injects profile seed on WebView onLoadEnd while import() is still
-  // evaluating — overlapping injectJavaScript + module eval overflows WKWebView stack.
-  var NATIVE_IMPORT_DELAY_MS=2800;
-  function nativeImportDelayMs(){
-    return window.ReactNativeWebView?NATIVE_IMPORT_DELAY_MS:50;
-  }
-  function msUntilNativeImportReady(){
-    if(!window.ReactNativeWebView)return 0;
-    var loadAt=window.__spPageLoadAt||0;
-    if(!loadAt)return NATIVE_IMPORT_DELAY_MS;
-    return Math.max(0,NATIVE_IMPORT_DELAY_MS-(Date.now()-loadAt));
-  }
-  function start(){
-    if(window.__spMainModuleLoading)return;
-    var wait=msUntilNativeImportReady();
-    if(wait>0){setTimeout(start,wait);return;}
-    window.__spMainModuleLoading=true;
-    try{window.__spDiag&&window.__spDiag("module_load_start",src);}catch(e){}
-    import(src).then(function(){
-      try{window.__spDiag&&window.__spDiag("module_script_loaded",src);}catch(e){}
-    }).catch(function(err){
-      var msg=String((err&&err.message)||err||"import failed");
-      try{window.__spDiag&&window.__spDiag("module_script_error",src+" "+msg);}catch(e){}
-      try{
-        if(window.__spPostToNative){
-          window.__spPostToNative({type:"js_error",msg:msg,detail:src});
-        }else if(window.ReactNativeWebView){
-          window.ReactNativeWebView.postMessage(JSON.stringify({type:"js_error",msg:msg,detail:src}));
-        }
-      }catch(e2){}
-    });
-  }
-  function schedule(){setTimeout(start,nativeImportDelayMs());}
-  window.__spScheduleMainModuleBoot=schedule;
-  if(document.readyState==="complete"){
-    if(!window.__spPageLoadAt)window.__spPageLoadAt=Date.now();
-    schedule();
-  }else{
-    window.addEventListener("load",function(){
-      window.__spPageLoadAt=Date.now();
-      schedule();
-    },{once:true});
-    document.addEventListener("DOMContentLoaded",function(){
-      if(!window.__spPageLoadAt)window.__spPageLoadAt=Date.now();
-    },{once:true});
-  }
-  setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},600);
-  setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},3200);
-  setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},5000);
+          // Build 200 fires injectProfileSeed + probeWebReady (200/800/2000ms) on onLoadEnd.
+          // Wait past all of that before touching the JS bundle in WKWebView.
+          var NATIVE_IMPORT_DELAY_MS=4500;
+          function nativeImportDelayMs(){
+            return window.ReactNativeWebView?NATIVE_IMPORT_DELAY_MS:50;
+          }
+          function msUntilNativeImportReady(){
+            if(!window.ReactNativeWebView)return 0;
+            var loadAt=window.__spPageLoadAt||0;
+            if(!loadAt)return NATIVE_IMPORT_DELAY_MS;
+            return Math.max(0,NATIVE_IMPORT_DELAY_MS-(Date.now()-loadAt));
+          }
+          function onModuleReady(){
+            window.__spModuleEvaluating=false;
+            try{window.__spInstallShellErrorHandlers&&window.__spInstallShellErrorHandlers();}catch(e){}
+            try{window.__spDiag&&window.__spDiag("module_script_loaded",src);}catch(e){}
+          }
+          function onModuleFail(err){
+            window.__spModuleEvaluating=false;
+            var msg=String((err&&err.message)||err||"import failed");
+            try{window.__spDiag&&window.__spDiag("module_script_error",src+" "+msg);}catch(e){}
+            try{
+              if(window.__spPostToNative){
+                window.__spPostToNative({type:"js_error",msg:msg,detail:src});
+              }
+            }catch(e2){}
+          }
+          function loadViaScriptTag(){
+            var existing=document.querySelector('script[type="module"][data-sp-main="1"]');
+            if(existing)return;
+            var s=document.createElement("script");
+            s.type="module";
+            s.src=src;
+            s.setAttribute("data-sp-main","1");
+            s.addEventListener("load",onModuleReady);
+            s.addEventListener("error",function(){onModuleFail(new Error("script error"));});
+            (document.head||document.documentElement).appendChild(s);
+          }
+          function start(){
+            if(window.__spMainModuleLoading)return;
+            var wait=msUntilNativeImportReady();
+            if(wait>0){setTimeout(start,wait);return;}
+            window.__spMainModuleLoading=true;
+            window.__spModuleEvaluating=true;
+            try{window.__spDiag&&window.__spDiag("module_load_start",src);}catch(e){}
+            if(window.ReactNativeWebView){
+              loadViaScriptTag();
+              return;
+            }
+            import(src).then(onModuleReady).catch(onModuleFail);
+          }
+          function schedule(){setTimeout(start,nativeImportDelayMs());}
+          window.__spScheduleMainModuleBoot=schedule;
+          if(document.readyState==="complete"){
+            if(!window.__spPageLoadAt)window.__spPageLoadAt=Date.now();
+            schedule();
+          }else{
+            window.addEventListener("load",function(){
+              window.__spPageLoadAt=Date.now();
+              schedule();
+            },{once:true});
+            document.addEventListener("DOMContentLoaded",function(){
+              if(!window.__spPageLoadAt)window.__spPageLoadAt=Date.now();
+            },{once:true});
+          }
+          setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},600);
+          setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},4800);
+          setTimeout(function(){if(!window.__spMainModuleLoading)schedule();},7000);
 })();
 </script>`;
           const moduleInsert = `${loaderScript}\n`;
@@ -213,16 +232,7 @@ export default defineConfig(({ mode }) => {
       target: "es2020",
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes("node_modules")) return;
-            if (id.includes("react-dom") || /\/react\//.test(id)) return "vendor-react";
-            if (id.includes("@tanstack/react-query")) return "vendor-query";
-            if (id.includes("wouter")) return "vendor-router";
-          },
-        },
-      },
+      // Single bundle — split vendor-react chunk + import() caused WKWebView stack overflow on build 200.
     },
     server: {
       port,

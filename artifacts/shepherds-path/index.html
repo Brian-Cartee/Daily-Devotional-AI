@@ -93,14 +93,7 @@
           var bridge = window.ReactNativeWebView;
           if (!bridge) return;
           var msg = typeof payload === "string" ? payload : JSON.stringify(payload);
-          var bypassQueue = false;
           if (window.__spDeferNativePostMessage) {
-            try {
-              var o = typeof payload === "string" ? JSON.parse(payload) : payload;
-              if (o && (o.type === "sp_diag" || o.type === "js_error")) bypassQueue = true;
-            } catch (e) {}
-          }
-          if (window.__spDeferNativePostMessage && !bypassQueue) {
             window.__spNativePostQueue.push(msg);
             return;
           }
@@ -130,16 +123,6 @@
       window.ReactNativeWebView.postMessage = function (msg) {
         try {
           if (!window.__spDeferNativePostMessage) {
-            return _spNativePostRaw(msg);
-          }
-          var o = null;
-          try {
-            o = typeof msg === "string" ? JSON.parse(msg) : msg;
-          } catch (e) {}
-          if (o && o.type === "react_booted") {
-            return _spNativePostRaw(msg);
-          }
-          if (o && (o.type === "sp_diag" || o.type === "js_error")) {
             return _spNativePostRaw(msg);
           }
           window.__spNativePostQueue.push(typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -782,30 +765,50 @@
       }
 
       function reportShellError(msg, detail, eventName) {
-        var text = String(msg || "");
-        var extra = String(detail || "");
-        diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
-        if (isBenignShellError(text) || isBenignShellError(extra)) return;
+        if (window.__spReportingShellError) return;
+        window.__spReportingShellError = true;
         try {
-          if (window.__spPostToNative && !window.__spDeferNativePostMessage) {
+          var text = String(msg || "");
+          var extra = String(detail || "");
+          if (/Maximum call stack size exceeded/i.test(text + extra)) {
+            window.__spDiagLogs = window.__spDiagLogs || [];
+            window.__spDiagLogs.push({
+              type: "sp_diag",
+              event: eventName || "js_error",
+              detail: (text + (extra ? " | " + extra : "")).slice(0, 500),
+              ts: Date.now(),
+            });
+            return;
+          }
+          diag(eventName || "js_error", text + (extra ? " | " + extra : ""));
+          if (isBenignShellError(text) || isBenignShellError(extra)) return;
+          if (window.__spPostToNative) {
             window.__spPostToNative({ type: "js_error", msg: text, detail: extra });
-          } else if (window.__spPostToNative && window.__spDeferNativePostMessage) {
-            window.__spDeferNativePostMessage = false;
-            window.__spPostToNative({ type: "js_error", msg: text, detail: extra });
-            window.__spDeferNativePostMessage = true;
           } else {
             bridge.postMessage(JSON.stringify({ type: "js_error", msg: text, detail: extra }));
           }
-        } catch (e) {}
+        } catch (e) {
+        } finally {
+          window.__spReportingShellError = false;
+        }
       }
 
-      window.onerror = function (msg, url, line, col, err) {
-        reportShellError(msg, (url || "") + ":" + line + ":" + col + " " + (err && err.message), "window_onerror");
-      };
-      window.onunhandledrejection = function (ev) {
-        var reason = ev && ev.reason;
-        reportShellError(reason, reason && (reason.stack || reason.message), "unhandledrejection");
-      };
+      function installShellErrorHandlers() {
+        if (window.__spShellErrorHandlersInstalled) return;
+        window.__spShellErrorHandlersInstalled = true;
+        window.onerror = function (msg, url, line, col, err) {
+          reportShellError(
+            msg,
+            (url || "") + ":" + line + ":" + col + " " + (err && err.message),
+            "window_onerror",
+          );
+        };
+        window.onunhandledrejection = function (ev) {
+          var reason = ev && ev.reason;
+          reportShellError(reason, reason && (reason.stack || reason.message), "unhandledrejection");
+        };
+      }
+      window.__spInstallShellErrorHandlers = installShellErrorHandlers;
 
       window.addEventListener(
         "error",
