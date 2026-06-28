@@ -89,6 +89,18 @@ function swCacheVersionPlugin() {
     if (meta && meta.getAttribute("content")) return meta.getAttribute("content");
     return SRC;
   }
+  function stripStaleModuleTags() {
+    var scripts = document.getElementsByTagName("script");
+    var i;
+    for (i = scripts.length - 1; i >= 0; i--) {
+      var s = scripts[i];
+      if (s.type !== "module") continue;
+      var src = s.getAttribute("src") || "";
+      if (s.getAttribute("data-sp-main") === "1") continue;
+      if (src.indexOf("/assets/index-") >= 0) continue;
+      if (s.parentNode) s.parentNode.removeChild(s);
+    }
+  }
   function signalReactBooted() {
     var attempts = 0;
     var t = setInterval(function () {
@@ -109,59 +121,42 @@ function swCacheVersionPlugin() {
       if (attempts >= 160) clearInterval(t);
     }, 50);
   }
-  function doImport(abs) {
-    if (window.__spMainModuleLoading) {
-      bootLog("boot_import_skip", "busy");
-      return;
-    }
+  function fallbackImport(abs) {
+    if (window.__spMainModuleLoading || window.__spBootstrapDone) return;
     window.__spMainModuleLoading = true;
-    bootLog("boot_kick", document.readyState);
-    bootLog("module_load_start", abs);
+    bootLog("boot_fallback_import", abs);
     window.__spModuleEvaluating = true;
-    var s = document.createElement("script");
-    s.type = "module";
-    s.src = abs;
-    s.setAttribute("data-sp-main", "1");
-    s.addEventListener("load", function () {
-      window.__spModuleEvaluating = false;
-      bootLog("module_script_loaded", abs);
-      signalReactBooted();
-    });
-    s.addEventListener("error", function () {
-      window.__spModuleEvaluating = false;
-      bootLog("module_script_error", abs);
-    });
-    (document.head || document.documentElement).appendChild(s);
-  }
-  function scheduleImport(abs) {
-    function kick() {
-      if (!window.__spMainModuleLoading) doImport(abs);
-    }
-    if (document.readyState === "complete") {
-      kick();
-      return;
-    }
-    window.addEventListener("load", kick, { once: true });
-    var polls = 0;
-    var pollTimer = setInterval(function () {
-      polls += 1;
-      if (document.readyState === "complete") {
-        clearInterval(pollTimer);
-        kick();
-      }
-      if (polls >= 400) clearInterval(pollTimer);
-    }, 25);
+    import(abs)
+      .then(function () {
+        window.__spModuleEvaluating = false;
+        bootLog("module_script_loaded", abs);
+        signalReactBooted();
+      })
+      .catch(function (err) {
+        window.__spModuleEvaluating = false;
+        bootLog("module_script_error", String((err && err.message) || err));
+      });
   }
   function runBoot() {
+    bootLog("boot_cb", location.search || "");
+    stripStaleModuleTags();
     var src = resolveSrc();
     if (!src) {
       bootLog("boot_src_missing", "");
       return;
     }
     var abs = absUrl(src);
-    window.__spModuleSrc = abs;
     bootLog("boot_native_loader", src);
-    scheduleImport(abs);
+    bootLog("boot_defer_native", "bootstrap");
+    var stripN = 0;
+    var stripTimer = setInterval(function () {
+      stripStaleModuleTags();
+      if (++stripN >= 120) clearInterval(stripTimer);
+    }, 25);
+    setTimeout(function () {
+      if (window.__spMainModuleLoading || window.__spBootstrapDone) return;
+      fallbackImport(abs);
+    }, 8000);
   }
   function tryBoot() {
     if (!window.ReactNativeWebView) return false;
