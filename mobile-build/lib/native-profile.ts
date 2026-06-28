@@ -386,6 +386,11 @@ export const SCRAPE_WEB_SUBSCRIBER_JS = `(function(){
     function readCookie(n){try{var m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):'';}catch(e){return '';}}
     var em=(localStorage.getItem('sp-subscribed-email')||readCookie('sp_subscriber_email')||'').trim().toLowerCase();
     if(em.indexOf('@')>0&&window.ReactNativeWebView){
+      if(window.__spDeferNativePostMessage)return;
+      if(window.__spPostToNative){
+        window.__spPostToNative({type:'sp_subscriber_profile',email:em,subscribed:true});
+        return;
+      }
       window.ReactNativeWebView.postMessage(JSON.stringify({type:'sp_subscriber_profile',email:em,subscribed:true}));
     }
   }catch(e){}
