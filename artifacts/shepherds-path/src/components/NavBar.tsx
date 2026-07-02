@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Compass, Home, Mic, NotebookPen, Search, Sun } from "lucide-react";
+import { BookOpen, Church, Compass, Home, NotebookPen, Search, Sun } from "lucide-react";
 import { NavBarMoreMenu } from "@/components/NavBarMoreMenu";
 import { ConvictionTopWhisper } from "@/components/ConvictionTopWhisper";
 import { BrandIcon } from "@/components/BrandIcon";
@@ -15,7 +15,6 @@ import {
   setDevotionalEntryMode,
   type DevotionalEntryMode,
 } from "@/lib/devotionalEntry";
-import { TALK_IT_THROUGH_LABEL } from "@/lib/navigationLabels";
 import {
   grantCoachConsentThisSession,
   hasCoachConsentThisSession,
@@ -27,6 +26,7 @@ import { markReturningHome } from "@/lib/introState";
 import { applyHomeScrollToTop } from "@/lib/scrollPageToTop";
 import { openConvictionPanel } from "@/lib/openConvictionPanel";
 import { isNativeWebViewShell, usesCompactTopNav } from "@/lib/platform";
+import { signalNativeGateAReady } from "@/lib/gateAReady";
 import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import { getRhythm } from "@/lib/faithRhythm";
 import { useEmailSubscriptionStatus } from "@/hooks/use-email-subscription";
@@ -89,14 +89,8 @@ const BOTTOM_NAV_ITEMS = [
     bookmark: "devotional" as BookmarkSection,
     navId: "today",
   },
-  { href: "/guidance", label: TALK_IT_THROUGH_LABEL, icon: Mic, bookmark: null, navId: "guidance" },
-  {
-    href: "/understand",
-    label: "Journey",
-    icon: Compass,
-    bookmark: "journey" as BookmarkSection,
-    navId: "journey",
-  },
+  { href: "/understand", label: "Journeys", icon: Compass, bookmark: null, navId: "journeys" },
+  { href: "/church", label: "Church", icon: Church, bookmark: null, navId: "church" },
 ] as const;
 
 function BottomNavVisual({
@@ -170,6 +164,11 @@ export function NavBar({ showTop = true }: { showTop?: boolean } = {}) {
   const inNativeApp = isNativeWebViewShell();
   const compactTopNav = usesCompactTopNav();
   const entryOverlayActive = useEntryOverlayActive();
+
+  useLayoutEffect(() => {
+    if (!inNativeApp) return;
+    signalNativeGateAReady("bottom_nav");
+  }, [inNativeApp, location, entryOverlayActive]);
 
   const applyGuidanceTone = (mode: GuidanceMode) => {
     saveGuidanceMode(mode);
