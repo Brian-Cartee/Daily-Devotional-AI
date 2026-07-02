@@ -125,6 +125,11 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify({ followUpStatus }),
       }),
+    logContact: (id: number, data: { contactType: string; notes?: string }) =>
+      req<{ ok: boolean }>(`/church-admin/visitors/${id}/contacts`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
 };
 
@@ -226,6 +231,8 @@ export interface PrayerRequest {
   answered_text: string | null;
   pray_count: number;
   created_at: string;
+  urgency_flagged: boolean;
+  urgency_reason: string | null;
 }
 
 export interface Announcement {

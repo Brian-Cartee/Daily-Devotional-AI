@@ -8,6 +8,13 @@ const STATUS_OPTIONS: { value: VisitorFollowUpStatus; label: string }[] = [
   { value: "connected", label: "Connected" },
 ];
 
+const CONTACT_TYPE_OPTIONS = [
+  { value: "call", label: "Phone call" },
+  { value: "text", label: "Text message" },
+  { value: "email", label: "Email" },
+  { value: "in_person", label: "In person" },
+] as const;
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -44,6 +51,11 @@ export default function VisitorsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [openContactFormId, setOpenContactFormId] = useState<number | null>(null);
+  const [contactType, setContactType] = useState<string>("call");
+  const [contactNotes, setContactNotes] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
+  const [lastContactedIds, setLastContactedIds] = useState<Record<number, boolean>>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -99,6 +111,37 @@ export default function VisitorsPage() {
       alert(err instanceof Error ? err.message : "Could not update status");
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  function openContactForm(id: number) {
+    setOpenContactFormId(id);
+    setContactType("call");
+    setContactNotes("");
+  }
+
+  function closeContactForm() {
+    setOpenContactFormId(null);
+    setContactType("call");
+    setContactNotes("");
+  }
+
+  async function handleLogContact(id: number) {
+    setSavingContact(true);
+    try {
+      await api.visitors.logContact(id, {
+        contactType,
+        notes: contactNotes.trim() || undefined,
+      });
+      setVisitors((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, follow_up_status: "contacted" as const } : v)),
+      );
+      setLastContactedIds((prev) => ({ ...prev, [id]: true }));
+      closeContactForm();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Could not log contact");
+    } finally {
+      setSavingContact(false);
     }
   }
 
@@ -215,49 +258,141 @@ export default function VisitorsPage() {
                   border: "1px solid var(--border)",
                   borderRadius: 12,
                   padding: "16px 20px",
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: 16,
-                  alignItems: "center",
                 }}
               >
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>
-                    {displayName(v)}
-                  </div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                    {[v.email, v.phone].filter(Boolean).join(" · ") || "No contact info"}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                    Visited {formatVisitDate(v.visit_date)}
-                    {v.notes ? ` — ${v.notes}` : ""}
-                  </div>
-                </div>
-                <select
-                  value={status}
-                  disabled={updatingId === v.id}
-                  onChange={(e) =>
-                    handleStatusChange(v.id, e.target.value as VisitorFollowUpStatus)
-                  }
+                <div
                   style={{
-                    width: "auto",
-                    minWidth: 140,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: `1px solid ${badge.borderColor}`,
-                    background: badge.background,
-                    color: badge.color,
-                    cursor: updatingId === v.id ? "wait" : "pointer",
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: 16,
+                    alignItems: "center",
                   }}
                 >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>
+                      {displayName(v)}
+                    </div>
+                    {lastContactedIds[v.id] && (
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
+                        Last contacted: just now
+                      </div>
+                    )}
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+                      {[v.email, v.phone].filter(Boolean).join(" · ") || "No contact info"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                      Visited {formatVisitDate(v.visit_date)}
+                      {v.notes ? ` — ${v.notes}` : ""}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openContactFormId === v.id ? closeContactForm() : openContactForm(v.id)
+                      }
+                      style={{
+                        background: "#f3f4f6",
+                        color: "#374151",
+                        border: "1px solid #e5e7eb",
+                        fontSize: 13,
+                        padding: "7px 14px",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Log contact
+                    </button>
+                    <select
+                      value={status}
+                      disabled={updatingId === v.id}
+                      onChange={(e) =>
+                        handleStatusChange(v.id, e.target.value as VisitorFollowUpStatus)
+                      }
+                      style={{
+                        width: "auto",
+                        minWidth: 140,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: `1px solid ${badge.borderColor}`,
+                        background: badge.background,
+                        color: badge.color,
+                        cursor: updatingId === v.id ? "wait" : "pointer",
+                      }}
+                    >
+                      {STATUS_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {openContactFormId === v.id && (
+                  <div
+                    style={{
+                      marginTop: 16,
+                      paddingTop: 16,
+                      borderTop: "1px solid var(--border)",
+                    }}
+                  >
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                        Contact type
+                      </label>
+                      <select
+                        value={contactType}
+                        onChange={(e) => setContactType(e.target.value)}
+                        style={{ width: "100%", maxWidth: 280 }}
+                      >
+                        {CONTACT_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                        Notes
+                      </label>
+                      <textarea
+                        value={contactNotes}
+                        onChange={(e) => setContactNotes(e.target.value)}
+                        placeholder="What happened? Leave a voicemail, spoke for 5 min..."
+                        rows={3}
+                        style={{ resize: "vertical", width: "100%" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleLogContact(v.id)}
+                        disabled={savingContact}
+                        style={{ background: "var(--green)", color: "#fff", fontSize: 13, padding: "7px 14px" }}
+                      >
+                        {savingContact ? "Saving..." : "Save contact"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeContactForm}
+                        disabled={savingContact}
+                        style={{
+                          background: "#f3f4f6",
+                          color: "#374151",
+                          border: "1px solid #e5e7eb",
+                          fontSize: 13,
+                          padding: "7px 14px",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

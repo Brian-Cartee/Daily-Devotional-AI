@@ -23,6 +23,11 @@ const updateStatusSchema = z.object({
   followUpStatus: z.enum(FOLLOW_UP_STATUSES),
 });
 
+const logContactSchema = z.object({
+  contactType: z.enum(["call", "text", "email", "in_person"]),
+  notes: z.string().max(2000).optional(),
+});
+
 export function registerVisitorRoutes(app: Express): void {
   app.post(
     "/api/church-admin/visitors",
@@ -97,6 +102,67 @@ export function registerVisitorRoutes(app: Express): void {
       }
 
       return res.json({ visitor: result.rows[0] });
+    },
+  );
+
+  // Log a contact attempt for a visitor
+  app.post(
+    "/api/church-admin/visitors/:id/contacts",
+    requireChurchAdmin,
+    async (req, res) => {
+      const session = (req as any).churchAdminSession as ChurchAdminSession;
+      if (!session.churchId) {
+        return res.status(400).json({ message: "No church linked to this account." });
+      }
+
+      const parsed = logContactSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid contact type." });
+      }
+
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid visitor id." });
+      }
+
+      // Verify visitor belongs to this church
+      const check = await pool.query(
+        `SELECT id FROM church_visitors WHERE id = $1 AND church_id = $2`,
+        [id, session.churchId],
+      );
+      if (check.rows.length === 0) {
+        return res.status(404).json({ message: "Visitor not found." });
+      }
+
+      await pool.query(
+        `INSERT INTO visitor_contacts (visitor_id, church_id, contact_type, notes, logged_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, session.churchId, parsed.data.contactType, parsed.data.notes ?? null, session.email],
+      );
+
+      // Auto-advance status to contacted if still pending
+      await pool.query(
+        `UPDATE church_visitors
+         SET follow_up_status = 'contacted', updated_at = now()
+         WHERE id = $1 AND church_id = $2 AND follow_up_status = 'pending'`,
+        [id, session.churchId],
+      );
+
+      // Write timeline event
+      await pool.query(
+        `INSERT INTO church_timeline_events
+           (church_id, visitor_id, event_type, description, source, logged_by)
+         VALUES ($1, $2, $3, $4, 'manual', $5)`,
+        [
+          session.churchId,
+          id,
+          "contact",
+          `${parsed.data.contactType} contact logged${parsed.data.notes ? `: ${parsed.data.notes.slice(0, 80)}` : ""}`,
+          session.email,
+        ],
+      );
+
+      return res.json({ ok: true });
     },
   );
 

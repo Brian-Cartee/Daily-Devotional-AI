@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 import { api, type PrayerRequest } from "../lib/api";
 
+function looksLikePhone(name: string | null): boolean {
+  if (!name?.trim()) return false;
+  const trimmed = name.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  return digits.length >= 7 && /^[\d\s().+-]+$/.test(trimmed);
+}
+
+function telHref(displayName: string | null): string {
+  if (!looksLikePhone(displayName)) return "tel:";
+  const digits = displayName!.replace(/[^\d+]/g, "");
+  return `tel:${digits}`;
+}
+
 export default function PrayerInboxPage() {
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,9 +84,12 @@ export default function PrayerInboxPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {requests.map((r) => (
+          {requests.map((r) => {
+            const urgent = r.urgency_flagged === true;
+            return (
             <div key={r.id} style={{
               background: "#fff", border: "1px solid #e5e7eb",
+              borderLeft: urgent ? "4px solid #dc2626" : undefined,
               borderRadius: 12, padding: "20px 24px",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -88,9 +104,27 @@ export default function PrayerInboxPage() {
                     {r.category}
                   </span>
                 </div>
-                <span style={{ fontSize: 12, color: "#9ca3af" }}>
-                  {new Date(r.created_at).toLocaleDateString()}
-                </span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                  {urgent && (
+                    <>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+                        background: "#fee2e2", color: "#991b1b",
+                        padding: "2px 8px", borderRadius: 20,
+                      }}>
+                        URGENT
+                      </span>
+                      {r.urgency_reason && (
+                        <span style={{ fontSize: 12, fontStyle: "italic", color: "#991b1b", textAlign: "right", maxWidth: 280 }}>
+                          {r.urgency_reason}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <span style={{ fontSize: 12, color: "#9ca3af" }}>
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
 
               <p style={{ margin: "0 0 16px", fontSize: 14, lineHeight: 1.6, color: "#374151" }}>
@@ -120,6 +154,20 @@ export default function PrayerInboxPage() {
                   >
                     {drafting === r.id ? "Drafting..." : "✦ Draft reply"}
                   </button>
+                  {urgent && (
+                    <a
+                      href={telHref(r.is_anonymous ? null : r.display_name)}
+                      style={{
+                        background: "#dc2626", color: "#fff", fontSize: 13,
+                        padding: "7px 14px", borderRadius: 6, textDecoration: "none",
+                        display: "inline-block",
+                      }}
+                    >
+                      {looksLikePhone(r.is_anonymous ? null : r.display_name)
+                        ? r.display_name
+                        : "Call member"}
+                    </a>
+                  )}
                   <button
                     onClick={() => handleMarkAnswered(r.id)}
                     style={{ background: "#2d6a4f", color: "#fff", fontSize: 13, padding: "7px 14px" }}
@@ -135,7 +183,8 @@ export default function PrayerInboxPage() {
                 </div>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>
