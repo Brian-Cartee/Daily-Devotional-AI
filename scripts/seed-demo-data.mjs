@@ -65,7 +65,9 @@ async function main() {
   console.log(`✅  Found church: ${churchId}`);
 
   // Clear existing demo data to allow clean re-runs
-  await q(`DELETE FROM prayer_wall WHERE church_id = $1`, [churchId]);
+  // prayer_wall uses session_id targeting in case church_id column isn't migrated yet
+  await q(`DELETE FROM prayer_wall WHERE session_id LIKE 'demo-member-%'`);
+  try { await q(`DELETE FROM prayer_wall WHERE church_id = $1`, [churchId]); } catch {}
   await q(`DELETE FROM church_care_requests WHERE church_id = $1`, [churchId]);
   await q(`DELETE FROM church_announcements WHERE church_id = $1`, [churchId]);
   await q(`DELETE FROM church_visitors WHERE church_id = $1`, [churchId]);
