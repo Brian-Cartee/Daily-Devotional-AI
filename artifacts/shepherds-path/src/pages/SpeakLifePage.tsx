@@ -44,20 +44,22 @@ const btnGhost: React.CSSProperties = {
   cursor: "pointer",
 };
 
-function PhilipBlock({ children }: { children: React.ReactNode }) {
+function PromptCard({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
     <div
       style={{
         borderRadius: "14px",
         padding: "18px 20px",
-        background: "rgba(139,92,246,0.10)",
-        border: "1px solid rgba(139,92,246,0.18)",
+        background: "rgba(196,78,224,0.08)",
+        border: "1px solid rgba(196,78,224,0.20)",
         marginBottom: "20px",
       }}
     >
-      <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: NATIVE_TEXT_MUTED, marginBottom: 10 }}>
-        Philip
-      </p>
+      {label ? (
+        <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: NATIVE_TEXT_MUTED, marginBottom: 10 }}>
+          {label}
+        </p>
+      ) : null}
       <div style={{ fontSize: "16px", lineHeight: 1.65, color: NATIVE_TEXT_SOFT, whiteSpace: "pre-wrap" }}>
         {children}
       </div>
@@ -117,8 +119,7 @@ function TextInput({
 export default function SpeakLifePage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [phase, setPhase] = useState<SpeakLifePhase>("opening");
-  const [openingStep, setOpeningStep] = useState(0);
+  const [phase, setPhase] = useState<SpeakLifePhase>("collecting_recipient");
   const [state, setState] = useState<SpeakLifeConversationState>(INITIAL_SPEAK_LIFE_STATE);
   const [draft, setDraft] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -129,19 +130,6 @@ export default function SpeakLifePage() {
   useEffect(() => {
     document.title = "Speak Life — Shepherd's Path";
   }, []);
-
-  useEffect(() => {
-    if (phase !== "opening") return;
-    const t1 = window.setTimeout(() => setOpeningStep(1), 1200);
-    const t2 = window.setTimeout(() => {
-      setOpeningStep(2);
-      setPhase("collecting_recipient");
-    }, 2800);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [phase]);
 
   const patch = useCallback((partial: Partial<SpeakLifeConversationState>) => {
     setState((s) => ({ ...s, ...partial }));
@@ -357,13 +345,13 @@ export default function SpeakLifePage() {
     if (pendingEdge === "deceased") {
       return (
         <>
-          <PhilipBlock>
+          <PromptCard>
             It sounds like {name} is no longer with us.
             {"\n\n"}
             Some people find there&apos;s still something healing about saying what needed to be said — even now.
             {"\n\n"}
             Would you like to write this for them? It can live in your 18:21 as a letter to God about what they meant.
-          </PhilipBlock>
+          </PromptCard>
           <button type="button" style={{ ...btnPrimary, marginBottom: 10 }} onClick={handleEdgeProceed}>
             Yes, write for them
           </button>
@@ -376,13 +364,13 @@ export default function SpeakLifePage() {
     if (pendingEdge === "estranged") {
       return (
         <>
-          <PhilipBlock>
+          <PromptCard>
             It sounds like things between you and {name} have been complicated.
             {"\n\n"}
             That makes this more meaningful, not less.
             {"\n\n"}
             Would you like to say something true about what you saw in them — even across that distance?
-          </PhilipBlock>
+          </PromptCard>
           <button type="button" style={{ ...btnPrimary, marginBottom: 10 }} onClick={handleEdgeProceed}>
             Continue gently
           </button>
@@ -395,9 +383,9 @@ export default function SpeakLifePage() {
     if (pendingEdge === "self") {
       return (
         <>
-          <PhilipBlock>
+          <PromptCard>
             Sometimes the most important words of life are the ones we&apos;ve never let ourselves receive.
-          </PhilipBlock>
+          </PromptCard>
           <button type="button" style={{ ...btnPrimary, marginBottom: 10 }} onClick={handleEdgeProceed}>
             Continue
           </button>
@@ -409,11 +397,11 @@ export default function SpeakLifePage() {
     }
     return (
       <>
-        <PhilipBlock>
+        <PromptCard>
           That&apos;s okay. Sometimes God brings someone to mind slowly.
           {"\n\n"}
           Is there anyone who&apos;s been on your heart lately — even quietly?
-        </PhilipBlock>
+        </PromptCard>
         <TextInput value={draft} onChange={setDraft} placeholder="Name or relationship…" />
         <button
           type="button"
@@ -464,30 +452,23 @@ export default function SpeakLifePage() {
       </div>
 
       <h1 style={{ fontSize: "28px", fontWeight: 600, marginBottom: 6 }}>Speak Life</h1>
+      <p style={{ fontSize: "15px", color: NATIVE_TEXT_SOFT, marginBottom: 8, lineHeight: 1.5 }}>
+        Death and life are in the power of the tongue.
+      </p>
       <p style={{ fontSize: "13px", color: NATIVE_TEXT_MUTED, marginBottom: 28 }}>Proverbs 18:21</p>
 
-      {(phase === "opening" || phase === "collecting_recipient") && (
+      {phase === "collecting_recipient" && (
         <>
-          {openingStep >= 1 && (
-            <PhilipBlock>
-              Take a moment.
-              {"\n"}
-              Ask God who needs to hear from you today.
-            </PhilipBlock>
-          )}
-          {phase === "collecting_recipient" && (
-            <>
-              <PhilipBlock>
-                Who has God placed in your life
-                {"\n"}
-                that needs to hear what He sees in them?
-              </PhilipBlock>
-              <TextInput value={draft} onChange={setDraft} placeholder="Name or relationship…" />
-              <button type="button" style={{ ...btnPrimary, marginTop: 16 }} onClick={handleRecipientContinue}>
-                Continue
-              </button>
-            </>
-          )}
+          <PromptCard label="Step 1">
+            Who has God placed in your life that needs to hear what He sees in them?
+          </PromptCard>
+          <p style={{ fontSize: "14px", color: NATIVE_TEXT_MUTED, marginBottom: 14, lineHeight: 1.5 }}>
+            Take a breath. Ask God who comes to mind — then write their name or how you know them.
+          </p>
+          <TextInput value={draft} onChange={setDraft} placeholder="Name or relationship…" />
+          <button type="button" style={{ ...btnPrimary, marginTop: 16 }} onClick={handleRecipientContinue}>
+            Continue
+          </button>
         </>
       )}
 
@@ -495,11 +476,11 @@ export default function SpeakLifePage() {
 
       {phase === "exchange_1" && (
         <>
-          <PhilipBlock>
-            {name}. Tell me — how has God shown up through {name} in your life?
+          <PromptCard label="Step 2">
+            How has God shown up through {name} in your life?
             {"\n\n"}
-            Was there a season, a moment, a way they carried something to you that you now understand was from Him?
-          </PhilipBlock>
+            Was there a season, a moment, or a way they carried something to you that you now understand was from Him?
+          </PromptCard>
           <TextInput value={draft} onChange={setDraft} placeholder="Share what comes to mind…" multiline rows={5} />
           <button type="button" style={{ ...btnPrimary, marginTop: 16 }} onClick={handleExchangeSubmit}>
             Continue
@@ -509,9 +490,9 @@ export default function SpeakLifePage() {
 
       {phase === "exchange_2" && (
         <>
-          <PhilipBlock>
-            Is there a specific moment when you saw it most clearly — when you realized God had placed {name} in your life on purpose?
-          </PhilipBlock>
+          <PromptCard label="Step 3">
+            When did you see it most clearly — when you realized God had placed {name} in your life on purpose?
+          </PromptCard>
           <TextInput value={draft} onChange={setDraft} placeholder="A moment, a memory…" multiline rows={5} />
           <button type="button" style={{ ...btnPrimary, marginTop: 16 }} onClick={handleExchangeSubmit}>
             Continue
@@ -521,11 +502,11 @@ export default function SpeakLifePage() {
 
       {phase === "exchange_3" && (
         <>
-          <PhilipBlock>
-            What do you believe God sees in {name} that {name} may not fully see in themselves?
+          <PromptCard label="Step 4">
+            What do you believe God sees in {name} that they may not fully see in themselves?
             {"\n\n"}
-            What do you want them to carry from this — about who they are, and how God has used them?
-          </PhilipBlock>
+            What do you want them to carry — about who they are, and how God has used them?
+          </PromptCard>
           <TextInput value={draft} onChange={setDraft} placeholder="What you want them to know…" multiline rows={5} />
           <button type="button" style={{ ...btnPrimary, marginTop: 16 }} onClick={handleExchangeSubmit}>
             Continue
@@ -534,12 +515,12 @@ export default function SpeakLifePage() {
       )}
 
       {phase === "generating_appreciation" && (
-        <PhilipBlock>Give me a moment — I&apos;m listening to what you shared.</PhilipBlock>
+        <PromptCard label="Shaping your words">Listening to what you shared…</PromptCard>
       )}
 
       {(phase === "review_appreciation" || phase === "editing_appreciation") && (
         <>
-          <PhilipBlock>Philip heard this in what you shared.</PhilipBlock>
+          <PromptCard label="From what you shared">Here is a draft in your voice — edit anything that doesn&apos;t sound like you.</PromptCard>
           {phase === "editing_appreciation" ? (
             <TextInput
               value={state.appreciation_text ?? ""}
@@ -596,9 +577,9 @@ export default function SpeakLifePage() {
 
       {phase === "prayer_offer" && (
         <>
-          <PhilipBlock>
-            Before this goes to {name} — would you like to pray for them together?
-          </PhilipBlock>
+          <PromptCard label="Before you send">
+            Would you like to pray for {name} before this goes out?
+          </PromptCard>
           <button type="button" style={{ ...btnPrimary, marginBottom: 10 }} onClick={handlePrayerYes}>
             Yes, pray
           </button>
@@ -615,11 +596,11 @@ export default function SpeakLifePage() {
         </>
       )}
 
-      {phase === "generating_prayer" && <PhilipBlock>Let&apos;s bring this before God…</PhilipBlock>}
+      {phase === "generating_prayer" && <PromptCard label="Prayer">Bringing this before God…</PromptCard>}
 
       {phase === "review_prayer" && state.prayer_text && (
         <>
-          <PhilipBlock>A prayer for {name}</PhilipBlock>
+          <PromptCard label={`A prayer for ${name}`}>You can speak this aloud, copy it, or keep it private.</PromptCard>
           <div
             style={{
               borderRadius: "16px",
@@ -641,7 +622,7 @@ export default function SpeakLifePage() {
 
       {phase === "sending" && (
         <>
-          <PhilipBlock>However you send this — the words are ready.</PhilipBlock>
+          <PromptCard label="Ready to send">However you send this — the words are yours.</PromptCard>
           <button type="button" style={{ ...btnPrimary, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} onClick={handleCopy}>
             <Copy size={18} />
             Copy message
@@ -658,11 +639,11 @@ export default function SpeakLifePage() {
 
       {phase === "complete" && (
         <>
-          <PhilipBlock>
+          <PromptCard>
             {state.private_only || state.recipient_is_living === false
               ? "This is yours now.\nAnd God heard every word."
               : "The word is spoken.\nMay it land where it needs to."}
-          </PhilipBlock>
+          </PromptCard>
           <Link href="/speak-life/archive" style={{ ...btnPrimary, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 10 }}>
             View 18:21
           </Link>
@@ -674,7 +655,7 @@ export default function SpeakLifePage() {
 
       {phase === "saved_private" && (
         <>
-          <PhilipBlock>
+          <PromptCard>
             {pendingEdge === "no_one" && !draft.trim()
               ? "When someone comes to mind, this will be here.\n\nThere's no rush."
               : state.recipient_is_living === false || state.edge_case === "deceased"
@@ -682,7 +663,7 @@ export default function SpeakLifePage() {
                 : state.edge_case === "self"
                   ? "Sometimes the most important words of life are the ones we've never let ourselves receive."
                   : "Saved quietly in your 18:21."}
-          </PhilipBlock>
+          </PromptCard>
           {state.garden_entry_created && (
             <Link href="/speak-life/archive" style={{ ...btnPrimary, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 10 }}>
               View 18:21
@@ -696,7 +677,7 @@ export default function SpeakLifePage() {
 
       {phase === "error" && (
         <>
-          <PhilipBlock>{errorMsg ?? "Something went wrong. Your words are still here."}</PhilipBlock>
+          <PromptCard>{errorMsg ?? "Something went wrong. Your words are still here."}</PromptCard>
           <button type="button" style={btnPrimary} onClick={() => setPhase("exchange_3")}>
             Try again
           </button>

@@ -78,10 +78,10 @@ const MODE_PLANS: Partial<Record<ThresholdNeed, ThresholdModePlan>> = {
     notifPrompt: "Want a strength reminder tomorrow morning?",
     notifSuccess: "We'll send a strength reminder tomorrow.",
     rhythmMorningLabel: "Armor prayer",
-    rhythmMorningHref: "/guidance",
+    rhythmMorningHref: "/speak-life",
     rhythmNightLabel: "Release the battle",
     rhythmNightHref: "/night",
-    defaultDoor: "talk",
+    defaultDoor: "speaklife",
   },
   worship: {
     key: "worship",

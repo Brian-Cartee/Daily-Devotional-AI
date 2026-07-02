@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Headphones } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +15,6 @@ import { useDailyVerse } from "@/hooks/use-verses";
 import { getListenFirstPreference, setListenFirstPreference } from "@/lib/listenFirst";
 import { canUseListenFirstAuto } from "@/lib/listenPolicy";
 import { isProVerifiedLocally } from "@/lib/proStatus";
-import { focusHeroTalkInput } from "@/components/TalkItThroughHeroPrompt";
 import { HomePresenceDoors, defaultPresenceDoor } from "@/components/HomePresenceDoors";
 import type { PresenceDoorId } from "@/components/HomePresenceDoors";
 import { HomePresenceHero } from "@/components/HomePresenceHero";
@@ -28,6 +27,7 @@ import { isHomeDevotionalFocusPeriod, shouldShowHeroVerseSnippet } from "@/lib/f
 import { fetchStreak } from "@/lib/streakApi";
 import { ExternalPromoLinks } from "@/components/ExternalPromoLinks";
 import { isNativeWebViewShell } from "@/lib/platform";
+import { signalNativeGateAReady } from "@/lib/gateAReady";
 
 export type ThresholdData = {
   headline: string;
@@ -70,7 +70,6 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   const { data: verse } = useDailyVerse();
   const [listenFirst, setListenFirst] = useState(() => getListenFirstPreference());
   const [activeDoor, setActiveDoor] = useState<PresenceDoorId>(defaultPresenceDoor);
-  const focusTalkAfterSelect = useRef(false);
   const thresholdNeed = getThresholdNeed();
   const modePlan = getThresholdModePlan(thresholdNeed);
   const verseReference =
@@ -140,19 +139,11 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
   const selectDoor = (id: PresenceDoorId) => {
     fireHaptic("soft");
     setActiveDoor(id);
-    if (id === "talk") focusTalkAfterSelect.current = true;
   };
 
   useEffect(() => {
     onPresenceContextChange?.({ door: effectiveDoor, arrivalOpen: showArrival });
   }, [effectiveDoor, showArrival, onPresenceContextChange]);
-
-  useEffect(() => {
-    if (activeDoor !== "talk" || !focusTalkAfterSelect.current) return;
-    focusTalkAfterSelect.current = false;
-    const t = window.setTimeout(() => focusHeroTalkInput(), 80);
-    return () => window.clearTimeout(t);
-  }, [activeDoor]);
 
   const toggleListenFirst = () => {
     if (!canUseListenFirstAuto()) return;
@@ -163,6 +154,12 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
 
   const photoHeight = showPhotoTaglines ? "52vh" : "46vh";
   const photoMaxHeight = showPhotoTaglines ? "460px" : "420px";
+
+  useLayoutEffect(() => {
+    if (isNativeWebViewShell()) {
+      signalNativeGateAReady("threshold_hero");
+    }
+  }, []);
 
   return (
     <div
@@ -471,7 +468,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                   </span>
                 </Link>
                 <p className="text-[12px] text-center text-white/48 mt-2.5 leading-snug">
-                  One step: verse, reflection, prayer. Talk it through is below when you need it.
+                  One step: verse, reflection, prayer. Speak Life is below when someone comes to mind.
                 </p>
               </div>
             ) : (
@@ -485,7 +482,7 @@ export function ThresholdHero({ onPresenceContextChange }: ThresholdHeroProps = 
                     phase={threshold?.phase}
                     thresholdNeed={thresholdNeed}
                     verse={verse ?? null}
-                    onSelectTalk={() => selectDoor("talk")}
+                    onSelectSpeakLife={() => selectDoor("speaklife")}
                   />
                 </div>
               </>

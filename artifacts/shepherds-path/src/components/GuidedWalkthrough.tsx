@@ -36,7 +36,7 @@ const STEPS = [
     id: "home",
     title: "For You — three ways",
     subtitle: "How you want to begin",
-    script: `On For You, you'll see three choices: Talk it through, Sit in Scripture, or Just breathe. Talk is usually selected first — so you can pray or share what's heavy right away. Your full devotional with today's Scripture continues right below. Tap Sit in Scripture anytime for the verse and share. Nothing here is shared unless you choose.`,
+    script: `On For You, you'll see three choices: Sit in Scripture, Speak Life, or Just breathe. Scripture is usually selected first — today's verse and devotional are right there. Speak Life helps you encourage someone God puts on your heart. Nothing here is shared unless you choose.`,
   },
   {
     id: "scripture",
@@ -45,16 +45,16 @@ const STEPS = [
     script: `Each day opens with a Bible verse chosen for today. Read or listen without rushing — reflection, prayer, and a quiet moment to respond. You can share the verse or a beautiful image with someone who needs it. This is the heart of a daily habit with God.`,
   },
   {
-    id: "talk",
-    title: "Talk it through",
-    subtitle: "When you need more than reading",
-    script: `When life is heavy, tap Talk it through — on For You or the bottom tab. Share what's on your heart in your own words. You'll receive Scripture, reflection, and prayer shaped for your moment — not generic advice. You can share encouragement too, without sharing your private words.`,
+    id: "speaklife",
+    title: "Speak Life",
+    subtitle: "Encourage someone on your heart",
+    script: `When someone comes to mind, tap Speak Life on For You or open it from the card below. Share what God has shown you in them — honestly, in your own words. The app helps shape that into encouragement they can receive. You can save it privately in your 18:21 archive.`,
   },
   {
     id: "listen",
     title: "Listen to everything",
     subtitle: "Let it come to you",
-    script: `Almost everything can be heard aloud — today's verse, your devotional, guidance, and prayer. Some people press play, set the phone down, and simply receive. You don't have to navigate. You can just listen.`,
+    script: `Almost everything can be heard aloud — today's verse, your devotional, and prayer. Some people press play, set the phone down, and simply receive. You don't have to navigate. You can just listen.`,
   },
   {
     id: "journal",

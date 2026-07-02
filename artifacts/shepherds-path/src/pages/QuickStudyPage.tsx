@@ -517,7 +517,7 @@ Be warm, clear, and helpful. End with an encouraging sentence inviting them to r
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-6 text-center px-6">
           <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5">SHEPHERD'S PATH</p>
           <h2 className="text-white text-2xl font-extrabold tracking-tight leading-tight">Walk Deeper</h2>
-          <p className="text-white/65 text-[12px] mt-1.5 leading-snug">Talk with Philip about Scripture — today's verse or anything on your heart.</p>
+          <p className="text-white/65 text-[12px] mt-1.5 leading-snug">Go deeper into Scripture — today's verse or any passage on your heart.</p>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
-import { isIOS, isAndroid, isNativeWebViewShell, markNativeShellUiPainted } from "@/lib/platform";
+import { isIOS, isAndroid, isNativeWebViewShell } from "@/lib/platform";
+import { signalNativeGateAReady } from "@/lib/gateAReady";
 import { Link, Redirect } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ShieldCheck, ChevronDown, Check, Share2, Flame, Sparkles, BookMarked, HandHeart } from "lucide-react";
@@ -46,10 +47,7 @@ import { ScriptureForYou } from "@/components/ScriptureForYou";
 import { PrayForThemCard } from "@/components/PrayForThem";
 import { TheThreadCard } from "@/components/TheThreadCard";
 import { HomeEngagementStack } from "@/components/HomeEngagementStack";
-import { PhilipDailyGreetingCard } from "@/components/PhilipDailyGreetingCard";
-import { PhilipRememberedCard } from "@/components/PhilipRememberedCard";
-import { PhilipFirstArrivalCard } from "@/components/PhilipFirstArrivalCard";
-import { PhilipReentryCard } from "@/components/PhilipReentryCard";
+import { SpeakLifeHomeCard } from "@/components/SpeakLifeHomeCard";
 import { HomeYourPathCard } from "@/components/HomeYourPathCard";
 import { hasActiveHomeEngagementSlot } from "@/lib/homeEngagementPriority";
 import { shouldShowYourPathCard } from "@/lib/homePathProgress";
@@ -90,7 +88,6 @@ import { LamentSeasonHomeCard } from "@/components/lament/LamentSeasonHomeCard";
 import { isLamentSeasonActive } from "@/lib/lamentPathway";
 import { SpiritualWeatherCard } from "@/components/SpiritualWeatherCard";
 import { HomePathsBlock } from "@/components/HomePathsBlock";
-import { TalkItThroughCard } from "@/components/TalkItThroughCard";
 import { HeartCheckModal } from "@/components/HeartCheckModal";
 import { shouldShowHeartCheck, markHeartCheckShown, getCurrentHeartState } from "@/lib/heartCheck";
 import { WEATHER_EMOJI } from "@/lib/heartCheckEmoji";
@@ -473,15 +470,15 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is it free?",
-    a: "Yes. The Daily Devotional, Talk It Through, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
+    a: "Yes. The Daily Devotional, Speak Life, Bible reading, Journeys, and Journal are all free. A Pro option exists for those who want to go deeper — but the core experience is and will remain free.",
   },
   {
     q: "What is the Daily Devotional?",
     a: "Each day, a verse is waiting for you. Not a lecture — something to sit with. You can read it, listen to it, or simply let it rest in you. It's the same for everyone that day. It takes as long as you need.",
   },
   {
-    q: "What is Talk It Through?",
-    a: "A quiet place to bring what's on your heart. You share what's weighing on you — honestly, without filtering — and receive scripture and a written prayer shaped for that moment. It's not advice. It's presence.",
+    q: "What is Speak Life?",
+    a: "A guided way to encourage someone God puts on your heart. You share what you've seen in them — honestly, in your own words — and the app helps shape that into a message of life they can receive. It's not a chatbot. It's an act of encouragement.",
   },
   {
     q: "What are Journeys?",
@@ -509,7 +506,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What is Pro?",
-    a: "Pro unlocks deeper access — more Talk It Through conversations, expanded Journeys, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
+    a: "Pro unlocks deeper access — expanded Journeys, full journal history, and the ability to listen to any passage. It supports the work of keeping the app free for everyone else. There's no pressure to upgrade; the free experience is complete on its own.",
   },
   {
     q: "Is there a mobile app?",
@@ -517,7 +514,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Where do I begin?",
-    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or open Talk It Through. Or step into a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
+    a: "Wherever feels right. Most people start with the Devotional — it's the gentlest entry point. Or try Speak Life when someone comes to mind. Or step into a Journey. There's no wrong door. The app is designed so any place you start is the right place.",
   },
 ];
 
@@ -776,15 +773,16 @@ function LandingHomeInner() {
   const sessionId = getSessionId();
   const inNativeApp = isNativeWebViewShell();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!inNativeApp) return;
-    document.getElementById("sp-fg-cover")?.remove();
-    nativeDiag("landing_home_mount");
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        markNativeShellUiPainted();
-      });
-    });
+    let polls = 0;
+    const timer = window.setInterval(() => {
+      polls += 1;
+      if (signalNativeGateAReady("landing_home_poll") || polls >= 120) {
+        window.clearInterval(timer);
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
   }, [inNativeApp]);
 
   // In the iOS app, permanently mark intro complete so cold-launch sessionStorage
@@ -974,8 +972,7 @@ function LandingHomeInner() {
     if (!isNativeWebViewShell()) return;
     if (entrySplashVisible || showBeginWalk || showSplash || showWelcomeOverlay) return;
     requestAnimationFrame(() => {
-      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
-      markNativeShellUiPainted();
+      signalNativeGateAReady("landing_rescue");
     });
   }, [entrySplashVisible, showBeginWalk, showSplash, showWelcomeOverlay]);
 
@@ -988,8 +985,7 @@ function LandingHomeInner() {
         '[data-testid="card-devotional"],[data-testid="home-threshold-hero"]',
       );
       if (splash || home) {
-        (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
-        markNativeShellUiPainted();
+        signalNativeGateAReady("landing_rescue");
         return;
       }
       if (homeOverlayActive) {
@@ -1000,8 +996,7 @@ function LandingHomeInner() {
         setShowSplash(false);
         setEntryOverlayActive(false);
       }
-      (window as Window & { __spSignalReady?: () => void }).__spSignalReady?.();
-      markNativeShellUiPainted();
+      signalNativeGateAReady("landing_rescue");
     }, 4000);
     return () => window.clearTimeout(t);
   }, [homeOverlayActive]);
@@ -1269,14 +1264,7 @@ function LandingHomeInner() {
             </p>
           )}
 
-          {/* ══ Philip first — Model B: companion before content ══ */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <PhilipFirstArrivalCard />
-          <PhilipReentryCard />
-          <PhilipRememberedCard />
-          <PhilipDailyGreetingCard />
-
-          {/* "Today's step" label belongs directly above the Devotional card, not above Philip */}
+          {/* Today's step label sits directly above the Devotional card */}
           {homeDevotionalFocus && !hideDevotionalCard && (
             <div
               data-testid="label-todays-step"
@@ -1310,8 +1298,7 @@ function LandingHomeInner() {
 
           {!hideDevotionalCard && <DevotionalCard homeFocus={homeDevotionalFocus} />}
           <SpeakLifeHomeCard />
-          {/* Talk It Through card removed — toolbar mic is the single canonical entry point.
-              Static feature cards become wallpaper. The mic becomes muscle memory. */}
+          {/* Speak Life is the primary relational path on home */}
 
           {/* ScriptureForYou removed — clutters home, duplicates Today's Word */}
 
@@ -1775,7 +1762,7 @@ function LandingHomeInner() {
                   stars: 5,
                 },
                 {
-                  quote: "Talk It Through changed how I pray. I type what I'm actually feeling — even when I'm angry — and what comes back is scripture that fits. It's not a search engine. It's something else.",
+                  quote: "Speak Life changed how I encourage people. I write what God actually showed me in someone — not generic praise — and it becomes something they can keep. It's not a template. It's my words, shaped.",
                   name: "Marcus T.",
                   descriptor: "Daily user, 6 months",
                   stars: 5,
@@ -1821,8 +1808,6 @@ function LandingHomeInner() {
           </div>
           </>
           )}
-
-          </div>
 
         </motion.div>
 

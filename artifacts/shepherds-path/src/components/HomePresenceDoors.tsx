@@ -1,7 +1,7 @@
-import { BookOpen, MessageCircle, Wind } from "lucide-react";
+import { BookOpen, Heart, Wind } from "lucide-react";
 import { isLateNight } from "@/lib/nightMode";
 
-export type PresenceDoorId = "scripture" | "talk" | "quiet";
+export type PresenceDoorId = "scripture" | "speaklife" | "quiet";
 
 interface HomePresenceDoorsProps {
   /** Which door matches the hero panel above */
@@ -10,7 +10,7 @@ interface HomePresenceDoorsProps {
   panelId?: string;
 }
 
-/** Left → right: signature guidance, daily Word, quiet room */
+/** Left → right: daily Word, Speak Life, quiet room */
 const DOORS: {
   id: PresenceDoorId;
   label: string;
@@ -19,18 +19,18 @@ const DOORS: {
   Icon: typeof BookOpen;
 }[] = [
   {
-    id: "talk",
-    label: "Talk it through",
-    desc: "Prayer & clarity now",
-    testid: "door-talk-through",
-    Icon: MessageCircle,
-  },
-  {
     id: "scripture",
     label: "Sit in Scripture",
     desc: "Verse & devotional",
     testid: "door-sit-scripture",
     Icon: BookOpen,
+  },
+  {
+    id: "speaklife",
+    label: "Speak Life",
+    desc: "Encourage someone",
+    testid: "door-speak-life",
+    Icon: Heart,
   },
   {
     id: "quiet",
@@ -41,10 +41,10 @@ const DOORS: {
   },
 ];
 
-/** Default tab — Talk hero + devotional card below (avoids duplicating Scripture in two panels) */
+/** Default tab — Scripture first; Speak Life is one tap away on the card stack below. */
 export function defaultPresenceDoor(): PresenceDoorId {
   if (isLateNight()) return "quiet";
-  return "talk";
+  return "scripture";
 }
 
 export function HomePresenceDoors({ selected, onSelect }: HomePresenceDoorsProps) {

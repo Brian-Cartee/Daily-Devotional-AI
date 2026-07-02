@@ -94,7 +94,7 @@ export function HomeSecondaryPathsRow({ hideCloset = false }: { hideCloset?: boo
               Walk Deeper
             </p>
             <p style={{ fontSize: "12px", color: NATIVE_TEXT_MUTED, lineHeight: 1.375, marginTop: "2px" }}>
-              Ask Philip anything about Scripture
+              Explore Scripture with guided study
             </p>
           </div>
           <ArrowRight style={{ width: "16px", height: "16px", flexShrink: 0, color: NATIVE_TEXT_FAINT }} />

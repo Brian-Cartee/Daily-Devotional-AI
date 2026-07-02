@@ -7,11 +7,7 @@ import { ARRIVAL_CARE_PRESETS, situationForArrivalChip } from "@/lib/situationTo
 
 const ARRIVAL_KEY = "sp_arrival_shown_v1";
 
-type NextStep = "talk" | "scripture" | "breathe";
-
-function encodeSituation(s: string): string {
-  return encodeURIComponent(s.trim());
-}
+type NextStep = "speaklife" | "scripture" | "breathe";
 
 export function shouldShowArrivalRitual(): boolean {
   try {
@@ -81,9 +77,10 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
       navigate(isLateNight() ? "/night" : "/sigh");
       return;
     }
-    // talk
-    const q = value.trim() ? `?situation=${encodeSituation(value)}&arrive=1` : "";
-    navigate(`/guidance${q}`);
+    if (step === "speaklife") {
+      navigate("/speak-life");
+      return;
+    }
   };
 
   const canSubmit = value.trim().length >= 3;
@@ -250,12 +247,12 @@ export function ArrivalRitual({ defaultOpen = false, onComplete, className }: Ar
                 >
                   <button
                     type="button"
-                    onClick={() => go("talk")}
+                    onClick={() => go("speaklife")}
                     className="rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] transition-colors px-3 py-3 text-left"
-                    data-testid="btn-arrival-next-talk"
+                    data-testid="btn-arrival-next-speak-life"
                   >
-                    <p className="text-[12px] font-semibold text-white/90">Talk it through</p>
-                    <p className="text-[11px] text-white/45 mt-0.5 leading-snug">Scripture + prayer for what you wrote</p>
+                    <p className="text-[12px] font-semibold text-white/90">Speak Life</p>
+                    <p className="text-[11px] text-white/45 mt-0.5 leading-snug">Encourage someone God puts on your heart</p>
                   </button>
                   <button
                     type="button"

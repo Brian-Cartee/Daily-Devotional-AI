@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { ArrowRight, BookOpen, Wind } from "lucide-react";
-import { TalkItThroughHeroPrompt } from "@/components/TalkItThroughHeroPrompt";
+import { SpeakLifeHeroPrompt } from "@/components/SpeakLifeHeroPrompt";
 import { ShareVerseTrigger } from "@/components/ShareVerseSheet";
 import { easternVerseDateKey } from "@/lib/shareVerse";
 import type { PresenceDoorId } from "@/components/HomePresenceDoors";
@@ -14,7 +14,7 @@ type Props = {
   phase?: string;
   thresholdNeed?: ThresholdNeed | null;
   verse?: Verse | null;
-  onSelectTalk?: () => void;
+  onSelectSpeakLife?: () => void;
 };
 
 const cardShell = {
@@ -27,11 +27,9 @@ const cardShell = {
   boxShadow: "0 10px 15px -3px rgba(0,0,0,0.25)",
 };
 
-export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTalk }: Props) {
-  if (door === "talk") {
-    return (
-      <TalkItThroughHeroPrompt phase={phase} thresholdNeed={thresholdNeed} />
-    );
+export function HomePresenceHero({ door, verse, onSelectSpeakLife }: Props) {
+  if (door === "speaklife") {
+    return <SpeakLifeHeroPrompt />;
   }
 
   if (door === "scripture") {
@@ -220,11 +218,11 @@ export function HomePresenceHero({ door, phase, thresholdNeed, verse, onSelectTa
             font: "inherit",
             cursor: "pointer",
           }}
-          onClick={onSelectTalk}
+          onClick={onSelectSpeakLife}
         >
-          Talk it through
+          Speak Life
         </button>{" "}
-        when you&apos;re ready.
+        when someone comes to mind.
       </p>
     </div>
   );
