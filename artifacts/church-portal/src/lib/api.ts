@@ -149,8 +149,31 @@ export interface DashboardStats {
   visitorsThisMonth: number;
 }
 
+export interface OverdueVisitorAlert {
+  id: number;
+  first_name: string;
+  last_name: string | null;
+  visit_date: string;
+  days_since: number;
+}
+
+export interface UrgentPrayerAlert {
+  id: number;
+  display_name: string | null;
+  is_anonymous: boolean;
+  request: string;
+  urgency_reason: string | null;
+  days_waiting: number;
+}
+
+export interface DashboardAlerts {
+  overdueVisitors: OverdueVisitorAlert[];
+  urgentPrayers: UrgentPrayerAlert[];
+}
+
 export interface DashboardResponse extends DashboardStats {
   church: ChurchSummary;
+  alerts: DashboardAlerts;
 }
 
 export interface ChurchProfile {
