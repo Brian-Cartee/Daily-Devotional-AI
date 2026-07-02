@@ -26,6 +26,20 @@ export const api = {
       req<{ ok: boolean; email: string; churchId: string }>(`/church-admin/auth/verify?token=${encodeURIComponent(token)}`),
     logout: () => req("/church-admin/auth/logout", { method: "POST" }),
   },
+  setup: {
+    submitInterest: (data: {
+      name: string;
+      email: string;
+      churchName: string;
+      city?: string;
+      congregationSize?: string;
+      message?: string;
+    }) =>
+      req<{ ok: boolean }>("/church-admin/setup-interest", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
   dashboard: {
     get: () => req<DashboardResponse>("/church-admin/dashboard"),
   },

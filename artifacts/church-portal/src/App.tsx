@@ -17,6 +17,7 @@ import SmallGroupsPage from "./pages/SmallGroupsPage";
 import SermonFollowupPage from "./pages/SermonFollowupPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import CareRequestsPage from "./pages/CareRequestsPage";
+import SetupPage from "./pages/SetupPage";
 import Layout from "./components/Layout";
 
 export interface Session {
@@ -70,6 +71,7 @@ export default function App() {
         path="/login"
         element={session ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={setSession} />}
       />
+      <Route path="/setup" element={<SetupPage session={session} />} />
       <Route path="/admin/auth/verify" element={<div style={{ padding: 40, textAlign: "center" }}>Signing you in...</div>} />
       {session ? (
         <Route element={

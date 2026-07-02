@@ -19,6 +19,7 @@ import {
   clearAdminSessionCookie,
   parseAdminSession,
   sendMagicLinkEmail,
+  sendChurchSetupInterestEmail,
   requireChurchAdmin,
   cleanExpiredTokens,
 } from "./auth";
@@ -480,6 +481,44 @@ export function registerChurchRoutes(app: Express): void {
 
   app.get("/api/church-admin/auth/me", requireChurchAdmin, (req, res) => {
     return res.json({ session: (req as any).churchAdminSession });
+  });
+
+  const setupInterestSchema = z.object({
+    name: z.string().min(2).max(100),
+    email: z.string().email(),
+    churchName: z.string().min(2).max(200),
+    city: z.string().max(100).optional(),
+    congregationSize: z.string().max(50).optional(),
+    message: z.string().max(2000).optional(),
+  });
+
+  app.post("/api/church-admin/setup-interest", async (req, res) => {
+    const parsed = setupInterestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Please fill in your name, email, and church name." });
+    }
+
+    const data = {
+      ...parsed.data,
+      name: parsed.data.name.trim(),
+      email: parsed.data.email.toLowerCase().trim(),
+      churchName: parsed.data.churchName.trim(),
+      city: parsed.data.city?.trim() || undefined,
+      congregationSize: parsed.data.congregationSize?.trim() || undefined,
+      message: parsed.data.message?.trim() || undefined,
+    };
+
+    try {
+      if (process.env.RESEND_API_KEY) {
+        await sendChurchSetupInterestEmail(data);
+      } else {
+        console.log("[church-setup] interest (email not configured):", data);
+      }
+      return res.json({ ok: true });
+    } catch (err) {
+      console.error("[church-setup] failed to send interest email:", err);
+      return res.status(500).json({ message: "Could not submit your request. Please try again." });
+    }
   });
 
   // ── Demo auth — no magic link required ───────────────────────────────────

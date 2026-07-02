@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Link, Outlet, NavLink } from "react-router-dom";
 import { useChurch } from "../contexts/ChurchContext";
 
 import type { Session } from "../App";
@@ -241,12 +241,12 @@ export default function Layout({ session, onLogout }: Props) {
                 {" — "}
                 this is Grace Community Church. Data resets periodically. Write actions are disabled.
               </span>
-              <a
-                href="https://admin.shepherdspathai.com"
+              <Link
+                to="/setup"
                 style={{ color: "#92400e", fontWeight: 600, whiteSpace: "nowrap", textDecoration: "underline" }}
               >
                 Set up your church →
-              </a>
+              </Link>
             </div>
           )}
           <div style={{ flex: 1, padding: "24px 20px" }}>

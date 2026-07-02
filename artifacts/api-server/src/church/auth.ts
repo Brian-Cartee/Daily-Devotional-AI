@@ -139,3 +139,68 @@ export async function cleanExpiredTokens(): Promise<void> {
     `DELETE FROM church_magic_links WHERE expires_at < now() OR used = true`,
   );
 }
+
+// ── Church setup interest ─────────────────────────────────────────────────────
+
+export interface ChurchSetupInterest {
+  name: string;
+  email: string;
+  churchName: string;
+  city?: string;
+  congregationSize?: string;
+  message?: string;
+}
+
+export async function sendChurchSetupInterestEmail(
+  data: ChurchSetupInterest,
+): Promise<void> {
+  const notifyEmail =
+    process.env.CHURCH_SETUP_NOTIFY_EMAIL || "briancartee@gmail.com";
+  const { client, fromEmail } = await getUncachableResendClient();
+
+  const rows = [
+    ["Name", data.name],
+    ["Email", data.email],
+    ["Church", data.churchName],
+    ...(data.city ? [["City / area", data.city] as const] : []),
+    ...(data.congregationSize
+      ? [["Congregation size", data.congregationSize] as const]
+      : []),
+  ];
+
+  const tableRows = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:8px 0;color:#888;font-size:13px;width:140px;">${label}</td>` +
+        `<td style="padding:8px 0;color:#333;font-size:14px;">${value}</td></tr>`,
+    )
+    .join("");
+
+  const messageBlock = data.message?.trim()
+    ? `<div style="margin-top:16px;background:#fff;border-left:3px solid #8b6f47;padding:16px;border-radius:0 8px 8px 0;">
+         <p style="color:#333;font-size:14px;line-height:1.7;margin:0;">${data.message.trim().replace(/\n/g, "<br>")}</p>
+       </div>`
+    : "";
+
+  await client.emails.send({
+    from: fromEmail,
+    to: notifyEmail,
+    replyTo: data.email,
+    subject: `[Church setup] ${data.churchName} — ${data.name}`,
+    html: `
+<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:32px;background:#f8f8f8;">
+  <h2 style="color:#333;margin-bottom:4px;">New church setup request</h2>
+  <p style="color:#888;font-size:13px;margin-top:0;">Shepherd's Path Church Portal</p>
+  <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+    ${tableRows}
+  </table>
+  ${messageBlock}
+  <p style="color:#aaa;font-size:12px;margin-top:24px;">Reply to this email to respond directly to ${data.name}.</p>
+</div>`,
+    text: `New church setup request\n\nName: ${data.name}\nEmail: ${data.email}\nChurch: ${data.churchName}${
+      data.city ? `\nCity: ${data.city}` : ""
+    }${data.congregationSize ? `\nSize: ${data.congregationSize}` : ""}${
+      data.message?.trim() ? `\n\n${data.message.trim()}` : ""
+    }`,
+  });
+}
