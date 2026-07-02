@@ -452,59 +452,64 @@ export default function LandingPage() {
           background: PAGE_BG,
         }}
       >
-        <img
-          src="/splash-bible-glow-REV.jpg"
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center",
-            display: "block",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(to right, #0d0612 0%, transparent 30%, transparent 70%, #0d0612 100%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 32px",
-            textAlign: "center",
-          }}
-        >
-          <blockquote
+        <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+          <img
+            src="/splash-bible-glow-REV.jpg"
+            alt=""
             style={{
-              margin: 0,
-              fontSize: "clamp(22px, 4vw, 32px)",
-              fontStyle: "italic",
-              fontWeight: 400,
-              color: TEXT,
-              lineHeight: 1.45,
-              textShadow: "0 2px 24px rgba(0,0,0,0.85), 0 0 40px rgba(13,6,18,0.9)",
-              maxWidth: 640,
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              filter: "brightness(0.35)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to right, #0d0612 0%, rgba(13,6,18,0.72) 30%, rgba(13,6,18,0.72) 70%, #0d0612 100%)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 32px",
+              textAlign: "center",
             }}
           >
-            &quot;He calls his own sheep by name.&quot;
-            <footer style={{ display: "block", marginTop: 12, fontSize: "0.55em", fontStyle: "normal", color: TEXT_SOFT }}>
-              — John 10:3
-            </footer>
-          </blockquote>
+            <blockquote
+              style={{
+                margin: 0,
+                fontSize: "clamp(22px, 4vw, 32px)",
+                fontStyle: "italic",
+                fontWeight: 400,
+                color: TEXT,
+                lineHeight: 1.45,
+                textShadow: "0 2px 24px rgba(0,0,0,0.85), 0 0 40px rgba(13,6,18,0.9)",
+                maxWidth: 640,
+              }}
+            >
+              &quot;He calls his own sheep by name.&quot;
+              <footer style={{ display: "block", marginTop: 12, fontSize: "0.55em", fontStyle: "normal", color: TEXT_SOFT }}>
+                — John 10:3
+              </footer>
+            </blockquote>
+          </div>
         </div>
       </section>
 
       {/* Two ways to experience */}
-      <section style={{ padding: "72px 24px", background: "#120d1a" }}>
+      <section style={{ padding: "72px 24px", background: PAGE_BG }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <h2
             style={{
@@ -545,23 +550,24 @@ export default function LandingPage() {
               <p style={{ margin: "0 0 24px", fontSize: 15, color: TEXT_SOFT, lineHeight: 1.6 }}>
                 Download Shepherd&apos;s Path and walk with God — one moment at a time.
               </p>
-              <button
-                type="button"
-                disabled
+              <a
+                href="https://apps.apple.com/us/app/shepherds-path/id6742929981"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
+                  display: "inline-block",
                   background: "transparent",
                   color: TEXT,
                   border: "1px solid rgba(255,255,255,0.2)",
-                  padding: "12px 22px",
+                  padding: "12px 24px",
                   borderRadius: 10,
                   fontSize: 14,
                   fontWeight: 500,
-                  opacity: 0.85,
-                  cursor: "not-allowed",
+                  textDecoration: "none",
                 }}
               >
-                Coming to App Store
-              </button>
+                Download on the App Store
+              </a>
             </div>
 
             <div

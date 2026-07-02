@@ -70,6 +70,11 @@ if [[ -f "\$REPO_ROOT/artifacts/church-portal/nginx-admin.conf" ]]; then
   else
     echo "WARN: nginx -t failed — fix config before reload (DNS/TLS may be pending)"
   fi
+  # HTTP-only template overwrites certbot SSL blocks — re-attach admin cert.
+  if command -v certbot >/dev/null 2>&1; then
+    sudo certbot --nginx -d admin.shepherdspathai.com --non-interactive --redirect 2>/dev/null || \
+      echo "WARN: certbot failed — run: sudo certbot --nginx -d admin.shepherdspathai.com"
+  fi
 fi
 
 echo "==> Starting church-portal PM2 on port \$CHURCH_PORTAL_PORT..."
