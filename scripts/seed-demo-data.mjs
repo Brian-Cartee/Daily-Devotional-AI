@@ -26,8 +26,14 @@ function loadDatabaseUrl() {
 }
 
 const DB_URL = loadDatabaseUrl();
-const { default: pg } = await import("pg");
-const { Pool } = pg;
+
+// pg lives in api-server/node_modules — resolve it by path since ESM
+// resolves imports relative to the script file, not CWD
+import { createRequire } from "module";
+const require = createRequire(
+  new URL("../artifacts/api-server/package.json", import.meta.url)
+);
+const { Pool } = require("pg");
 const pool = new Pool({ connectionString: DB_URL });
 
 function daysAgo(n) {
