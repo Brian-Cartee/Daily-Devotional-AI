@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useNavigate, useSearchParams } from "react-rou
 import { api } from "./lib/api";
 import { ChurchProvider } from "./contexts/ChurchContext";
 import LoginPage from "./pages/LoginPage";
+import LandingPage from "./pages/LandingPage";
+import DemoEntryPage from "./pages/DemoEntryPage";
 import DashboardPage from "./pages/DashboardPage";
 import PrayerInboxPage from "./pages/PrayerInboxPage";
 import VisitorsPage from "./pages/VisitorsPage";
@@ -56,7 +58,18 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={setSession} />} />
+      <Route
+        path="/"
+        element={session ? <Navigate to="/dashboard" replace /> : <LandingPage />}
+      />
+      <Route
+        path="/demo"
+        element={<DemoEntryPage session={session} onLogin={setSession} />}
+      />
+      <Route
+        path="/login"
+        element={session ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={setSession} />}
+      />
       <Route path="/admin/auth/verify" element={<div style={{ padding: 40, textAlign: "center" }}>Signing you in...</div>} />
       {session ? (
         <Route element={
@@ -79,7 +92,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       ) : (
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       )}
     </Routes>
   );
