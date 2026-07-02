@@ -17,10 +17,11 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import CareRequestsPage from "./pages/CareRequestsPage";
 import Layout from "./components/Layout";
 
-interface Session {
+export interface Session {
   email: string;
   churchId: string;
   role: string;
+  isDemo?: boolean;
 }
 
 export default function App() {

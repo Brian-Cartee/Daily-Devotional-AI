@@ -15,6 +15,7 @@ export interface ChurchAdminSession {
   email: string;
   churchId: string | null;
   role: string;
+  isDemo?: boolean;
 }
 
 // ── Token generation ──────────────────────────────────────────────────────────

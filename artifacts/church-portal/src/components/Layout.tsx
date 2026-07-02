@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { useChurch } from "../contexts/ChurchContext";
 
+import type { Session } from "../App";
+
 interface Props {
-  session: { email: string; churchId: string; role: string };
+  session: Session;
   onLogout: () => void;
 }
 
@@ -145,8 +147,34 @@ export default function Layout({ session, onLogout }: Props) {
           </div>
         </aside>
 
-        <main style={{ flex: 1, padding: "24px 20px", overflowY: "auto" }} className="church-main">
-          <Outlet />
+        <main style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }} className="church-main">
+          {session.isDemo && (
+            <div style={{
+              background: "#fffbeb",
+              borderBottom: "1px solid #fde68a",
+              padding: "10px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              fontSize: 13,
+              color: "#92400e",
+              flexShrink: 0,
+            }}>
+              <span>
+                <strong>You're exploring a live demo</strong> — this is Grace Community Church. Data resets periodically. Write actions are disabled.
+              </span>
+              <a
+                href="https://admin.shepherdspathai.com"
+                style={{ color: "#92400e", fontWeight: 600, whiteSpace: "nowrap", textDecoration: "underline" }}
+              >
+                Set up your church →
+              </a>
+            </div>
+          )}
+          <div style={{ flex: 1, padding: "24px 20px" }}>
+            <Outlet />
+          </div>
         </main>
       </div>
 

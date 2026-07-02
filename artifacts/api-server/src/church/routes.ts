@@ -449,6 +449,40 @@ export function registerChurchRoutes(app: Express): void {
     return res.json({ session: (req as any).churchAdminSession });
   });
 
+  // ── Demo auth — no magic link required ───────────────────────────────────
+  // Issues a read-only session scoped to Grace Community demo church.
+  // The session carries isDemo=true so the portal can show a banner
+  // and block write operations.
+  app.get("/api/church-admin/auth/demo", async (req, res) => {
+    try {
+      const church = await pool.query(
+        `SELECT id FROM churches WHERE slug = 'grace-community-demo' AND status = 'active'`,
+      );
+      if (church.rows.length === 0) {
+        return res.status(503).json({ message: "Demo church not configured." });
+      }
+      const churchId = church.rows[0].id;
+      const payload = Buffer.from(
+        JSON.stringify({
+          email: "demo@shepherdspathai.com",
+          churchId,
+          role: "admin",
+          isDemo: true,
+        }),
+      ).toString("base64");
+      res.cookie("sp_church_admin", payload, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 2 * 60 * 60 * 1000, // 2 hours
+      });
+      return res.json({ ok: true, churchId });
+    } catch (err) {
+      console.error("[church-auth] demo session error:", err);
+      return res.status(500).json({ message: "Failed to create demo session." });
+    }
+  });
+
   // ── Sub-module routes ─────────────────────────────────────────────────────
 
   registerPrayerInboxRoutes(app);

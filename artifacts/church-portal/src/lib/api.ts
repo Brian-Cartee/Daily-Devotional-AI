@@ -15,7 +15,8 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   auth: {
-    me: () => req<{ session: { email: string; churchId: string; role: string } }>("/church-admin/auth/me"),
+    me: () => req<{ session: { email: string; churchId: string; role: string; isDemo?: boolean } }>("/church-admin/auth/me"),
+    enterDemo: () => req<{ ok: boolean; churchId: string }>("/church-admin/auth/demo"),
     requestLink: (email: string, churchSlug: string) =>
       req<{ ok: boolean; devMagicUrl?: string }>("/church-admin/auth/request-link", {
         method: "POST",
