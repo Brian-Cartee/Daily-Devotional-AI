@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CHURCH_PLANS, CHURCH_ROLES } from "@workspace/db";
 import { adminAuth } from "../adminAuth";
 import { storage } from "../storage";
+import { pool } from "../db";
 import { churchStorage } from "./storage";
 import { resolveAccessContext } from "./resolveAccessContext";
 import { canAccessChurchFeature } from "./permissions";
@@ -11,6 +12,24 @@ import {
   toChurchInvitePreview,
   toPublicChurchProfile,
 } from "./publicProfile";
+import {
+  createMagicLink,
+  verifyMagicToken,
+  setAdminSessionCookie,
+  clearAdminSessionCookie,
+  parseAdminSession,
+  sendMagicLinkEmail,
+  requireChurchAdmin,
+  cleanExpiredTokens,
+} from "./auth";
+import { registerPrayerInboxRoutes } from "./prayerInbox";
+import { registerAnnouncementRoutes } from "./announcements";
+import { registerVisitorRoutes } from "./visitors";
+import { registerDashboardRoutes } from "./dashboard";
+import { registerChurchProfileRoutes } from "./churchProfile";
+import { registerMemberRoutes } from "./members";
+import { registerChurchSettingsRoutes } from "./churchSettings";
+import { registerBriefingRoutes, startBriefingScheduler } from "./briefing";
 
 const createChurchBodySchema = z.object({
   name: z.string().min(1).max(120),
@@ -334,4 +353,117 @@ export function registerChurchRoutes(app: Express): void {
       res.status(500).json({ message: "Failed to resolve access context" });
     }
   });
+
+  // ── Pastor magic-link auth ────────────────────────────────────────────────
+
+  const requestLinkSchema = z.object({
+    email: z.string().email(),
+    churchSlug: z.string().min(2).max(64),
+  });
+
+  app.post("/api/church-admin/auth/request-link", async (req, res) => {
+    const parsed = requestLinkSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Valid email and church slug required." });
+    }
+
+    const { email, churchSlug } = parsed.data;
+
+    const churchResult = await pool.query(
+      `SELECT id, name FROM churches WHERE slug = $1 AND status = 'active'`,
+      [churchSlug],
+    );
+
+    if (churchResult.rows.length === 0) {
+      // Return 200 regardless to avoid church enumeration
+      return res.json({ ok: true });
+    }
+
+    const church = churchResult.rows[0];
+
+    const memberResult = await pool.query(
+      `SELECT role FROM church_memberships
+       WHERE church_id = $1 AND email = $2 AND status = 'active'
+         AND role IN ('admin', 'owner', 'leader')`,
+      [church.id, email.toLowerCase().trim()],
+    );
+
+    if (memberResult.rows.length === 0) {
+      return res.json({ ok: true });
+    }
+
+    const baseUrl = process.env.CHURCH_PORTAL_URL || `https://admin.shepherdspathai.com`;
+    const magicUrl = await createMagicLink(email, church.id, baseUrl);
+    let devMagicUrl: string | undefined;
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await sendMagicLinkEmail(email, magicUrl, church.name);
+      } catch (err) {
+        console.error("[church-auth] failed to send magic link:", err);
+        if (process.env.NODE_ENV !== "production") devMagicUrl = magicUrl;
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      console.log(`[church-auth] RESEND not configured — dev sign-in link for ${email}: ${magicUrl}`);
+      devMagicUrl = magicUrl;
+    } else {
+      console.error("[church-auth] RESEND_API_KEY not set — magic link not emailed");
+    }
+
+    return res.json({ ok: true, ...(devMagicUrl ? { devMagicUrl } : {}) });
+  });
+
+  app.get("/api/church-admin/auth/verify", async (req, res) => {
+    const token = String(req.query.token ?? "").trim();
+    if (!token) return res.status(400).json({ message: "Token required." });
+
+    const verified = await verifyMagicToken(token);
+    if (!verified) {
+      return res.status(401).json({ message: "Link expired or already used. Please request a new one." });
+    }
+
+    const memberResult = await pool.query(
+      `SELECT role FROM church_memberships
+       WHERE church_id = $1 AND email = $2 AND status = 'active'`,
+      [verified.churchId, verified.email],
+    );
+
+    const role = memberResult.rows[0]?.role ?? "admin";
+
+    setAdminSessionCookie(res, {
+      email: verified.email,
+      churchId: verified.churchId,
+      role,
+    });
+
+    return res.json({ ok: true, email: verified.email, churchId: verified.churchId });
+  });
+
+  app.post("/api/church-admin/auth/logout", (req, res) => {
+    clearAdminSessionCookie(res);
+    return res.json({ ok: true });
+  });
+
+  app.get("/api/church-admin/auth/me", requireChurchAdmin, (req, res) => {
+    return res.json({ session: (req as any).churchAdminSession });
+  });
+
+  // ── Sub-module routes ─────────────────────────────────────────────────────
+
+  registerPrayerInboxRoutes(app);
+  registerAnnouncementRoutes(app);
+  registerVisitorRoutes(app);
+  registerDashboardRoutes(app);
+  registerChurchProfileRoutes(app);
+  registerMemberRoutes(app);
+  registerChurchSettingsRoutes(app);
+  registerBriefingRoutes(app);
+
+  // Clean expired magic link tokens on startup
+  cleanExpiredTokens().catch((err) =>
+    console.error("[church-auth] token cleanup error:", err),
+  );
+
+  // Start Sunday night briefing scheduler
+  startBriefingScheduler();
 }
