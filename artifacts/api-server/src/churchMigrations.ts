@@ -235,4 +235,11 @@ export async function ensureChurchSchema(): Promise<void> {
       ADD COLUMN IF NOT EXISTS assigned_to text,
       ADD COLUMN IF NOT EXISTS next_followup_date date;
   `);
+
+  await pool.query(`
+    ALTER TABLE church_announcements ADD COLUMN IF NOT EXISTS event_date date;
+  `);
+  await pool.query(`
+    ALTER TABLE church_announcements ADD COLUMN IF NOT EXISTS location text;
+  `);
 }

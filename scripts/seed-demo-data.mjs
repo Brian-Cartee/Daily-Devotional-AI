@@ -221,19 +221,40 @@ async function main() {
 
   await q(`
     INSERT INTO church_announcements
-      (church_id, author_session_id, title, body, pinned, published_at, created_at)
+      (church_id, author_session_id, title, body, pinned, published_at, event_date, location, created_at)
     VALUES
       ($1, 'demo-pastor-grace-community',
        'Summer Small Groups — Sign Up Now',
        'We are launching 6 new small groups this summer: prayer, Scripture study, parenting, men''s discipleship, women''s fellowship, and community service. Sign up at the welcome desk or in the Shepherd''s Path app. Groups begin July 14th.',
-       true, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'),
+       true, NOW() - INTERVAL '2 days', $2, 'Fellowship Hall', NOW() - INTERVAL '2 days'),
 
       ($1, 'demo-pastor-grace-community',
        'VBS Registration Open',
        'Vacation Bible School runs July 21–25 for ages 4–12. Register your kids and sign up to volunteer through the church office or app.',
-       false, NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days')
-  `, [churchId]);
-  console.log("✅  2 announcements seeded");
+       false, NOW() - INTERVAL '4 days', $3, 'Children''s Wing', NOW() - INTERVAL '4 days')
+  `, [churchId, daysFromNow(12), daysFromNow(19)]);
+  console.log("✅  2 announcements seeded (with event dates)");
+
+  // ── Small groups (stored in church settings) ───────────────────────────────
+
+  const settingsPatch = {
+    smallGroups: [
+      {
+        id: "demo-psalms-group",
+        name: "Psalms Study Group",
+        leader: "James White",
+        meetingTime: "Thursdays 7:00 PM",
+        contact: "james.white@demo.com",
+      },
+    ],
+  };
+  await q(`
+    UPDATE churches
+    SET settings = COALESCE(settings, '{}'::jsonb) || $2::jsonb,
+        updated_at = now()
+    WHERE id = $1
+  `, [churchId, JSON.stringify(settingsPatch)]);
+  console.log("✅  1 small group seeded (Psalms Study Group)");
 
   // ── Summary ───────────────────────────────────────────────────────────────
 

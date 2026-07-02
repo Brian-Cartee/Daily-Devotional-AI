@@ -44,6 +44,10 @@ cd "\$REPO_ROOT/artifacts/church-portal"
 pnpm install 2>/dev/null || true
 pnpm run build
 
+echo "==> Refreshing Grace Community demo data..."
+cd "\$REPO_ROOT"
+node scripts/seed-demo-data.mjs || echo "WARN: seed-demo-data failed — run manually on server"
+
 echo "==> Ensuring CHURCH_PORTAL_URL in api-server .env..."
 API_ENV="\$REPO_ROOT/artifacts/api-server/.env"
 if [[ -f "\$API_ENV" ]]; then

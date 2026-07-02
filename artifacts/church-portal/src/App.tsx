@@ -85,7 +85,7 @@ export default function App() {
           <Route path="/care-requests" element={<CareRequestsPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/members" element={<MembersPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings" element={<SettingsPage session={session} />} />
           <Route path="/resources" element={<ResourcesPage />} />
           <Route path="/prayer-settings" element={<PrayerSettingsPage />} />
           <Route path="/small-groups" element={<SmallGroupsPage />} />

@@ -8,11 +8,15 @@ import { pool } from "../db";
 import { requireChurchAdmin } from "./auth";
 import type { ChurchAdminSession } from "./auth";
 
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 const createSchema = z.object({
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(5000),
   pinned: z.boolean().optional().default(false),
   publishedAt: z.string().datetime().optional(),
+  event_date: dateString.nullable().optional(),
+  location: z.string().max(200).nullable().optional(),
 });
 
 const updateSchema = z.object({
@@ -20,7 +24,12 @@ const updateSchema = z.object({
   body: z.string().min(1).max(5000).optional(),
   pinned: z.boolean().optional(),
   publishedAt: z.string().datetime().nullable().optional(),
+  event_date: dateString.nullable().optional(),
+  location: z.string().max(200).nullable().optional(),
 });
+
+const announcementColumns =
+  "id, title, body, pinned, published_at, event_date, location, created_at, updated_at";
 
 export function registerAnnouncementRoutes(app: Express): void {
 
@@ -41,7 +50,7 @@ export function registerAnnouncementRoutes(app: Express): void {
     const limit = Math.min(Number(req.query.limit) || 20, 50);
 
     const result = await pool.query(
-      `SELECT id, title, body, pinned, published_at, created_at
+      `SELECT id, title, body, pinned, published_at, event_date, location, created_at
        FROM church_announcements
        WHERE church_id = $1
          AND (published_at IS NULL OR published_at <= now())
@@ -64,7 +73,7 @@ export function registerAnnouncementRoutes(app: Express): void {
       }
 
       const result = await pool.query(
-        `SELECT id, title, body, pinned, published_at, created_at, updated_at
+        `SELECT ${announcementColumns}
          FROM church_announcements
          WHERE church_id = $1
          ORDER BY created_at DESC
@@ -91,13 +100,13 @@ export function registerAnnouncementRoutes(app: Express): void {
         return res.status(400).json({ message: "Invalid request.", errors: parsed.error.flatten() });
       }
 
-      const { title, body, pinned, publishedAt } = parsed.data;
+      const { title, body, pinned, publishedAt, event_date, location } = parsed.data;
 
       const result = await pool.query(
         `INSERT INTO church_announcements
-           (church_id, author_session_id, title, body, pinned, published_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, title, body, pinned, published_at, created_at`,
+           (church_id, author_session_id, title, body, pinned, published_at, event_date, location)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, title, body, pinned, published_at, event_date, location, created_at`,
         [
           session.churchId,
           session.email,
@@ -105,6 +114,8 @@ export function registerAnnouncementRoutes(app: Express): void {
           body,
           pinned,
           publishedAt ? new Date(publishedAt) : new Date(),
+          event_date ?? null,
+          location?.trim() ? location.trim() : null,
         ],
       );
 
@@ -127,21 +138,53 @@ export function registerAnnouncementRoutes(app: Express): void {
         return res.status(400).json({ message: "Invalid request." });
       }
 
-      const { title, body, pinned, publishedAt } = parsed.data;
+      const { title, body, pinned, publishedAt, event_date, location } = parsed.data;
       const id = Number(req.params.id);
 
-      await pool.query(
+      const sets: string[] = ["updated_at = now()"];
+      const params: unknown[] = [];
+      let idx = 1;
+
+      if (title !== undefined) {
+        sets.push(`title = $${idx++}`);
+        params.push(title);
+      }
+      if (body !== undefined) {
+        sets.push(`body = $${idx++}`);
+        params.push(body);
+      }
+      if (pinned !== undefined) {
+        sets.push(`pinned = $${idx++}`);
+        params.push(pinned);
+      }
+      if (publishedAt !== undefined) {
+        sets.push(`published_at = $${idx++}`);
+        params.push(publishedAt ? new Date(publishedAt) : null);
+      }
+      if (event_date !== undefined) {
+        sets.push(`event_date = $${idx++}`);
+        params.push(event_date);
+      }
+      if (location !== undefined) {
+        sets.push(`location = $${idx++}`);
+        params.push(location?.trim() ? location.trim() : null);
+      }
+
+      params.push(id, session.churchId);
+
+      const result = await pool.query(
         `UPDATE church_announcements
-         SET title = COALESCE($1, title),
-             body = COALESCE($2, body),
-             pinned = COALESCE($3, pinned),
-             published_at = CASE WHEN $4::text IS NOT NULL THEN $4::timestamp ELSE published_at END,
-             updated_at = now()
-         WHERE id = $5 AND church_id = $6`,
-        [title ?? null, body ?? null, pinned ?? null, publishedAt ?? null, id, session.churchId],
+         SET ${sets.join(", ")}
+         WHERE id = $${idx++} AND church_id = $${idx}
+         RETURNING id, title, body, pinned, published_at, event_date, location, created_at, updated_at`,
+        params,
       );
 
-      return res.json({ ok: true });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Announcement not found." });
+      }
+
+      return res.json({ announcement: result.rows[0] });
     },
   );
 

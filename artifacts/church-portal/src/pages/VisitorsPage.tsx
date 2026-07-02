@@ -46,6 +46,35 @@ function formatVisitDate(dateStr: string): string {
   });
 }
 
+function formatFollowUpBy(dateStr: string): string {
+  return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function isFollowUpDueOrPast(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  return dateStr <= todayIso();
+}
+
+function isFollowUpOverdue(v: Visitor): boolean {
+  return (
+    v.follow_up_status === "pending" &&
+    v.next_followup_date !== null &&
+    isFollowUpDueOrPast(v.next_followup_date)
+  );
+}
+
+function sortVisitors(list: Visitor[]): Visitor[] {
+  return [...list].sort((a, b) => {
+    const aOverdue = isFollowUpOverdue(a) ? 0 : 1;
+    const bOverdue = isFollowUpOverdue(b) ? 0 : 1;
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+    return new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime();
+  });
+}
+
 export default function VisitorsPage() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +83,8 @@ export default function VisitorsPage() {
   const [openContactFormId, setOpenContactFormId] = useState<number | null>(null);
   const [contactType, setContactType] = useState<string>("call");
   const [contactNotes, setContactNotes] = useState("");
+  const [assignTo, setAssignTo] = useState("");
+  const [nextFollowupDate, setNextFollowupDate] = useState("");
   const [savingContact, setSavingContact] = useState(false);
   const [lastContactedIds, setLastContactedIds] = useState<Record<number, boolean>>({});
 
@@ -66,7 +97,7 @@ export default function VisitorsPage() {
 
   async function loadVisitors() {
     const data = await api.visitors.list();
-    setVisitors(data.visitors);
+    setVisitors(sortVisitors(data.visitors));
   }
 
   useEffect(() => {
@@ -114,27 +145,52 @@ export default function VisitorsPage() {
     }
   }
 
-  function openContactForm(id: number) {
-    setOpenContactFormId(id);
+  function openContactForm(visitor: Visitor) {
+    setOpenContactFormId(visitor.id);
     setContactType("call");
     setContactNotes("");
+    setAssignTo(visitor.assigned_to ?? "");
+    setNextFollowupDate(visitor.next_followup_date ?? "");
   }
 
   function closeContactForm() {
     setOpenContactFormId(null);
     setContactType("call");
     setContactNotes("");
+    setAssignTo("");
+    setNextFollowupDate("");
   }
 
   async function handleLogContact(id: number) {
     setSavingContact(true);
+    const assignToVal = assignTo.trim();
+    const hasAssignTo = assignToVal.length > 0;
+    const hasFollowupDate = nextFollowupDate.length > 0;
     try {
       await api.visitors.logContact(id, {
         contactType,
         notes: contactNotes.trim() || undefined,
       });
+
+      if (hasAssignTo || hasFollowupDate) {
+        api.visitors
+          .update(id, {
+            ...(hasAssignTo ? { assignedTo: assignToVal } : {}),
+            ...(hasFollowupDate ? { nextFollowupDate } : {}),
+          })
+          .catch(() => {});
+      }
+
       setVisitors((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, follow_up_status: "contacted" as const } : v)),
+        prev.map((v) => {
+          if (v.id !== id) return v;
+          return {
+            ...v,
+            follow_up_status: "contacted" as const,
+            ...(hasAssignTo ? { assigned_to: assignToVal } : {}),
+            ...(hasFollowupDate ? { next_followup_date: nextFollowupDate } : {}),
+          };
+        }),
       );
       setLastContactedIds((prev) => ({ ...prev, [id]: true }));
       closeContactForm();
@@ -269,8 +325,23 @@ export default function VisitorsPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>
-                      {displayName(v)}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                      <span style={{ fontSize: 15, fontWeight: 500 }}>{displayName(v)}</span>
+                      {isFollowUpOverdue(v) && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            background: "#fee2e2",
+                            color: "#991b1b",
+                            padding: "2px 8px",
+                            borderRadius: 20,
+                          }}
+                        >
+                          Follow up overdue
+                        </span>
+                      )}
                     </div>
                     {lastContactedIds[v.id] && (
                       <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
@@ -280,6 +351,22 @@ export default function VisitorsPage() {
                     <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
                       {[v.email, v.phone].filter(Boolean).join(" · ") || "No contact info"}
                     </div>
+                    {v.assigned_to && (
+                      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
+                        Assigned to: {v.assigned_to}
+                      </div>
+                    )}
+                    {v.next_followup_date && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: isFollowUpDueOrPast(v.next_followup_date) ? "#dc2626" : "#9ca3af",
+                          marginBottom: 4,
+                        }}
+                      >
+                        Follow up by: {formatFollowUpBy(v.next_followup_date)}
+                      </div>
+                    )}
                     <div style={{ fontSize: 12, color: "#9ca3af" }}>
                       Visited {formatVisitDate(v.visit_date)}
                       {v.notes ? ` — ${v.notes}` : ""}
@@ -289,7 +376,7 @@ export default function VisitorsPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        openContactFormId === v.id ? closeContactForm() : openContactForm(v.id)
+                        openContactFormId === v.id ? closeContactForm() : openContactForm(v)
                       }
                       style={{
                         background: "#f3f4f6",
@@ -354,6 +441,30 @@ export default function VisitorsPage() {
                           </option>
                         ))}
                       </select>
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                        Assign to
+                      </label>
+                      <input
+                        type="text"
+                        value={assignTo}
+                        onChange={(e) => setAssignTo(e.target.value.slice(0, 80))}
+                        placeholder="Pastor James"
+                        maxLength={80}
+                        style={{ width: "100%", maxWidth: 280 }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                        Follow up by
+                      </label>
+                      <input
+                        type="date"
+                        value={nextFollowupDate}
+                        onChange={(e) => setNextFollowupDate(e.target.value)}
+                        style={{ width: "100%", maxWidth: 280 }}
+                      />
                     </div>
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>

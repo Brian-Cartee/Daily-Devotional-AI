@@ -117,9 +117,21 @@ export const api = {
   },
   announcements: {
     list: () => req<{ announcements: Announcement[] }>("/church-admin/announcements"),
-    create: (data: { title: string; body: string; pinned?: boolean }) =>
+    create: (data: {
+      title: string;
+      body: string;
+      pinned?: boolean;
+      event_date?: string | null;
+      location?: string | null;
+    }) =>
       req("/church-admin/announcements", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: number, data: Partial<{ title: string; body: string; pinned: boolean }>) =>
+    update: (id: number, data: Partial<{
+      title: string;
+      body: string;
+      pinned: boolean;
+      event_date: string | null;
+      location: string | null;
+    }>) =>
       req(`/church-admin/announcements/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: number) =>
       req(`/church-admin/announcements/${id}`, { method: "DELETE" }),
@@ -307,6 +319,8 @@ export interface Announcement {
   body: string;
   pinned: boolean;
   published_at: string | null;
+  event_date: string | null;
+  location: string | null;
   created_at: string;
 }
 

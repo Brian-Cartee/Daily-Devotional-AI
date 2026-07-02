@@ -119,6 +119,27 @@ async function resolveChurchForJoin(input: {
 }
 
 export function registerChurchRoutes(app: Express): void {
+  const DEMO_WRITE_EXEMPT = new Set([
+    "/auth/request-link",
+    "/auth/logout",
+    "/setup-interest",
+  ]);
+
+  app.use("/api/church-admin", (req, res, next) => {
+    const method = req.method.toUpperCase();
+    if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
+    if (DEMO_WRITE_EXEMPT.has(req.path)) return next();
+    const session = parseAdminSession(req);
+    if (session?.isDemo) {
+      res.status(403).json({
+        code: "demo_read_only",
+        message: "This is a read-only demo. Changes are not saved.",
+      });
+      return;
+    }
+    next();
+  });
+
   // ── Public church lookup (no auth, no Pro required) ───────────────────────
 
   app.get("/api/churches/by-slug/:slug", async (req, res) => {
