@@ -19,14 +19,14 @@ import NotFound from "@/pages/not-found";
 import StartPage from "@/pages/StartPage";
 import WelcomePage from "@/pages/WelcomePage";
 import LandingHome from "@/pages/LandingHome";
-import Devotional from "@/pages/Devotional";
+const Devotional = lazy(() => import("@/pages/Devotional"));
 import SharedVersePage from "@/pages/SharedVersePage";
 import SharedMomentPage from "@/pages/SharedMomentPage";
 import TheThreadPage from "@/pages/TheThreadPage";
-import UnderstandBible from "@/pages/UnderstandBible";
-import ReadBible from "@/pages/ReadBible";
-import Journal from "@/pages/Journal";
-import QuickStudyPage from "@/pages/QuickStudyPage";
+const UnderstandBible = lazy(() => import("@/pages/UnderstandBible"));
+const ReadBible = lazy(() => import("@/pages/ReadBible"));
+const Journal = lazy(() => import("@/pages/Journal"));
+const QuickStudyPage = lazy(() => import("@/pages/QuickStudyPage"));
 import ProSuccess from "@/pages/ProSuccess";
 import RestorePage from "@/pages/RestorePage";
 import RefundPage from "@/pages/RefundPage";
@@ -37,7 +37,7 @@ import DemoCreate from "@/pages/DemoCreate";
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
-import GuidancePage from "@/pages/GuidancePage";
+const GuidancePage = lazy(() => import("@/pages/GuidancePage"));
 import { FloatingAskAI } from "@/components/FloatingAskAI";
 import { ConvictionPanel } from "@/components/ConvictionPanel";
 import { NavBar } from "@/components/NavBar";
@@ -58,6 +58,7 @@ import HowToUsePage from "@/pages/HowToUsePage";
 import SafetyPage from "@/pages/SafetyPage";
 import FeedbackPage from "@/pages/FeedbackPage";
 import InvitePage from "@/pages/InvitePage";
+const ChurchPage = lazy(() => import("@/pages/ChurchPage"));
 import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
@@ -78,7 +79,7 @@ import {
 import { useEntryOverlayActive } from "@/lib/entryOverlayState";
 import { syncUserNameFromServer, hasBeenPrompted } from "@/lib/userName";
 import { isThresholdComplete, markThresholdComplete } from "@/lib/thresholdState";
-import { NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
+import { hasNativeUiReadyElement, NATIVE_UI_READY_SELECTORS } from "@/lib/nativeUiReadySelectors";
 import { nativeDiag } from "@/lib/nativeDiag";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HeavenEasterEgg } from "@/components/HeavenEasterEgg";
@@ -150,6 +151,10 @@ function NativeRouteBeacon() {
   return null;
 }
 
+const NATIVE_ROUTE_FALLBACK = (
+  <div style={{ minHeight: "100vh", background: "rgba(13, 6, 18, 1)" }} />
+);
+
 function Router() {
   const [location] = useLocation();
   const entryOverlayActive = useEntryOverlayActive();
@@ -168,15 +173,39 @@ function Router() {
       <Route path="/" component={LandingHome} />
       <Route path="/start" component={StartPage} />
       <Route path="/welcome" component={WelcomePage} />
-      <Route path="/guidance" component={GuidancePage} />
-      <Route path="/devotional" component={Devotional} />
+      <Route path="/guidance">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <GuidancePage />
+        </Suspense>
+      </Route>
+      <Route path="/devotional">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <Devotional />
+        </Suspense>
+      </Route>
       <Route path="/v/:date" component={SharedVersePage} />
       <Route path="/s/:id" component={SharedMomentPage} />
       <Route path="/thread" component={TheThreadPage} />
-      <Route path="/understand" component={UnderstandBible} />
-      <Route path="/read" component={ReadBible} />
-      <Route path="/study" component={QuickStudyPage} />
-      <Route path="/journal" component={Journal} />
+      <Route path="/understand">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <UnderstandBible />
+        </Suspense>
+      </Route>
+      <Route path="/read">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <ReadBible />
+        </Suspense>
+      </Route>
+      <Route path="/study">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <QuickStudyPage />
+        </Suspense>
+      </Route>
+      <Route path="/journal">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <Journal />
+        </Suspense>
+      </Route>
       <Route path="/moments" component={Moments} />
       <Route path="/pro-success" component={ProSuccess} />
       <Route path="/restore" component={RestorePage} />
@@ -210,6 +239,16 @@ function Router() {
       <Route path="/safety" component={SafetyPage} />
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/invite" component={InvitePage} />
+      <Route path="/church">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <ChurchPage />
+        </Suspense>
+      </Route>
+      <Route path="/join/:slug">
+        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
+          <ChurchPage />
+        </Suspense>
+      </Route>
       <Route path="/trivia" component={TriviaPage} />
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}
@@ -320,7 +359,7 @@ function App() {
     if (!isNativeWebViewShell()) return;
 
     const tryMark = () => {
-      if (!document.querySelector(NATIVE_UI_READY_SELECTORS)) return false;
+      if (!hasNativeUiReadyElement()) return false;
       markNativeShellUiPainted();
       return true;
     };
@@ -332,8 +371,15 @@ function App() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
+    let polls = 0;
+    const poll = window.setInterval(() => {
+      polls += 1;
+      if (tryMark() || polls >= 80) window.clearInterval(poll);
+    }, 250);
+
     return () => {
       observer.disconnect();
+      window.clearInterval(poll);
     };
   }, []);
 

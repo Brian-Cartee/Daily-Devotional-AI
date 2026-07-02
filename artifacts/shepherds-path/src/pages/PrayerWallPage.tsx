@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getSessionId } from "@/lib/session";
+import { fetchMyChurches } from "@/lib/church";
 import { useToast } from "@/hooks/use-toast";
-import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing } from "lucide-react";
+import { HandHeart, Send, Loader2, Clock, Users, Bell, BellRing, Church } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type WallTab = "recent" | "praying" | "answered";
@@ -73,6 +75,13 @@ export default function PrayerWallPage() {
     queryFn: () => fetch("/api/prayer-wall/answered").then((r) => r.json()),
     enabled: tab === "answered",
   });
+
+  const { data: myChurches = [] } = useQuery({
+    queryKey: ["/api/churches/mine", sessionId],
+    queryFn: () => fetchMyChurches(sessionId),
+    staleTime: 60_000,
+  });
+  const connectedChurch = myChurches[0]?.church ?? null;
 
   const visibleEntries = useMemo(() => {
     if (tab === "answered") return [];
@@ -166,6 +175,27 @@ export default function PrayerWallPage() {
           "For where two or three gather in My name, there am I with them." — Matthew 18:20
         </motion.p>
 
+        {connectedChurch && (
+          <motion.div
+            {...fadeUp(0.03)}
+            className="mb-5 rounded-2xl px-4 py-3.5 flex gap-3"
+            style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.22)" }}
+          >
+            <Church className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-[13px] text-foreground/85 leading-relaxed">
+                Requests here are shared with the wider Shepherd&apos;s Path community — not your church&apos;s pastor inbox.
+              </p>
+              <Link
+                href="/church"
+                className="inline-block mt-1.5 text-[12px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                Need pastoral care from {connectedChurch.name}? Go to Church →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Submit button / form */}
         <motion.div {...fadeUp(0.05)} className="mb-6">
           <AnimatePresence mode="wait">
@@ -191,7 +221,10 @@ export default function PrayerWallPage() {
               >
                 <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-500 to-rose-500 rounded-t-2xl" />
                 <div className="p-4">
-                  <p className="text-[14px] font-bold text-foreground mb-3">Share your prayer request</p>
+                  <p className="text-[14px] font-bold text-foreground mb-1">Share your prayer request</p>
+                  <p className="text-[12px] text-muted-foreground mb-3 leading-relaxed">
+                    This goes to the community prayer wall — visible to others in the app, not your church leaders.
+                  </p>
                   <textarea
                     data-testid="input-prayer-request"
                     value={request}

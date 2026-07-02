@@ -56,7 +56,7 @@ const CRISIS_KEYWORDS = [
   "homeless", "addiction", "overdose", "alone", "nobody cares",
 ];
 
-async function detectUrgency(
+export async function detectUrgency(
   prayerText: string,
 ): Promise<{ urgent: boolean; reason: string | null }> {
   const lower = prayerText.toLowerCase();

@@ -1,6 +1,5 @@
 /** Elements that mean the home shell has real UI (native overlay + splash can dismiss). */
 export const NATIVE_UI_READY_SELECTORS = [
-  '[data-testid="landing-home"]',
   '[data-testid="sp-splash-active"]',
   '[data-testid="splash-icebreaker"]',
   '[data-testid="splash-icebreaker-callback"]',
@@ -11,11 +10,15 @@ export const NATIVE_UI_READY_SELECTORS = [
   '[data-testid="text-threshold-welcome"]',
   '[data-testid="threshold-arrival"]',
   '[data-testid="btn-threshold-enter"]',
+  '[data-testid="night-shepherd"]',
+  '[data-testid="btn-night-continue-greet"]',
 ].join(",");
 
 export function hasNativeUiReadyElement(): boolean {
   if (typeof document === "undefined") return false;
   if (document.documentElement.dataset.nativeUiReady === "1") return true;
-  if (document.getElementById("sp-native-boot-placeholder")) return false;
-  return !!document.querySelector(NATIVE_UI_READY_SELECTORS);
+  const el = document.querySelector(NATIVE_UI_READY_SELECTORS);
+  if (!el) return false;
+  if ((el as HTMLElement).id === "sp-native-boot-placeholder") return false;
+  return true;
 }

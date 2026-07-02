@@ -101,6 +101,9 @@ import { turnMetadataToHeaders } from "../philip-runtime/runtime/headers";
 import { freeTrialGrants } from "../freeTrialConfig";
 import { registerSpeakLifeRoutes } from "../speakLife";
 import { registerChurchRoutes } from "../church/routes";
+import { churchStorage } from "../church/storage";
+import { canAccessChurchFeature } from "../church/permissions";
+import { detectUrgency } from "../church/prayerInbox";
 import { ensureChurchSchema } from "../churchMigrations";
 import { ensurePhilipRelationshipSchema } from "../philipRelationshipMigrations";
 import { ensurePhilipTranscriptSchema } from "../philipTranscriptMigrations";
@@ -3262,6 +3265,7 @@ What you never do:
           FROM prayer_wall_encouragements GROUP BY request_id
         ) ec ON ec.request_id = pw.id
         WHERE pw.status IN ('active', 'answered')
+          AND pw.church_id IS NULL
       `;
       const params: any[] = [];
       if (category && PRAYER_CATEGORIES.includes(category as any)) {
@@ -3314,7 +3318,7 @@ What you never do:
     try {
       const result = await pool.query(
         `SELECT id, display_name, is_anonymous, request, category, answered_text, answered_at, created_at
-         FROM prayer_wall WHERE status = 'answered' ORDER BY answered_at DESC LIMIT 20`
+         FROM prayer_wall WHERE status = 'answered' AND church_id IS NULL ORDER BY answered_at DESC LIMIT 20`
       );
       res.json(result.rows.map((e: any) => ({
         id: e.id,
@@ -3331,9 +3335,12 @@ What you never do:
   });
 
   app.post("/api/prayer-wall", async (req, res) => {
-    const parsed = insertPrayerWallSchema.safeParse(req.body);
+    const postPrayerWallBodySchema = insertPrayerWallSchema.extend({
+      churchId: z.string().uuid().optional(),
+    });
+    const parsed = postPrayerWallBodySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid request", errors: parsed.error.flatten() });
-    const { sessionId, request, category, isAnonymous, displayName } = parsed.data;
+    const { sessionId, request, category, isAnonymous, displayName, churchId } = parsed.data;
 
     // Daily post limit check (isPro passed from client — honour-based; server side is free=1, pro=5)
     const isPro = req.body.isPro === true;
@@ -3360,6 +3367,38 @@ What you never do:
     }
 
     try {
+      if (churchId) {
+        const membership = await churchStorage.getMembership(churchId, sessionId);
+        if (!membership || membership.status !== "active") {
+          return res.status(403).json({ message: "Not a member of this church" });
+        }
+        const church = await churchStorage.getChurchById(churchId);
+        if (!church) return res.status(404).json({ message: "Church not found" });
+        if (!canAccessChurchFeature(church.plan, "church_prayer_wall")) {
+          return res.status(403).json({ message: "Church prayer wall is not available on this plan" });
+        }
+
+        const result = await pool.query(
+          `INSERT INTO prayer_wall (session_id, display_name, is_anonymous, request, category, status, church_id)
+           VALUES ($1, $2, $3, $4, $5, 'active', $6) RETURNING *`,
+          [sessionId, isAnonymous ? null : (displayName || null), isAnonymous ?? true, request, category || "Other", churchId],
+        );
+        const row = result.rows[0];
+
+        const { urgent, reason } = await detectUrgency(request);
+        if (urgent) {
+          await pool.query(
+            `UPDATE prayer_wall SET urgency_flagged = true, urgency_reason = $1 WHERE id = $2`,
+            [reason, row.id],
+          );
+          row.urgency_flagged = true;
+          row.urgency_reason = reason;
+        }
+
+        incrementPrayerPostCount(sessionId);
+        return res.json(row);
+      }
+
       const result = await pool.query(
         `INSERT INTO prayer_wall (session_id, display_name, is_anonymous, request, category, status)
          VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
