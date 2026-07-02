@@ -3,8 +3,50 @@ import { Link } from "react-router-dom";
 import { useChurch } from "../contexts/ChurchContext";
 import { api, type DashboardAlerts } from "../lib/api";
 
+const CARD_BG = "#1a1520";
+const CARD_BORDER = "rgba(255,255,255,0.08)";
+const TEXT = "#ede8e0";
+const TEXT_MUTED = "rgba(237, 232, 224, 0.55)";
+
 interface Props {
   session: { email: string; churchId: string; role: string };
+}
+
+function QuickActionLink({ label, to, primary = false }: { label: string; to: string; primary?: boolean }) {
+  const [hover, setHover] = useState(false);
+
+  const baseStyle = {
+    display: "inline-block" as const,
+    borderRadius: "12px",
+    padding: "14px 20px",
+    fontSize: "14px",
+    fontWeight: 500,
+    cursor: "pointer",
+    textDecoration: "none",
+    transition: "border-color 0.15s ease, background 0.15s ease",
+    ...(primary
+      ? {
+          background: hover ? "rgba(217, 119, 6, 0.16)" : "rgba(217, 119, 6, 0.12)",
+          border: `1px solid ${hover ? "rgba(217, 119, 6, 0.4)" : "rgba(217, 119, 6, 0.3)"}`,
+          color: "#fbbf24",
+        }
+      : {
+          background: hover ? "rgba(255,255,255,0.04)" : CARD_BG,
+          border: `1px solid ${hover ? "rgba(196, 78, 224, 0.3)" : CARD_BORDER}`,
+          color: TEXT,
+        }),
+  };
+
+  return (
+    <Link
+      to={to}
+      style={baseStyle}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {label} →
+    </Link>
+  );
 }
 
 export default function DashboardPage({ session }: Props) {
@@ -27,20 +69,20 @@ export default function DashboardPage({ session }: Props) {
 
   return (
     <div>
-      <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 600 }}>Dashboard</h1>
-      <p style={{ margin: "0 0 8px", color: "#6b7280", fontSize: 14 }}>
+      <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 600, color: TEXT }}>Dashboard</h1>
+      <p style={{ margin: "0 0 8px", color: TEXT_MUTED, fontSize: 14 }}>
         Welcome back, {session.email}
       </p>
       {church && (
-        <p style={{ margin: "0 0 32px", fontSize: 15, fontWeight: 500, color: "#1b4332" }}>
+        <p style={{ margin: "0 0 32px", fontSize: 15, fontWeight: 500, color: TEXT }}>
           {church.name}
         </p>
       )}
       {!church && !loading && (
-        <p style={{ margin: "0 0 32px", color: "#9ca3af", fontSize: 14 }}>Could not load church info.</p>
+        <p style={{ margin: "0 0 32px", color: TEXT_MUTED, fontSize: 14 }}>Could not load church info.</p>
       )}
       {loading && !stats && (
-        <p style={{ margin: "0 0 32px", color: "#9ca3af", fontSize: 14 }}>Loading stats...</p>
+        <p style={{ margin: "0 0 32px", color: TEXT_MUTED, fontSize: 14 }}>Loading stats...</p>
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
@@ -49,33 +91,46 @@ export default function DashboardPage({ session }: Props) {
             key={card.label}
             to={card.to}
             style={{
-              background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
-              padding: "20px 24px", textDecoration: "none", color: "inherit",
+              background: CARD_BG,
+              border: `1px solid ${CARD_BORDER}`,
+              borderRadius: 16,
+              padding: "20px 24px",
+              textDecoration: "none",
+              color: "inherit",
             }}
           >
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: TEXT_MUTED,
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                marginBottom: 8,
+              }}
+            >
               {card.label}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 600, color: "#1b4332", marginBottom: 4 }}>
+            <div style={{ fontSize: 42, fontWeight: 700, color: TEXT, marginBottom: 4, lineHeight: 1.1 }}>
               {card.value}
             </div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{card.sub}</div>
+            <div style={{ fontSize: 13, color: TEXT_MUTED }}>{card.sub}</div>
           </Link>
         ))}
       </div>
 
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600 }}>Needs Attention</h2>
+        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600, color: TEXT }}>Needs Attention</h2>
         {alerts === null ? (
-          <p style={{ color: "#9ca3af", fontSize: 14 }}>Loading alerts...</p>
+          <p style={{ color: TEXT_MUTED, fontSize: 14 }}>Loading alerts...</p>
         ) : alerts.overdueVisitors.length === 0 && alerts.urgentPrayers.length === 0 ? (
           <div
             style={{
-              background: "#e8f5ee",
-              border: "1px solid #b7e4c7",
-              borderRadius: 8,
+              background: CARD_BG,
+              border: `1px solid ${CARD_BORDER}`,
+              borderRadius: 12,
               padding: "12px 16px",
-              color: "#1b4332",
+              color: TEXT_MUTED,
               fontSize: 14,
             }}
           >
@@ -89,18 +144,19 @@ export default function DashboardPage({ session }: Props) {
                 to="/visitors"
                 style={{
                   display: "block",
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
+                  background: CARD_BG,
+                  border: `1px solid ${CARD_BORDER}`,
+                  borderLeft: "3px solid rgba(217,119,6,0.6)",
+                  borderRadius: "0 8px 8px 0",
                   padding: "12px 16px",
                   textDecoration: "none",
                   color: "inherit",
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#1b4332", marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: TEXT, marginBottom: 4 }}>
                   ⚠️ {[v.first_name, v.last_name].filter(Boolean).join(" ")}
                 </div>
-                <div style={{ fontSize: 13, color: "#6b7280" }}>
+                <div style={{ fontSize: 13, color: TEXT_MUTED }}>
                   visited {v.days_since} {v.days_since === 1 ? "day" : "days"} ago · no follow-up
                 </div>
               </Link>
@@ -111,18 +167,19 @@ export default function DashboardPage({ session }: Props) {
                 to="/prayer-inbox"
                 style={{
                   display: "block",
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
+                  background: CARD_BG,
+                  border: `1px solid ${CARD_BORDER}`,
+                  borderLeft: "3px solid rgba(220,38,38,0.6)",
+                  borderRadius: "0 8px 8px 0",
                   padding: "12px 16px",
                   textDecoration: "none",
                   color: "inherit",
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#1b4332", marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: TEXT, marginBottom: 4 }}>
                   🔴 {p.is_anonymous ? "Anonymous" : (p.display_name || "Member")}
                 </div>
-                <div style={{ fontSize: 13, color: "#6b7280", fontStyle: "italic", marginBottom: 4 }}>
+                <div style={{ fontSize: 13, color: TEXT_MUTED, fontStyle: "italic", marginBottom: 4 }}>
                   {p.request.length > 80 ? `${p.request.slice(0, 80)}…` : p.request}
                 </div>
                 <div style={{ fontSize: 13, color: "#dc2626" }}>
@@ -134,27 +191,24 @@ export default function DashboardPage({ session }: Props) {
         )}
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "24px" }}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600 }}>Quick actions</h2>
+      <div
+        style={{
+          background: CARD_BG,
+          border: `1px solid ${CARD_BORDER}`,
+          borderRadius: 16,
+          padding: "24px",
+        }}
+      >
+        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600, color: TEXT }}>Quick actions</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {[
             { label: "View prayer inbox", to: "/prayer-inbox" },
             { label: "Post announcement", to: "/announcements" },
-            { label: "Log a visitor", to: "/visitors" },
+            { label: "Log a visitor", to: "/visitors", primary: true },
             { label: "Church settings", to: "/settings" },
             { label: "View analytics", to: "/analytics" },
-          ].map(({ label, to }) => (
-            <Link
-              key={label}
-              to={to}
-              style={{
-                display: "inline-block", background: "#e8f5ee", color: "#2d6a4f",
-                padding: "10px 18px", borderRadius: 8, fontSize: 14, fontWeight: 500,
-                textDecoration: "none",
-              }}
-            >
-              {label} →
-            </Link>
+          ].map(({ label, to, primary }) => (
+            <QuickActionLink key={label} label={label} to={to} primary={primary} />
           ))}
         </div>
       </div>
