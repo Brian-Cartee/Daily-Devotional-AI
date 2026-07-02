@@ -68,10 +68,13 @@ const joinChurchBodySchema = z
     sessionId: z.string().min(1).max(128),
     slug: z.string().min(2).max(64).optional(),
     inviteCode: z.string().min(6).max(32).optional(),
+    /** Single field from the app — tries invite code, then slug */
+    token: z.string().min(2).max(64).optional(),
   })
-  .refine((data) => Boolean(data.slug?.trim() || data.inviteCode?.trim()), {
-    message: "slug or inviteCode required",
-  });
+  .refine(
+    (data) => Boolean(data.slug?.trim() || data.inviteCode?.trim() || data.token?.trim()),
+    { message: "slug, inviteCode, or token required" },
+  );
 
 const leaveChurchBodySchema = z.object({
   sessionId: z.string().min(1).max(128),
@@ -157,14 +160,25 @@ export function registerChurchRoutes(app: Express): void {
         message: parsed.error.issues[0]?.message ?? "Invalid join request",
       });
     }
-    const { sessionId, slug, inviteCode } = parsed.data;
+    const { sessionId, slug, inviteCode, token } = parsed.data;
     try {
-      const church = slug?.trim()
-        ? await churchStorage.getChurchBySlug(slug.trim().toLowerCase())
-        : await churchStorage.getChurchByInviteCode(inviteCode!.trim());
+      let church = null;
+      const trimmedToken = token?.trim();
+      if (trimmedToken) {
+        church =
+          (await churchStorage.getChurchByInviteCode(trimmedToken)) ??
+          (await churchStorage.getChurchBySlug(trimmedToken.toLowerCase()));
+      } else if (slug?.trim()) {
+        church = await churchStorage.getChurchBySlug(slug.trim().toLowerCase());
+      } else {
+        church = await churchStorage.getChurchByInviteCode(inviteCode!.trim());
+      }
 
       if (!church || !isChurchJoinable(church.status)) {
-        return res.status(404).json({ message: "Church not found" });
+        return res.status(404).json({
+          message:
+            "Church not found. Check your invite code — it may look like grace-demo-2026, not the church name.",
+        });
       }
       if (!canAccessChurchFeature(church.plan, "invite_join")) {
         return res.status(403).json({ message: "This church is not accepting members yet" });

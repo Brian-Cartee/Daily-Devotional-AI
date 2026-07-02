@@ -50,16 +50,21 @@ export async function fetchMyChurches(sessionId: string): Promise<MyChurchEntry[
 
 export async function joinChurch(
   sessionId: string,
-  opts: { inviteCode?: string; slug?: string },
+  opts: { inviteCode?: string; slug?: string; token?: string },
 ): Promise<MyChurchEntry> {
+  const token = opts.token?.trim();
+  const inviteCode = opts.inviteCode?.trim();
+  const slug = opts.slug?.trim().toLowerCase();
+
   const res = await fetch(apiUrl("/api/churches/join"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
       sessionId,
-      ...(opts.inviteCode?.trim() ? { inviteCode: opts.inviteCode.trim() } : {}),
-      ...(opts.slug?.trim() ? { slug: opts.slug.trim().toLowerCase() } : {}),
+      ...(token ? { token } : {}),
+      ...(inviteCode && !token ? { inviteCode } : {}),
+      ...(slug && !token && !inviteCode ? { slug } : {}),
     }),
   });
   const data = await parseJson<{

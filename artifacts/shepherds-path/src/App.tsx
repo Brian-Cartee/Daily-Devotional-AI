@@ -58,7 +58,7 @@ import HowToUsePage from "@/pages/HowToUsePage";
 import SafetyPage from "@/pages/SafetyPage";
 import FeedbackPage from "@/pages/FeedbackPage";
 import InvitePage from "@/pages/InvitePage";
-const ChurchPage = lazy(() => import("@/pages/ChurchPage"));
+import ChurchPage from "@/pages/ChurchPage";
 import TriviaPage from "@/pages/TriviaPage";
 // import SmsPage from "@/pages/SmsPage"; // temporarily disabled — awaiting Twilio toll-free verification
 import CallingPage from "@/pages/CallingPage";
@@ -152,7 +152,19 @@ function NativeRouteBeacon() {
 }
 
 const NATIVE_ROUTE_FALLBACK = (
-  <div style={{ minHeight: "100vh", background: "rgba(13, 6, 18, 1)" }} />
+  <div
+    style={{
+      minHeight: "100vh",
+      background: "rgba(13, 6, 18, 1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "rgba(237,232,224,0.45)",
+      fontSize: "14px",
+    }}
+  >
+    Loading…
+  </div>
 );
 
 function Router() {
@@ -239,16 +251,8 @@ function Router() {
       <Route path="/safety" component={SafetyPage} />
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/invite" component={InvitePage} />
-      <Route path="/church">
-        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
-          <ChurchPage />
-        </Suspense>
-      </Route>
-      <Route path="/join/:slug">
-        <Suspense fallback={NATIVE_ROUTE_FALLBACK}>
-          <ChurchPage />
-        </Suspense>
-      </Route>
+      <Route path="/church" component={ChurchPage} />
+      <Route path="/join/:slug" component={ChurchPage} />
       <Route path="/trivia" component={TriviaPage} />
       <Route path="/trivia/:id" component={TriviaPage} />
       {/* <Route path="/sms" component={SmsPage} /> */}

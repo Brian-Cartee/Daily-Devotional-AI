@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useRoute, useSearch } from "wouter";
+import { Link, useRoute, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getSessionId } from "@/lib/session";
+import { NATIVE_PAGE } from "@/lib/nativeColors";
 import {
   fetchAnnouncements,
   fetchMyChurches,
@@ -42,11 +43,12 @@ function fadeUp(delay = 0) {
   };
 }
 
+const pageStyle = { minHeight: "100vh", background: NATIVE_PAGE, color: "#ede8e0" };
+
 export default function ChurchPage() {
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const search = useSearch();
   const [, joinParams] = useRoute("/join/:slug");
 
@@ -55,29 +57,29 @@ export default function ChurchPage() {
   const urlSlug = urlParams.get("slug")?.trim().toLowerCase() ?? "";
   const routeSlug = joinParams?.slug?.trim().toLowerCase() ?? "";
 
-  const [inviteCode, setInviteCode] = useState(urlCode);
-  const [slugInput, setSlugInput] = useState(urlSlug || routeSlug);
+  const initialJoin = urlCode || urlSlug || routeSlug;
+  const [joinInput, setJoinInput] = useState(initialJoin);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [showSlugHelp, setShowSlugHelp] = useState(false);
   const [request, setRequest] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPrayerForm, setShowPrayerForm] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    if (urlCode) setInviteCode(urlCode);
-  }, [urlCode]);
-
-  useEffect(() => {
-    const nextSlug = urlSlug || routeSlug;
-    if (nextSlug) setSlugInput(nextSlug);
-  }, [urlSlug, routeSlug]);
+    const next = urlCode || urlSlug || routeSlug;
+    if (next) setJoinInput(next);
+  }, [urlCode, urlSlug, routeSlug]);
 
   const {
     data: myChurches = [],
     isLoading: churchesLoading,
+    isError: churchesError,
     refetch: refetchChurches,
   } = useQuery({
     queryKey: ["my-churches", sessionId],
     queryFn: () => fetchMyChurches(sessionId),
+    retry: 1,
   });
 
   const activeChurch: MyChurchEntry | null = myChurches[0] ?? null;
@@ -90,26 +92,24 @@ export default function ChurchPage() {
 
   const joinMutation = useMutation({
     mutationFn: () => {
-      const code = inviteCode.trim();
-      const slug = slugInput.trim().toLowerCase();
-      if (!code && !slug) {
-        return Promise.reject(new Error("Enter an invite code or church slug."));
+      const token = joinInput.trim();
+      if (token.length < 2) {
+        return Promise.reject(new Error("Enter the invite code your church gave you."));
       }
-      return joinChurch(sessionId, {
-        inviteCode: code || undefined,
-        slug: code ? undefined : slug,
-      });
+      return joinChurch(sessionId, { token });
     },
     onSuccess: () => {
+      setJoinError(null);
+      setJoinInput("");
       queryClient.invalidateQueries({ queryKey: ["my-churches", sessionId] });
-      setInviteCode("");
       toast({ description: "You're connected with your church." });
     },
     onError: (err: Error) => {
-      toast({
-        description: err.message || "Could not join this church. Check your code and try again.",
-        variant: "destructive",
-      });
+      const message =
+        err.message ||
+        "Could not join this church. Double-check the invite code from your church.";
+      setJoinError(message);
+      toast({ description: message, variant: "destructive" });
     },
   });
 
@@ -153,34 +153,56 @@ export default function ChurchPage() {
     }
   };
 
-  const canJoin = (inviteCode.trim().length >= 6 || slugInput.trim().length >= 2) && !joinMutation.isPending;
+  const canJoin = joinInput.trim().length >= 2 && !joinMutation.isPending;
   const canSubmitPrayer = request.trim().length >= 10 && !prayerMutation.isPending;
 
   if (churchesLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div style={pageStyle} className="flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (churchesError) {
+    return (
+      <div style={pageStyle}>
+        <div className="max-w-xl mx-auto px-5 pt-10 pb-28 text-center">
+          <p className="text-[15px] text-foreground/85 mb-4">Could not load your church connection.</p>
+          <button
+            type="button"
+            onClick={() => refetchChurches()}
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Try again
+          </button>
+          <p className="mt-8">
+            <Link href="/" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+              Return home
+            </Link>
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!activeChurch) {
     return (
-      <div className="min-h-screen bg-background">
+      <div style={pageStyle}>
         <div className="max-w-xl mx-auto px-5 pt-6 pb-28">
           <motion.div {...fadeUp()} className="mt-6 mb-8">
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
               style={{ background: "rgba(59,130,246,0.09)" }}
             >
-              <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Building2 className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight" data-testid="church-page-title">
+            <h1 className="text-2xl font-bold tracking-tight" data-testid="church-page-title">
               Connect with your church
             </h1>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-md">
-              Join your congregation on Shepherd&apos;s Path to receive announcements and share prayer
-              requests with your pastors.
+            <p className="text-sm mt-2 leading-relaxed max-w-md" style={{ color: "rgba(237,232,224,0.65)" }}>
+              Enter the invite code your church gave you — usually a short code like{" "}
+              <span className="font-semibold text-foreground/90">grace-demo-2026</span>, not the church name.
             </p>
           </motion.div>
 
@@ -189,33 +211,38 @@ export default function ChurchPage() {
             className="rounded-2xl p-4 mb-4"
             style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.22)" }}
           >
-            <label className="text-[13px] font-semibold text-foreground block mb-2">
-              Invite code
+            <label className="text-[13px] font-semibold block mb-2" htmlFor="church-join-input">
+              Church invite code
             </label>
             <input
+              id="church-join-input"
               data-testid="input-church-invite-code"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
+              value={joinInput}
+              onChange={(e) => {
+                setJoinInput(e.target.value);
+                if (joinError) setJoinError(null);
+              }}
               placeholder="e.g. grace-demo-2026"
               autoCapitalize="none"
               autoCorrect="off"
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-[15px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 mb-4"
+              enterKeyHint="done"
+              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-[15px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
             />
 
-            <p className="text-[11px] text-muted-foreground/70 text-center mb-3">or</p>
+            <p className="text-[12px] leading-relaxed mb-4" style={{ color: "rgba(237,232,224,0.55)" }}>
+              Paste the code from your pastor or church email. We&apos;ll match invite codes and church links
+              automatically.
+            </p>
 
-            <label className="text-[13px] font-semibold text-foreground block mb-2">
-              Church slug
-            </label>
-            <input
-              data-testid="input-church-slug"
-              value={slugInput}
-              onChange={(e) => setSlugInput(e.target.value)}
-              placeholder="e.g. grace-community-demo"
-              autoCapitalize="none"
-              autoCorrect="off"
-              className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-[15px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 mb-4"
-            />
+            {joinError && (
+              <div
+                data-testid="church-join-error"
+                className="rounded-xl px-3.5 py-3 mb-4 text-[13px] leading-relaxed"
+                style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.28)", color: "#fecaca" }}
+              >
+                {joinError}
+              </div>
+            )}
 
             <Button
               data-testid="btn-join-church"
@@ -232,23 +259,39 @@ export default function ChurchPage() {
                 </>
               )}
             </Button>
+
+            <button
+              type="button"
+              onClick={() => setShowSlugHelp((v) => !v)}
+              className="w-full mt-3 text-[12px] font-medium text-center"
+              style={{ color: "rgba(237,232,224,0.45)" }}
+            >
+              {showSlugHelp ? "Hide church link help" : "Have a church link instead of a code?"}
+            </button>
+
+            {showSlugHelp && (
+              <p className="text-[12px] mt-2 leading-relaxed" style={{ color: "rgba(237,232,224,0.55)" }}>
+                Some churches share a short link name instead — for example{" "}
+                <span className="font-semibold">grace-community-demo</span>. You can paste that here too.
+              </p>
+            )}
           </motion.div>
 
-          <motion.p {...fadeUp(0.1)} className="text-center text-xs text-muted-foreground">
+          <motion.p {...fadeUp(0.1)} className="text-center text-xs" style={{ color: "rgba(237,232,224,0.45)" }}>
             <a href="mailto:support@shepherdspathai.com" className="text-primary font-semibold hover:underline">
               Church isn&apos;t on Shepherd&apos;s Path yet?
             </a>
           </motion.p>
 
           <motion.div {...fadeUp(0.12)} className="mt-10 text-center">
-            <button
-              type="button"
+            <Link
+              href="/"
               data-testid="btn-continue-without-church"
-              onClick={() => setLocation("/")}
-              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-semibold hover:text-foreground transition-colors"
+              style={{ color: "rgba(237,232,224,0.55)" }}
             >
               Continue without a church
-            </button>
+            </Link>
           </motion.div>
         </div>
       </div>
@@ -258,17 +301,17 @@ export default function ChurchPage() {
   const { church } = activeChurch;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div style={pageStyle}>
       <div className="max-w-xl mx-auto px-5 pt-6 pb-28">
         <motion.div {...fadeUp()} className="mt-6 mb-6">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
             style={{ background: "rgba(59,130,246,0.09)" }}
           >
-            <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <Building2 className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">{church.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">/{church.slug}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{church.name}</h1>
+          <p className="text-sm mt-1" style={{ color: "rgba(237,232,224,0.55)" }}>/{church.slug}</p>
         </motion.div>
 
         <motion.div {...fadeUp(0.05)} className="mb-6">
