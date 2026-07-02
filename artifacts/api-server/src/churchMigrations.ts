@@ -228,4 +228,11 @@ export async function ensureChurchSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS church_briefings_church_idx
       ON church_briefings (church_id, generated_at DESC);
   `);
+
+  // Visitor customization fields — who's following up and by when
+  await pool.query(`
+    ALTER TABLE church_visitors
+      ADD COLUMN IF NOT EXISTS assigned_to text,
+      ADD COLUMN IF NOT EXISTS next_followup_date date;
+  `);
 }

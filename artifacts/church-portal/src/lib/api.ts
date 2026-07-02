@@ -121,6 +121,15 @@ export const api = {
       notes?: string;
       source?: string;
     }) => req<{ visitor: Visitor }>("/church-admin/visitors", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: number, data: {
+      followUpStatus?: VisitorFollowUpStatus;
+      assignedTo?: string | null;
+      nextFollowupDate?: string | null;
+    }) =>
+      req<{ visitor: Visitor }>(`/church-admin/visitors/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
     updateStatus: (id: number, followUpStatus: VisitorFollowUpStatus) =>
       req<{ visitor: Visitor }>(`/church-admin/visitors/${id}`, {
         method: "PATCH",
@@ -300,6 +309,8 @@ export interface Visitor {
   source: string | null;
   notes: string | null;
   follow_up_status: VisitorFollowUpStatus;
+  assigned_to: string | null;
+  next_followup_date: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -17,10 +17,16 @@ const createVisitorSchema = z.object({
   visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   notes: z.string().max(2000).optional(),
   source: z.string().max(80).optional(),
+  assignedTo: z.string().max(80).optional(),
+  nextFollowupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const updateStatusSchema = z.object({
-  followUpStatus: z.enum(FOLLOW_UP_STATUSES),
+  followUpStatus: z.enum(FOLLOW_UP_STATUSES).optional(),
+  assignedTo: z.string().max(80).optional().nullable(),
+  nextFollowupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+}).refine(d => d.followUpStatus || d.assignedTo !== undefined || d.nextFollowupDate !== undefined, {
+  message: "At least one field required",
 });
 
 const logContactSchema = z.object({
@@ -45,14 +51,15 @@ export function registerVisitorRoutes(app: Express): void {
         });
       }
 
-      const { firstName, lastName, email, phone, visitDate, notes, source } = parsed.data;
+      const { firstName, lastName, email, phone, visitDate, notes, source, assignedTo, nextFollowupDate } = parsed.data;
 
       const result = await pool.query(
         `INSERT INTO church_visitors
-           (church_id, first_name, last_name, email, phone, visit_date, source, notes)
-         VALUES ($1, $2, $3, $4, $5, COALESCE($6::date, CURRENT_DATE), $7, $8)
+           (church_id, first_name, last_name, email, phone, visit_date, source, notes, assigned_to, next_followup_date)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6::date, CURRENT_DATE), $7, $8, $9, $10::date)
          RETURNING id, church_id, first_name, last_name, email, phone,
-                   visit_date, source, notes, follow_up_status, created_at, updated_at`,
+                   visit_date, source, notes, follow_up_status,
+                   assigned_to, next_followup_date, created_at, updated_at`,
         [
           session.churchId,
           firstName.trim(),
@@ -62,6 +69,8 @@ export function registerVisitorRoutes(app: Express): void {
           visitDate ?? null,
           source?.trim() || "walk-in",
           notes?.trim() || null,
+          assignedTo?.trim() || null,
+          nextFollowupDate ?? null,
         ],
       );
 
@@ -80,7 +89,7 @@ export function registerVisitorRoutes(app: Express): void {
 
       const parsed = updateStatusSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid follow-up status." });
+        return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid update." });
       }
 
       const id = Number(req.params.id);
@@ -90,11 +99,21 @@ export function registerVisitorRoutes(app: Express): void {
 
       const result = await pool.query(
         `UPDATE church_visitors
-         SET follow_up_status = $1, updated_at = now()
-         WHERE id = $2 AND church_id = $3
+         SET follow_up_status = COALESCE($1, follow_up_status),
+             assigned_to = CASE WHEN $2::text IS NOT NULL THEN $2::text ELSE assigned_to END,
+             next_followup_date = CASE WHEN $3::date IS NOT NULL THEN $3::date ELSE next_followup_date END,
+             updated_at = now()
+         WHERE id = $4 AND church_id = $5
          RETURNING id, church_id, first_name, last_name, email, phone,
-                   visit_date, source, notes, follow_up_status, created_at, updated_at`,
-        [parsed.data.followUpStatus, id, session.churchId],
+                   visit_date, source, notes, follow_up_status,
+                   assigned_to, next_followup_date, created_at, updated_at`,
+        [
+          parsed.data.followUpStatus ?? null,
+          parsed.data.assignedTo !== undefined ? (parsed.data.assignedTo ?? null) : null,
+          parsed.data.nextFollowupDate !== undefined ? (parsed.data.nextFollowupDate ?? null) : null,
+          id,
+          session.churchId,
+        ],
       );
 
       if (result.rows.length === 0) {
@@ -177,10 +196,13 @@ export function registerVisitorRoutes(app: Express): void {
 
       const result = await pool.query(
         `SELECT id, church_id, first_name, last_name, email, phone,
-                visit_date, source, notes, follow_up_status, created_at, updated_at
+                visit_date, source, notes, follow_up_status,
+                assigned_to, next_followup_date, created_at, updated_at
          FROM church_visitors
          WHERE church_id = $1
-         ORDER BY visit_date DESC, created_at DESC
+         ORDER BY
+           CASE WHEN follow_up_status = 'pending' THEN 0 ELSE 1 END,
+           visit_date DESC, created_at DESC
          LIMIT 50`,
         [session.churchId],
       );
