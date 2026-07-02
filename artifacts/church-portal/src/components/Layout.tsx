@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/prayer-inbox", label: "Prayer Inbox" },
   { to: "/visitors", label: "Visitors" },
+  { to: "/care-requests", label: "Care Requests" },
   { to: "/announcements", label: "Announcements" },
   { to: "/members", label: "Members" },
   { to: "/settings", label: "Profile" },

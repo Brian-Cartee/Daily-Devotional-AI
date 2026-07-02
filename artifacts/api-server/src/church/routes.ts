@@ -30,6 +30,7 @@ import { registerChurchProfileRoutes } from "./churchProfile";
 import { registerMemberRoutes } from "./members";
 import { registerChurchSettingsRoutes } from "./churchSettings";
 import { registerBriefingRoutes, startBriefingScheduler } from "./briefing";
+import { registerCareRequestRoutes } from "./careRequests";
 
 const createChurchBodySchema = z.object({
   name: z.string().min(1).max(120),
@@ -458,6 +459,7 @@ export function registerChurchRoutes(app: Express): void {
   registerMemberRoutes(app);
   registerChurchSettingsRoutes(app);
   registerBriefingRoutes(app);
+  registerCareRequestRoutes(app);
 
   // Clean expired magic link tokens on startup
   cleanExpiredTokens().catch((err) =>

@@ -131,6 +131,25 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
+  careRequests: {
+    list: () => req<{ careRequests: CareRequest[] }>("/church-admin/care-requests"),
+    create: (data: {
+      personName: string;
+      requestType: string;
+      description: string;
+      assignedTo?: string;
+      dueDate?: string;
+    }) =>
+      req<{ careRequest: CareRequest }>("/church-admin/care-requests", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateStatus: (id: number, status: string) =>
+      req<{ careRequest: CareRequest }>(`/church-admin/care-requests/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
+  },
 };
 
 export interface ChurchSummary {
@@ -282,4 +301,16 @@ export interface Visitor {
   follow_up_status: VisitorFollowUpStatus;
   created_at: string;
   updated_at: string;
+}
+
+export interface CareRequest {
+  id: number;
+  person_name: string;
+  request_type: string;
+  description: string;
+  assigned_to: string | null;
+  due_date: string | null;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
 }

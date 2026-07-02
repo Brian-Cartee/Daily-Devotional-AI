@@ -14,6 +14,7 @@ import PrayerSettingsPage from "./pages/PrayerSettingsPage";
 import SmallGroupsPage from "./pages/SmallGroupsPage";
 import SermonFollowupPage from "./pages/SermonFollowupPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import CareRequestsPage from "./pages/CareRequestsPage";
 import Layout from "./components/Layout";
 
 interface Session {
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage session={session} />} />
           <Route path="/prayer-inbox" element={<PrayerInboxPage />} />
           <Route path="/visitors" element={<VisitorsPage />} />
+          <Route path="/care-requests" element={<CareRequestsPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
