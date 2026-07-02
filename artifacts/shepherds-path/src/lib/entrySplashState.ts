@@ -527,7 +527,7 @@ export const ONBOARDING_SLIDES: SplashSlide[] = [
   { image: "/splash-door.jpg", headline: "Step inside.", subline: null, cta: "Enter" },
   { image: "/splash-road-sunset-REV.jpg", headline: "There you are.", subline: "He never left.", cta: "I'm here" },
   { image: "/splash-bible-glow-REV.jpg", headline: "He's been waiting.", subline: null, cta: "Enter" },
-  { image: "/splash-mic-REV.jpg", headline: "Talk it through.", subline: "He's listening.", cta: "I'm here" },
+  { image: "/splash-prayer.jpg", headline: "Speak life.", subline: "Someone is on your heart.", cta: "I'm here" },
   { image: "/splash-shepherd.jpg", headline: "The path is still here.", subline: null, cta: "Enter" },
 ];
 
