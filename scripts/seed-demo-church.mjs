@@ -76,7 +76,7 @@ async function main() {
       name: CHURCH_NAME,
       slug: CHURCH_SLUG,
       plan: "plus",
-      inviteCode: "grace-demo-2026",
+      inviteCode: "demo-sp",
       ownerSessionId: OWNER_SESSION_ID,
       settings: {
         serviceTimes: "Sunday 9:00 AM & 11:00 AM",

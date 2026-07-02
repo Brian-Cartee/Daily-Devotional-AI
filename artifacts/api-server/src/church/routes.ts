@@ -88,6 +88,35 @@ function requireAdmin(req: Request, res: Response): boolean {
   return adminAuth(req, res);
 }
 
+/** Well-known shortcuts for the public demo church (Grace Community). */
+const DEMO_CHURCH_SLUG = "grace-community-demo";
+const DEMO_JOIN_ALIASES = new Set(["demo", "demo-sp"]);
+
+async function resolveChurchForJoin(input: {
+  token?: string;
+  slug?: string;
+  inviteCode?: string;
+}) {
+  const trimmedToken = input.token?.trim();
+  if (trimmedToken) {
+    const alias = trimmedToken.toLowerCase();
+    if (DEMO_JOIN_ALIASES.has(alias)) {
+      return churchStorage.getChurchBySlug(DEMO_CHURCH_SLUG);
+    }
+    return (
+      (await churchStorage.getChurchByInviteCode(trimmedToken)) ??
+      (await churchStorage.getChurchBySlug(alias))
+    );
+  }
+  if (input.slug?.trim()) {
+    return churchStorage.getChurchBySlug(input.slug.trim().toLowerCase());
+  }
+  if (input.inviteCode?.trim()) {
+    return churchStorage.getChurchByInviteCode(input.inviteCode.trim());
+  }
+  return null;
+}
+
 export function registerChurchRoutes(app: Express): void {
   // ── Public church lookup (no auth, no Pro required) ───────────────────────
 
@@ -162,22 +191,12 @@ export function registerChurchRoutes(app: Express): void {
     }
     const { sessionId, slug, inviteCode, token } = parsed.data;
     try {
-      let church = null;
-      const trimmedToken = token?.trim();
-      if (trimmedToken) {
-        church =
-          (await churchStorage.getChurchByInviteCode(trimmedToken)) ??
-          (await churchStorage.getChurchBySlug(trimmedToken.toLowerCase()));
-      } else if (slug?.trim()) {
-        church = await churchStorage.getChurchBySlug(slug.trim().toLowerCase());
-      } else {
-        church = await churchStorage.getChurchByInviteCode(inviteCode!.trim());
-      }
+      const church = await resolveChurchForJoin({ token, slug, inviteCode });
 
       if (!church || !isChurchJoinable(church.status)) {
         return res.status(404).json({
           message:
-            "Church not found. Check your invite code — it may look like grace-demo-2026, not the church name.",
+            "Church not found. Use the invite code from your church — try demo to explore the demo church.",
         });
       }
       if (!canAccessChurchFeature(church.plan, "invite_join")) {

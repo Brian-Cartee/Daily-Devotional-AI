@@ -201,8 +201,8 @@ export default function ChurchPage() {
               Connect with your church
             </h1>
             <p className="text-sm mt-2 leading-relaxed max-w-md" style={{ color: "rgba(237,232,224,0.65)" }}>
-              Enter the invite code your church gave you — usually a short code like{" "}
-              <span className="font-semibold text-foreground/90">grace-demo-2026</span>, not the church name.
+              Enter the invite code your church gave you. To try the demo church, type{" "}
+              <span className="font-semibold text-foreground/90">demo</span>.
             </p>
           </motion.div>
 
@@ -222,7 +222,7 @@ export default function ChurchPage() {
                 setJoinInput(e.target.value);
                 if (joinError) setJoinError(null);
               }}
-              placeholder="e.g. grace-demo-2026"
+              placeholder="e.g. demo"
               autoCapitalize="none"
               autoCorrect="off"
               enterKeyHint="done"
@@ -272,7 +272,8 @@ export default function ChurchPage() {
             {showSlugHelp && (
               <p className="text-[12px] mt-2 leading-relaxed" style={{ color: "rgba(237,232,224,0.55)" }}>
                 Some churches share a short link name instead — for example{" "}
-                <span className="font-semibold">grace-community-demo</span>. You can paste that here too.
+                <span className="font-semibold">grace-community-demo</span>. You can paste that here too,
+                or just type <span className="font-semibold">demo</span>.
               </p>
             )}
           </motion.div>
