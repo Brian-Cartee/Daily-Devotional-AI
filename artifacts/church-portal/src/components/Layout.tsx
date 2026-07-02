@@ -114,6 +114,9 @@ export default function Layout({ session, onLogout }: Props) {
         className="church-mobile-header"
       >
         <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: TEXT, marginBottom: 4 }}>
+            {church?.name ?? "Church Admin"}
+          </div>
           <div
             style={{
               fontSize: 10,
@@ -123,9 +126,6 @@ export default function Layout({ session, onLogout }: Props) {
             }}
           >
             Shepherd&apos;s Path
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: TEXT }}>
-            {church?.name ?? "Church Admin"}
           </div>
         </div>
         <button
@@ -180,6 +180,9 @@ export default function Layout({ session, onLogout }: Props) {
           className="church-sidebar"
         >
           <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: TEXT, marginBottom: 6 }}>
+              {church?.name ?? "Church Admin"}
+            </div>
             <div
               style={{
                 fontSize: 10,
@@ -187,13 +190,9 @@ export default function Layout({ session, onLogout }: Props) {
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 color: PURPLE_EYEBROW,
-                marginBottom: 6,
               }}
             >
               Shepherd&apos;s Path
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: TEXT }}>
-              {church?.name ?? "Church Admin"}
             </div>
           </div>
 
@@ -224,24 +223,27 @@ export default function Layout({ session, onLogout }: Props) {
           {session.isDemo && (
             <div
               style={{
-                background: "rgba(217, 119, 6, 0.12)",
-                borderBottom: "1px solid rgba(217, 119, 6, 0.25)",
-                padding: "10px 24px",
+                background: "#fffbeb",
+                borderBottom: "1px solid #fcd34d",
+                padding: "12px 24px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: 12,
-                fontSize: 13,
-                color: "#fbbf24",
+                gap: 16,
+                fontSize: 14,
+                lineHeight: 1.5,
+                color: "#78350f",
                 flexShrink: 0,
               }}
             >
               <span>
-                <strong>You&apos;re exploring a live demo</strong> — this is Grace Community Church. Data resets periodically. Write actions are disabled.
+                <strong style={{ color: "#451a03" }}>You&apos;re exploring a live demo</strong>
+                {" — "}
+                this is Grace Community Church. Data resets periodically. Write actions are disabled.
               </span>
               <a
                 href="https://admin.shepherdspathai.com"
-                style={{ color: "#fbbf24", fontWeight: 600, whiteSpace: "nowrap", textDecoration: "underline" }}
+                style={{ color: "#92400e", fontWeight: 600, whiteSpace: "nowrap", textDecoration: "underline" }}
               >
                 Set up your church →
               </a>
