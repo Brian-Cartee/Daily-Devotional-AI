@@ -6,11 +6,12 @@ import type { Session } from "../App";
 
 const SIDEBAR_BG = "#0f0b14";
 const TEXT = "#ede8e0";
-const TEXT_MUTED = "rgba(237, 232, 224, 0.55)";
-const PURPLE_EYEBROW = "rgba(196, 78, 224, 0.7)";
+const NAV_INACTIVE = "rgba(237, 232, 224, 0.55)";
+const SIDEBAR_FOOTER_MUTED = "rgba(237, 232, 224, 0.45)";
+const PURPLE_EYEBROW = "rgba(196, 78, 224, 0.75)";
 const PURPLE_ACTIVE_BG = "rgba(196, 78, 224, 0.12)";
 const PURPLE_ACTIVE_TEXT = "#d8b4fe";
-const PAGE_BG = "#0d0612";
+const CONTENT_BG = "#f8f7f9";
 
 interface Props {
   session: Session;
@@ -45,7 +46,7 @@ function SidebarNavLink({ to, label, onNavigate }: { to: string; label: string; 
         display: "block",
         padding: "10px 20px",
         fontSize: 14,
-        color: isActive ? PURPLE_ACTIVE_TEXT : hover ? TEXT : "rgba(237, 232, 224, 0.65)",
+        color: isActive ? PURPLE_ACTIVE_TEXT : hover ? TEXT : NAV_INACTIVE,
         background: isActive ? PURPLE_ACTIVE_BG : hover ? "rgba(255,255,255,0.04)" : "transparent",
         textDecoration: "none",
         fontWeight: isActive ? 500 : 400,
@@ -61,25 +62,20 @@ function SidebarNavLink({ to, label, onNavigate }: { to: string; label: string; 
 }
 
 function SignOutButton({ onLogout, fullWidth = false }: { onLogout: () => void; fullWidth?: boolean }) {
-  const [hover, setHover] = useState(false);
-
   return (
     <button
       type="button"
       onClick={onLogout}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         background: "transparent",
-        color: hover ? TEXT : TEXT_MUTED,
+        color: SIDEBAR_FOOTER_MUTED,
         padding: fullWidth ? "6px 0" : "6px 0",
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 400,
         width: fullWidth ? "100%" : "auto",
         textAlign: fullWidth ? "left" : "left",
         border: "none",
         cursor: "pointer",
-        transition: "color 0.15s ease",
       }}
     >
       Sign out
@@ -102,7 +98,7 @@ export default function Layout({ session, onLogout }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: PAGE_BG }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: CONTENT_BG }}>
       {/* Mobile top bar */}
       <header
         style={{
@@ -120,15 +116,15 @@ export default function Layout({ session, onLogout }: Props) {
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               textTransform: "uppercase",
-              letterSpacing: "0.12em",
+              letterSpacing: "0.1em",
               color: PURPLE_EYEBROW,
             }}
           >
             Shepherd&apos;s Path
           </div>
-          <div style={{ fontSize: 15, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: TEXT }}>
+          <div style={{ fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: TEXT }}>
             {church?.name ?? "Church Admin"}
           </div>
         </div>
@@ -164,7 +160,7 @@ export default function Layout({ session, onLogout }: Props) {
           <div style={{ display: "flex", flexDirection: "column", minWidth: "max-content" }}>
             <NavItems onNavigate={() => setMenuOpen(false)} />
             <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize: 12, color: TEXT_MUTED, marginBottom: 8 }}>{session.email}</div>
+              <div style={{ fontSize: 12, color: SIDEBAR_FOOTER_MUTED, marginBottom: 8 }}>{session.email}</div>
               <SignOutButton onLogout={onLogout} fullWidth />
             </div>
           </div>
@@ -186,9 +182,9 @@ export default function Layout({ session, onLogout }: Props) {
           <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 600,
-                letterSpacing: "0.12em",
+                letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 color: PURPLE_EYEBROW,
                 marginBottom: 6,
@@ -196,7 +192,7 @@ export default function Layout({ session, onLogout }: Props) {
             >
               Shepherd&apos;s Path
             </div>
-            <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: TEXT }}>
+            <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: TEXT }}>
               {church?.name ?? "Church Admin"}
             </div>
           </div>
@@ -205,10 +201,10 @@ export default function Layout({ session, onLogout }: Props) {
             <NavItems />
           </nav>
 
-          <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 13 }}>
+          <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12 }}>
             <div
               style={{
-                color: TEXT_MUTED,
+                color: SIDEBAR_FOOTER_MUTED,
                 marginBottom: 8,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -222,7 +218,7 @@ export default function Layout({ session, onLogout }: Props) {
         </aside>
 
         <main
-          style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", background: PAGE_BG, color: TEXT }}
+          style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", background: CONTENT_BG }}
           className="church-main"
         >
           {session.isDemo && (
