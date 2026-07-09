@@ -101,6 +101,7 @@ import { turnMetadataToHeaders } from "../philip-runtime/runtime/headers";
 import { freeTrialGrants } from "../freeTrialConfig";
 import { registerSpeakLifeRoutes } from "../speakLife";
 import { registerChurchRoutes } from "../church/routes";
+import { registerPhilipVoiceLabRoutes } from "./philipVoiceLab";
 import { churchStorage } from "../church/storage";
 import { canAccessChurchFeature } from "../church/permissions";
 import { detectUrgency } from "../church/prayerInbox";
@@ -423,6 +424,7 @@ export async function registerRoutes(
 
   registerSpeakLifeRoutes(app);
   registerChurchRoutes(app);
+  registerPhilipVoiceLabRoutes(app);
 
   await ensureIdentitySchema().catch((err) => {
     console.error("[identity] schema ensure failed:", err);
