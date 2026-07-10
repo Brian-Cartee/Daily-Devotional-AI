@@ -137,6 +137,7 @@ export interface GuidanceTurnInput {
   isAcutePain: (text: string) => boolean;
   buildModeNote: (mode: string) => string;
   buildRelationshipNote: (days: number, count: number) => string;
+  philipVoiceLab?: boolean;
 }
 
 export interface GuidanceTurnDeps {
@@ -182,6 +183,7 @@ export async function handleGuidanceTurn(
     isAcutePain,
     buildModeNote,
     buildRelationshipNote,
+    philipVoiceLab,
   } = input;
   const { openai, anthropic, fetchSessionContext, fetchPriorSessionContinuity, fetchRelationshipProfile } = deps;
 
@@ -657,7 +659,21 @@ let nextQuestion = "";
 let plannerSource: PlannerSource = "none";
 let usedMechanicalConstruction = false;
 
-const presenceHold = tryPresenceShortCircuit(lastUserForPresence, conversationState);
+const voiceLabPresenceState = philipVoiceLab
+  ? { ...conversationState, almost_said_it_detected: false }
+  : conversationState;
+
+const exchangeNumForPresence = Math.floor(conversationHistory.length / 2);
+const priorPhilipTexts = (conversationHistory as Array<{ role: string; content: string }>)
+  .filter(m => m.role === "assistant")
+  .slice(-4)
+  .map(m => m.content);
+const presenceHold = tryPresenceShortCircuit(
+  lastUserForPresence,
+  voiceLabPresenceState,
+  exchangeNumForPresence,
+  priorPhilipTexts,
+);
 if (presenceHold) {
   phase2Text = presenceHold.text;
   lane = "presence_hold";
@@ -814,7 +830,18 @@ if (presenceHold) {
           if (forceSit) recordGate(gates, "force_sit");
 
           if (selectedMove === "plain_question" && nextQuestion) {
-            phase2Text = nextQuestion;
+            if (exchangeNum <= 2) {
+              phase2Text = await generatePhase2WithClaude(
+                systemMsg + PHILIP_MOVE_TEMPLATES.plain_question
+                  + "\n\n[REQUIRED: One short sentence that recognizes what they just said — their words, their weight — before your question. Never open with a territory template.]",
+                claudeHistory,
+                nextQuestion,
+                80,
+              );
+              phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
+            } else {
+              phase2Text = nextQuestion;
+            }
           } else if (selectedMove === "skip" && nextQuestion && nextQuestion.split(/\s+/).length <= 10) {
             phase2Text = nextQuestion;
           } else if (selectedMove === "sit" || forceSit) {
@@ -887,7 +914,7 @@ if (presenceHold) {
     noQuestionMode,
     conversationHistory,
     exchangeNum: exchangeForMode,
-    conversationState,
+    conversationState: voiceLabPresenceState,
   });
   phase2Text = postTurn.text;
   for (const g of postTurn.gates) recordGate(gates, g);

@@ -161,10 +161,14 @@ export function applyPostTurnGates(input: {
   const userMsgs = input.conversationHistory.filter(m => m.role === "user").map(m => m.content);
   const lastUserMsg = userMsgs[userMsgs.length - 1] ?? "";
 
+  const claudeHistory = input.conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
+  const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
+  const recentPhilip = philipMsgs.slice(-4).map(m => m.content);
+
   const presenceLane = resolvePresenceLane(lastUserMsg, input.conversationState);
   if (presenceLane) {
     const beforePresence = text;
-    text = enforcePresenceResponse(text, presenceLane);
+    text = enforcePresenceResponse(text, presenceLane, philipMsgs.length, recentPhilip);
     gates.push(presenceLane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause");
     if (text !== beforePresence || lane === null) {
       lane = "presence_hold";
@@ -175,8 +179,7 @@ export function applyPostTurnGates(input: {
     return { text, gates, lane };
   }
 
-  const claudeHistory = input.conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
-  const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
+  const beforeRisk = text;
   text = enforceAmbiguousRiskCheck(text, lastUserMsg, philipMsgs, input.exchangeNum);
   if (text !== beforeRisk) {
     gates.push("ambiguous_risk");

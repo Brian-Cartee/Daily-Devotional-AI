@@ -68,6 +68,30 @@ const recycled = isValidPlannedQuestion("What's been hardest about the distance?
 });
 assert("rejects recycled question", !recycled);
 
+assert("rejects generic relationships territory on turn 2", !isValidPlannedQuestion(
+  "What haven't you said yet about relationships?",
+  {
+    lastUserMessage: "My husband died three weeks ago.",
+    userMessages: ["My husband died three weeks ago."],
+    factsLearned: [],
+    priorExplored: [],
+    exchangeNum: 2,
+    questionsAsked: [],
+  },
+));
+
+assert("rejects template leak", !isValidPlannedQuestion(
+  "What haven't you said yet about user's relationship with faith?",
+  {
+    lastUserMessage: "I don't know.",
+    userMessages: ["I don't know."],
+    factsLearned: [],
+    priorExplored: [],
+    exchangeNum: 3,
+    questionsAsked: [],
+  },
+));
+
 assert("enabled by default", isMindPlannerEnabled());
 
 console.log(`\n${passed} passed, ${failed} failed`);

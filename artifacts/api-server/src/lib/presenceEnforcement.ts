@@ -62,19 +62,34 @@ export function resolvePresenceLane(
   return null;
 }
 
-export function buildPresenceShortCircuitResponse(lane: PresenceLane, seedText = ""): string {
+export function buildPresenceShortCircuitResponse(
+  lane: PresenceLane,
+  seedText = "",
+  varietyIndex = 0,
+  recentResponses: string[] = [],
+): string {
   const pool = lane === "almost_said_it" ? ALMOST_SAID_RESPONSES : SACRED_PAUSE_RESPONSES;
-  const idx = seedFromText(seedText) % pool.length;
-  return pool[idx] ?? pool[0];
+  const recent = new Set(recentResponses.map((r) => r.trim().toLowerCase()));
+  for (let offset = 0; offset < pool.length; offset += 1) {
+    const idx = (seedFromText(seedText) + varietyIndex + offset) % pool.length;
+    const candidate = pool[idx] ?? pool[0];
+    if (!recent.has(candidate.trim().toLowerCase())) return candidate;
+  }
+  return pool[(seedFromText(seedText) + varietyIndex) % pool.length] ?? pool[0];
 }
 
-export function enforcePresenceResponse(text: string, lane: PresenceLane): string {
+export function enforcePresenceResponse(
+  text: string,
+  lane: PresenceLane,
+  varietyIndex = 0,
+  recentResponses: string[] = [],
+): string {
   const trimmed = text.trim();
-  if (!trimmed) return buildPresenceShortCircuitResponse(lane);
+  if (!trimmed) return buildPresenceShortCircuitResponse(lane, "", varietyIndex, recentResponses);
 
   if (lane === "almost_said_it") {
     if (!/\?/.test(trimmed) && countWords(trimmed) <= 30) return trimmed;
-    return buildPresenceShortCircuitResponse("almost_said_it", trimmed);
+    return buildPresenceShortCircuitResponse("almost_said_it", trimmed, varietyIndex, recentResponses);
   }
 
   const one = firstSentence(trimmed).replace(/\?/g, "").trim();
@@ -87,18 +102,20 @@ export function enforcePresenceResponse(text: string, lane: PresenceLane): strin
   if (sacredOk) {
     return one.endsWith(".") ? one : `${one}.`;
   }
-  return buildPresenceShortCircuitResponse("sacred_pause", trimmed);
+  return buildPresenceShortCircuitResponse("sacred_pause", trimmed, varietyIndex, recentResponses);
 }
 
 export function tryPresenceShortCircuit(
   userMessage: string,
   state?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null,
+  varietyIndex = 0,
+  recentResponses: string[] = [],
 ): { lane: PresenceLane; text: string } | null {
   const presenceLane = resolvePresenceLane(userMessage, state);
   if (!presenceLane) return null;
   return {
     lane: presenceLane,
-    text: buildPresenceShortCircuitResponse(presenceLane, userMessage),
+    text: buildPresenceShortCircuitResponse(presenceLane, userMessage, varietyIndex, recentResponses),
   };
 }
 

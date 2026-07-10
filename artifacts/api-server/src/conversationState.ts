@@ -125,10 +125,8 @@ function normalizePresenceFields(
   parsed.weight_level = parsed.weight_level ?? defaults.weight_level;
   parsed.permission_level = parsed.permission_level ?? defaults.permission_level;
   parsed.current_depth_layer = parsed.current_depth_layer ?? defaults.current_depth_layer;
-  parsed.almost_said_it_detected =
-    detectAlmostSaidIt(lastUserMessage) || (parsed.almost_said_it_detected ?? false);
-  parsed.sacred_pause_warranted =
-    detectSacredPauseUserMessage(lastUserMessage) || (parsed.sacred_pause_warranted ?? defaults.sacred_pause_warranted);
+  parsed.almost_said_it_detected = detectAlmostSaidIt(lastUserMessage);
+  parsed.sacred_pause_warranted = detectSacredPauseUserMessage(lastUserMessage);
   parsed.delight_expressed_this_session =
     parsed.delight_expressed_this_session ?? defaults.delight_expressed_this_session;
   parsed.humor_attempted_this_session =
@@ -1225,11 +1223,51 @@ export function shouldRejectPriorExploredQuestion(
   return questionOverlapsExploredArea(question, exploredAreas);
 }
 
+/** Generic territory labels from state-schema examples — not real user-specific topics. */
+const GENERIC_TERRITORY_TOKENS = new Set([
+  "relationships",
+  "relationship",
+  "faith",
+  "sleep",
+  "loss",
+  "work",
+  "body",
+  "time",
+  "specific people",
+  "etc",
+]);
+
+export function isGenericTerritoryArea(area: string): boolean {
+  const a = area.trim().toLowerCase();
+  if (!a) return true;
+  if (a.length > 72) return true;
+  if (/aspects of the situation|not yet asked about|specific people, etc/i.test(a)) return true;
+  if (GENERIC_TERRITORY_TOKENS.has(a)) return true;
+  const firstToken = a.split(/[\s,—/]+/)[0]?.trim();
+  return !!(firstToken && GENERIC_TERRITORY_TOKENS.has(firstToken) && a.split(/\s+/).length <= 3);
+}
+
+export function sanitizeAreasUnexplored(areas: string[]): string[] {
+  return (areas ?? [])
+    .map((a) => a.trim())
+    .filter((a) => a && !isGenericTerritoryArea(a));
+}
+
+/** Raw planner / LLM placeholder leaks — never ship to users. */
+export function isTemplateLeakQuestion(question: string): boolean {
+  const q = question.toLowerCase();
+  if (/\buser'?s?\s+(relationship|feelings|faith|situation)\b/.test(q)) return true;
+  if (/\babout user\b/.test(q)) return true;
+  if (/what happened after user\b/.test(q)) return true;
+  if (/what haven'?t you said yet about user\b/.test(q)) return true;
+  return false;
+}
+
 export function pickFreshTerritoryQuestion(
   state: ConversationState | null,
   priorExplored: string[],
 ): string {
-  const unexplored = (state?.areas_unexplored ?? []).filter((area) =>
+  const unexplored = sanitizeAreasUnexplored(state?.areas_unexplored ?? []).filter((area) =>
     !priorExplored.some((e) => questionSimilarity(area, e) >= 0.5),
   );
   if (unexplored.length > 0) {
@@ -1314,7 +1352,7 @@ User message: "${userMessage.slice(0, 220)}"`;
 }
 
 export function pickRecoveryFallbackQuestion(state: ConversationState): string {
-  const unexplored = state.areas_unexplored.filter(a => a.trim());
+  const unexplored = sanitizeAreasUnexplored(state.areas_unexplored);
   if (unexplored.length > 0) {
     return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
   }
@@ -1434,6 +1472,7 @@ For conversation_closing: set true if the most recent user message indicates the
     }
 
     normalizePresenceFields(parsed, lastUserMessage, existingState);
+    parsed.areas_unexplored = sanitizeAreasUnexplored(parsed.areas_unexplored ?? []);
 
     return parsed;
   } catch {

@@ -2,11 +2,14 @@ import {
   containsMysticalColdRead,
   inventsUnsupportedDetail,
   isBannedQuestion,
+  isGenericTerritoryArea,
+  isTemplateLeakQuestion,
   pickFreshTerritoryQuestion,
   pickRecoveryFallbackQuestion,
   questionInventsRelationship,
   recyclesPriorQuestion,
   reasksWhatUserJustStated,
+  sanitizeAreasUnexplored,
   shouldRejectPriorExploredQuestion,
   userMessageHasFreshDetail,
   type ConversationState,
@@ -46,6 +49,8 @@ export function isValidPlannedQuestion(
   const q = question?.trim();
   if (!q || !q.includes("?")) return false;
   if (isBannedQuestion(q)) return false;
+  if (isTemplateLeakQuestion(q)) return false;
+  if (ctx.exchangeNum <= 2 && /what haven'?t you said yet about/i.test(q)) return false;
   if (containsMysticalColdRead(q)) return false;
   if (questionInventsRelationship(q, ctx.userMessages, ctx.factsLearned)) return false;
   if (inventsUnsupportedDetail(q, ctx.userMessages, ctx.factsLearned, ctx.exchangeNum)) return false;
@@ -85,8 +90,9 @@ function buildUnexploredCandidate(
   state: ConversationState,
   priorExplored: string[],
 ): string | null {
-  const unexplored = (state.areas_unexplored ?? []).filter(area =>
+  const unexplored = sanitizeAreasUnexplored(state.areas_unexplored ?? []).filter(area =>
     area.trim()
+    && !isGenericTerritoryArea(area)
     && !priorExplored.some(e => area.toLowerCase().includes(e.toLowerCase().slice(0, 12))),
   );
   if (unexplored.length === 0) return null;
