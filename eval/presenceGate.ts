@@ -91,8 +91,13 @@ export function collectPresenceGateFailures(
   const flags = scenario.flags ?? [];
 
   for (const e of exchanges) {
-    // Universal: no scripture in phase 1 or early exchanges
-    if (e.exchangeNum <= EARLY_EXCHANGE_SCRIPTURE_CAP && hasScriptureReference(e.philipResponse)) {
+    const userNamedFaith = /\b(god|jesus|christ|faith|scripture|bible|church)\b/i.test(e.userMessage);
+    // Universal: no scripture in phase 1 or early exchanges — unless user already named faith language
+    if (
+      e.exchangeNum <= EARLY_EXCHANGE_SCRIPTURE_CAP
+      && hasScriptureReference(e.philipResponse)
+      && !userNamedFaith
+    ) {
       failures.push(`${scenario.id} #${e.exchangeNum}: scripture too early`);
     }
 

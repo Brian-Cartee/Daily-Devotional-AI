@@ -1,7 +1,7 @@
 /**
  * Philip Turing Test
  *
- * Uses Claude Opus to simultaneously:
+ * Uses Claude (default Sonnet) to simultaneously:
  *  1. Play a real user in full 8-12 exchange conversations with Philip
  *  2. Evaluate Philip's quality per exchange
  *
@@ -14,6 +14,13 @@
  *   cd eval && npx tsx philip-turing-test.ts --exchanges 12          # longer conversations
  *   cd eval && npx tsx philip-turing-test.ts --features            # dependency, send-off, memory lanes
  *   cd eval && npx tsx philip-turing-test.ts --presence            # presence-layer scenarios
+ *   cd eval && npx tsx philip-turing-test.ts --spot              # 3-scenario spot check (~$3-5)
+ *   cd eval && npm run turing:spot-gate                          # spot check with gate exit code
+ *
+ * Cost control (defaults to Sonnet — ~10× cheaper than Opus):
+ *   TURING_MODEL=claude-sonnet-4-6   (default)
+ *   TURING_MODEL=claude-opus-4-8     (deep review only)
+ *   TURING_USE_THINKING=1            (optional; adds cost on user-sim / engagement)
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -26,7 +33,9 @@ import {
   SMOKE_CORE_IDS,
   FEATURE_SCENARIO_IDS,
   PRESENCE_SCENARIO_IDS,
+  SPOT_GATE_IDS,
   GATE_MIN_PASS_RATE,
+  SPOT_GATE_MIN_PASS_RATE,
   MIND_GATE_MIN_EXCHANGE,
   MIND_GATE_MIN_VERSION,
 } from "./golden.js";
@@ -49,7 +58,28 @@ const USE_SMOKE       = args.includes("--smoke");
 const USE_FEATURES    = args.includes("--features");
 const USE_PRESENCE    = args.includes("--presence");
 const USE_GOLDEN      = args.includes("--golden");
+const USE_SPOT        = args.includes("--spot");
 const USE_GATE        = args.includes("--gate");
+const USE_SPOT_GATE   = args.includes("--spot-gate");
+
+/** Eval judge / user-sim model — Sonnet default keeps full gate ~$6-8 vs ~$65 on Opus. */
+const TURING_MODEL = process.env.TURING_MODEL?.trim() || "claude-sonnet-4-6";
+const TURING_USE_THINKING = process.env.TURING_USE_THINKING === "1";
+
+function turingCreateParams(maxTokens: number, withThinking = false) {
+  return {
+    model: TURING_MODEL,
+    max_tokens: maxTokens,
+    ...(withThinking && TURING_USE_THINKING ? { thinking: { type: "adaptive" as const } } : {}),
+  };
+}
+
+function estimateRunCostLabel(scenarioCount: number): string {
+  const isOpus = TURING_MODEL.includes("opus");
+  if (scenarioCount <= 3) return isOpus ? "~$10-15" : "~$3-5";
+  if (scenarioCount <= 5) return isOpus ? "~$20-30" : "~$2-4";
+  return isOpus ? "~$60-70" : "~$6-8";
+}
 
 // Engagement check fires after this exchange — 60% through, minimum exchange 6
 const ENGAGEMENT_CHECK_AT = Math.min(6, Math.floor(MAX_EXCHANGES * 0.6));
@@ -194,6 +224,89 @@ function parseFinalVerdictPass(raw: string): boolean {
   const tail = raw.trim().slice(-24);
   if (/VERDICT:\s*PASS?$/i.test(tail) || /VERDIC$/i.test(tail)) return true;
   return false;
+}
+
+function extractJsonObject(raw: string): string {
+  const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
+  if (cleaned.startsWith("{")) return cleaned;
+  const match = cleaned.match(/\{[\s\S]*/);
+  return match ? match[0] : cleaned;
+}
+
+function repairTruncatedJson(jsonStr: string): string {
+  let s = jsonStr.trim();
+  if (!s) return "{}";
+  if (/:\s*"[^"]*$/.test(s)) s += '"';
+  s = s.replace(/,\s*$/, "");
+  const openBraces = (s.match(/\{/g) || []).length;
+  const closeBraces = (s.match(/\}/g) || []).length;
+  if (openBraces > closeBraces) {
+    s += "}".repeat(openBraces - closeBraces);
+  }
+  return s;
+}
+
+function normalizeJudgeJson(jsonStr: string): string {
+  return jsonStr
+    .replace(/";(\s*})/g, '"$1')
+    .replace(/';(\s*})/g, "'$1");
+}
+
+function parseJudgeExchangeResult(raw: string): JudgeExchangeResult | null {
+  const jsonStr = normalizeJudgeJson(extractJsonObject(raw));
+  try {
+    return JSON.parse(jsonStr) as JudgeExchangeResult;
+  } catch {
+    try {
+      return JSON.parse(normalizeJudgeJson(repairTruncatedJson(jsonStr))) as JudgeExchangeResult;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function fallbackJudgeFromPartial(raw: string): JudgeExchangeResult {
+  const num = (key: string, fallback = 0) => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*(\\d+(?:\\.\\d+)?)`));
+    return m ? Number(m[1]) : fallback;
+  };
+  const bool = (key: string, fallback = false) => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*(true|false)`));
+    return m ? m[1] === "true" : fallback;
+  };
+  const numOrNull = (key: string) => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*(null|\\d+(?:\\.\\d+)?)`));
+    if (!m || m[1] === "null") return null;
+    return Number(m[1]);
+  };
+  const strOrNull = (key: string) => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*("(?:[^"\\\\]|\\\\.)*"|null)`));
+    if (!m || m[1] === "null") return null;
+    try {
+      return JSON.parse(m[1]) as string;
+    } catch {
+      return null;
+    }
+  };
+  const boolOrNull = (key: string): boolean | null => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*(true|false|null)`));
+    if (!m) return null;
+    if (m[1] === "null") return null;
+    return m[1] === "true";
+  };
+  return {
+    curiosity: num("curiosity"),
+    specificity: num("specificity"),
+    patternBreak: num("patternBreak"),
+    illusionHold: bool("illusionHold"),
+    pullScore: num("pullScore"),
+    recognitionScore: numOrNull("recognitionScore"),
+    permissionRespect: bool("permissionRespect"),
+    thresholdHandling: boolOrNull("thresholdHandling"),
+    presenceViolation: strOrNull("presenceViolation"),
+    chatbotPhrase: strOrNull("chatbotPhrase"),
+    notes: strOrNull("notes") ?? `Partial judge parse: ${raw.slice(0, 120)}`,
+  };
 }
 
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 529]);
@@ -349,9 +462,7 @@ async function simulateUserReply(
     : "";
 
   const response = await withRetry(() => client.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 200,
-    thinking: { type: "adaptive" },
+    ...turingCreateParams(200, true),
     system: `${USER_SIM_SYSTEM}\n\nYour situation: "${scenario.situation}"\nCategory: ${scenario.category}\nDescription: ${scenario.description}${flagsNote}`,
     messages: [{
       role: "user",
@@ -464,9 +575,7 @@ Score this response:
 }`;
 
   const response = await withRetry(() => client.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 1024,
-    thinking: { type: "adaptive" },
+    ...turingCreateParams(2048),
     system: JUDGE_SYSTEM,
     messages: [{ role: "user", content: prompt }],
   }), { label: `judge ex${exchangeNum}` });
@@ -476,28 +585,26 @@ Score this response:
     if (block.type === "text") raw = block.text.trim();
   }
 
-  try {
-    const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
-    let jsonStr = cleaned;
-    if (!jsonStr.startsWith("{")) {
-      const match = jsonStr.match(/\{[\s\S]*\}/);
-      if (match) jsonStr = match[0];
-    }
-    return JSON.parse(jsonStr) as JudgeExchangeResult;
-  } catch {
-    console.error(`Parse error on exchange ${exchangeNum}. Raw:\n${raw}\n`);
-    // Parse errors score 0s — don't inflate averages with neutral fallbacks
-    return {
-      curiosity: 0, specificity: 0, patternBreak: 0,
-      illusionHold: false, pullScore: 0,
-      recognitionScore: null,
-      permissionRespect: false,
-      thresholdHandling: null,
-      presenceViolation: "JUDGE_PARSE_ERROR",
-      chatbotPhrase: "JUDGE_PARSE_ERROR",
-      notes: `Parse error — scored 0s: ${raw.slice(0, 120)}`,
-    };
+  const parsed = parseJudgeExchangeResult(raw);
+  if (parsed) return parsed;
+
+  if (/\b"(curiosity|specificity|illusionHold)"\s*:/.test(raw)) {
+    console.warn(`Partial judge parse on exchange ${exchangeNum} — using field extraction`);
+    return fallbackJudgeFromPartial(raw);
   }
+
+  console.error(`Parse error on exchange ${exchangeNum}. Raw:\n${raw}\n`);
+  // Parse errors score 0s — don't inflate averages with neutral fallbacks
+  return {
+    curiosity: 0, specificity: 0, patternBreak: 0,
+    illusionHold: false, pullScore: 0,
+    recognitionScore: null,
+    permissionRespect: false,
+    thresholdHandling: null,
+    presenceViolation: "JUDGE_PARSE_ERROR",
+    chatbotPhrase: "JUDGE_PARSE_ERROR",
+    notes: `Parse error — scored 0s: ${raw.slice(0, 120)}`,
+  };
 }
 
 // ── Engagement Check ────────────────────────────────────────────────────────
@@ -512,9 +619,7 @@ async function checkEngagement(
   ).join("\n\n");
 
   const response = await withRetry(() => client.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 200,
-    thinking: { type: "adaptive" },
+    ...turingCreateParams(200, true),
     system: `You are roleplaying as this person: "${scenario.situation}"\nCategory: ${scenario.category}. Answer honestly in first person.`,
     messages: [{
       role: "user",
@@ -574,9 +679,7 @@ Then on a new line write only: VERDICT: PASS or VERDICT: FAIL
 (PASS = the user would likely not realize they were talking to AI and would want to return)`;
 
   const response = await withRetry(() => client.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 900,
-    thinking: { type: "adaptive" },
+    ...turingCreateParams(1200),
     system: "You are a senior evaluator assessing whether a pastoral AI can pass as a human. Be precise and ruthlessly honest.",
     messages: [{ role: "user", content: prompt }],
   }), { label: "final verdict" });
@@ -726,8 +829,14 @@ async function runConversation(client: Anthropic, scenario: Scenario): Promise<C
 
 // ── Scenario Selection ────────────────────────────────────────────────────────
 
-function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean, usePresence: boolean, useGolden: boolean): Scenario[] {
+function pickScenarios(pool: Scenario[], count: number, useSmoke: boolean, useFeatures: boolean, usePresence: boolean, useGolden: boolean, useSpot: boolean): Scenario[] {
   const byId = new Map(pool.map(s => [s.id, s]));
+
+  if (useSpot) {
+    return (SPOT_GATE_IDS as readonly string[])
+      .map(id => byId.get(id))
+      .filter((s): s is Scenario => !!s);
+  }
 
   if (useGolden) {
     return (GOLDEN_15_IDS as readonly string[])
@@ -943,11 +1052,13 @@ async function main() {
   else if (FILTER_CATEGORY) pool = pool.filter(s => s.category.includes(FILTER_CATEGORY));
 
   // Default (no filter flags) always uses the smoke set for comparable runs
-  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES && !USE_PRESENCE && !USE_GOLDEN);
-  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES, USE_PRESENCE, USE_GOLDEN);
+  const useSmoke = USE_SMOKE || (!FILTER_ID && !FILTER_CATEGORY && !USE_FEATURES && !USE_PRESENCE && !USE_GOLDEN && !USE_SPOT);
+  const selectedScenarios = pickScenarios(pool, MAX_COUNT, useSmoke, USE_FEATURES, USE_PRESENCE, USE_GOLDEN, USE_SPOT);
 
   const target = USE_LOCAL ? `local (${BASE_URL})` : `live (${BASE_URL})`;
-  const modeNote = USE_GOLDEN
+  const modeNote = USE_SPOT
+    ? " [spot gate]"
+    : USE_GOLDEN
     ? " [golden gate]"
     : USE_PRESENCE
       ? " [presence layer]"
@@ -956,6 +1067,7 @@ async function main() {
       : (useSmoke && !FILTER_ID && !FILTER_CATEGORY ? " [smoke set]" : "");
   console.log("\n" + bold("Philip Turing Test"));
   console.log(dim(`${selectedScenarios.length} scenarios${modeNote} · ${MAX_EXCHANGES} exchanges each · ${target}`));
+  console.log(dim(`Judge model: ${TURING_MODEL}${TURING_USE_THINKING ? " · thinking on" : ""} · est. cost ${estimateRunCostLabel(selectedScenarios.length)}`));
   console.log(dim("─".repeat(80)));
 
   const results: ConversationResult[] = [];
@@ -1074,10 +1186,11 @@ async function main() {
     })),
   }, null, 2));
 
-  if (USE_GATE) {
+  if (USE_GATE || USE_SPOT_GATE) {
     const gateFailures: string[] = [];
-    if (passRate < GATE_MIN_PASS_RATE) {
-      gateFailures.push(`pass rate ${passRate}% < ${GATE_MIN_PASS_RATE}%`);
+    const minPassRate = USE_SPOT_GATE ? SPOT_GATE_MIN_PASS_RATE : GATE_MIN_PASS_RATE;
+    if (passRate < minPassRate) {
+      gateFailures.push(`pass rate ${passRate}% < ${minPassRate}%`);
     }
     for (const r of scoredResults) {
       if (r.sendOffViolation) {

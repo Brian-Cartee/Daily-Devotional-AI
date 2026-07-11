@@ -4,14 +4,25 @@ import {
   isBannedQuestion,
   isGenericTerritoryArea,
   isTemplateLeakQuestion,
+  isMechanicalForwardProbe,
+  detectAlmostSaidIt,
+  mergeQuestionsAsked,
   pickFreshTerritoryQuestion,
   pickRecoveryFallbackQuestion,
+  collectFallbackQuestionCandidates,
+  pickUniqueFallbackQuestion,
   questionInventsRelationship,
   recyclesPriorQuestion,
+  asksMetaHardestProbe,
   reasksWhatUserJustStated,
   sanitizeAreasUnexplored,
   shouldRejectPriorExploredQuestion,
+  territoryToNaturalQuestion,
   userMessageHasFreshDetail,
+  userMessageWarrantsReceiveOnly,
+  userSharedConcreteBeat,
+  isSubstantiveDisclosure,
+  presenceThreadBlocksPlannerProbe,
   type ConversationState,
   type PhilipMove,
 } from "../../conversationState";
@@ -31,6 +42,8 @@ export interface PlanQuestionFromMindInput {
   isGuardedUser: boolean;
   move: PhilipMove | "sit";
   repetitionRecovery?: boolean;
+  priorPhilipMessages?: string[];
+  openingSituation?: string;
 }
 
 export interface QuestionValidationContext {
@@ -42,6 +55,24 @@ export interface QuestionValidationContext {
   questionsAsked: string[];
 }
 
+function mergedQuestionsAsked(input: PlanQuestionFromMindInput): string[] {
+  return mergeQuestionsAsked(
+    input.state.questions_asked ?? [],
+    input.priorPhilipMessages ?? [],
+  );
+}
+
+function buildValidationContext(input: PlanQuestionFromMindInput): QuestionValidationContext {
+  return {
+    lastUserMessage: input.lastUserMessage,
+    userMessages: [...input.priorUserMessages, input.lastUserMessage],
+    factsLearned: input.state.facts_learned ?? [],
+    priorExplored: input.priorExplored,
+    exchangeNum: input.exchangeNum,
+    questionsAsked: mergedQuestionsAsked(input),
+  };
+}
+
 export function isValidPlannedQuestion(
   question: string,
   ctx: QuestionValidationContext,
@@ -50,12 +81,15 @@ export function isValidPlannedQuestion(
   if (!q || !q.includes("?")) return false;
   if (isBannedQuestion(q)) return false;
   if (isTemplateLeakQuestion(q)) return false;
+  if (isMechanicalForwardProbe(q)) return false;
+  if (ctx.exchangeNum <= 5 && detectAlmostSaidIt(ctx.lastUserMessage) && isMechanicalForwardProbe(q)) return false;
   if (ctx.exchangeNum <= 2 && /what haven'?t you said yet about/i.test(q)) return false;
   if (containsMysticalColdRead(q)) return false;
   if (questionInventsRelationship(q, ctx.userMessages, ctx.factsLearned)) return false;
   if (inventsUnsupportedDetail(q, ctx.userMessages, ctx.factsLearned, ctx.exchangeNum)) return false;
   if (shouldRejectPriorExploredQuestion(q, ctx.priorExplored, ctx.lastUserMessage)) return false;
   if (reasksWhatUserJustStated(ctx.lastUserMessage, q)) return false;
+  if (asksMetaHardestProbe(ctx.lastUserMessage, q)) return false;
   if (recyclesPriorQuestion(q, ctx.questionsAsked)) return false;
   return true;
 }
@@ -72,18 +106,18 @@ function extractNamedPerson(facts: string[]): string | null {
 
 function buildGuardedCandidate(state: ConversationState, lastUserMessage: string): string | null {
   const named = extractNamedPerson(state.facts_learned);
-  if (named) return `What happened with ${named} after that?`;
-  if (lastUserMessage.split(/\s+/).length >= 6) return "What happened next?";
-  return "Can you say a little more about that?";
+  if (named) return `What's been hardest with ${named} lately?`;
+  if (lastUserMessage.split(/\s+/).length >= 6) return null;
+  return "What's the part you haven't said yet?";
 }
 
 function buildDeepenCandidate(state: ConversationState, lastUserMessage: string): string | null {
-  const phrase = [...state.user_exact_words]
-    .reverse()
-    .find(w => w.trim().length >= 8 && lastUserMessage.toLowerCase().includes(w.toLowerCase().slice(0, 24)));
-  if (!phrase) return null;
-  const short = phrase.length > 50 ? `${phrase.slice(0, 47)}…` : phrase;
-  return `Say more about "${short}"?`;
+  if (isSubstantiveDisclosure(lastUserMessage)) return null;
+  const named = extractNamedPerson(state.facts_learned);
+  if (named && lastUserMessage.toLowerCase().includes(named.toLowerCase())) {
+    return `Where is ${named} in this for you right now?`;
+  }
+  return null;
 }
 
 function buildUnexploredCandidate(
@@ -96,15 +130,18 @@ function buildUnexploredCandidate(
     && !priorExplored.some(e => area.toLowerCase().includes(e.toLowerCase().slice(0, 12))),
   );
   if (unexplored.length === 0) return null;
-  return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
+  return territoryToNaturalQuestion(unexplored[0]);
 }
 
-function buildFactCandidate(state: ConversationState): string | null {
+function buildFactCandidate(state: ConversationState, lastUserMessage: string): string | null {
+  if (userSharedConcreteBeat(lastUserMessage)) return null;
   const named = extractNamedPerson(state.facts_learned);
   if (named) return `Where is ${named} in this for you right now?`;
   const fact = [...state.facts_learned].reverse().find(f => f.trim().length > 8 && f.trim().length < 100);
   if (!fact) return null;
-  return `What happened after ${fact.replace(/\.$/, "")}?`;
+  const nameInFact = fact.match(/\b([A-Z][a-z]+)\b/);
+  if (nameInFact) return `What's hardest about ${nameInFact[1]} in this right now?`;
+  return null;
 }
 
 function buildMoveShapedCandidate(
@@ -122,11 +159,11 @@ function buildMoveShapedCandidate(
     if (hasFresh) {
       return buildDeepenCandidate(state, lastUserMessage) ?? buildUnexploredCandidate(state, priorExplored);
     }
-    return buildUnexploredCandidate(state, priorExplored) ?? buildFactCandidate(state);
+    return buildUnexploredCandidate(state, priorExplored) ?? buildFactCandidate(state, lastUserMessage);
   }
 
   if (move === "named_fact") {
-    return buildFactCandidate(state) ?? buildDeepenCandidate(state, lastUserMessage);
+    return buildFactCandidate(state, lastUserMessage) ?? buildDeepenCandidate(state, lastUserMessage);
   }
 
   if (move === "tension" && hasFresh) {
@@ -147,18 +184,14 @@ function buildMindQuestionCandidates(input: PlanQuestionFromMindInput): string[]
   const { state, lastUserMessage, priorExplored, isGuardedUser, move, repetitionRecovery } = input;
 
   if (repetitionRecovery) {
-    return [
-      pickRecoveryFallbackQuestion(state),
-      pickFreshTerritoryQuestion(state, priorExplored),
-      buildUnexploredCandidate(state, priorExplored) ?? "",
-    ].filter(Boolean);
+    return collectFallbackQuestionCandidates(state, priorExplored);
   }
 
   if (isGuardedUser) {
     return [
       buildGuardedCandidate(state, lastUserMessage) ?? "",
       buildUnexploredCandidate(state, priorExplored) ?? "",
-      pickFreshTerritoryQuestion(state, priorExplored),
+      pickFreshTerritoryQuestion(state, priorExplored, input.priorPhilipMessages ?? []),
     ].filter(Boolean);
   }
 
@@ -172,9 +205,9 @@ function buildMindQuestionCandidates(input: PlanQuestionFromMindInput): string[]
   const candidates = [
     shaped ?? "",
     buildDeepenCandidate(state, lastUserMessage) ?? "",
-    buildFactCandidate(state) ?? "",
+    buildFactCandidate(state, lastUserMessage) ?? "",
     buildUnexploredCandidate(state, priorExplored) ?? "",
-    pickFreshTerritoryQuestion(state, priorExplored),
+    pickFreshTerritoryQuestion(state, priorExplored, input.priorPhilipMessages ?? []),
   ].filter(Boolean);
 
   return [...new Set(candidates)];
@@ -182,14 +215,20 @@ function buildMindQuestionCandidates(input: PlanQuestionFromMindInput): string[]
 
 /** Deterministic question from Session Mind — no LLM. */
 export function planQuestionFromMind(input: PlanQuestionFromMindInput): string | null {
-  const ctx: QuestionValidationContext = {
-    lastUserMessage: input.lastUserMessage,
-    userMessages: [...input.priorUserMessages, input.lastUserMessage],
-    factsLearned: input.state.facts_learned ?? [],
-    priorExplored: input.priorExplored,
-    exchangeNum: input.exchangeNum,
-    questionsAsked: input.state.questions_asked ?? [],
-  };
+  if (input.openingSituation && presenceThreadBlocksPlannerProbe(
+    input.openingSituation,
+    input.priorUserMessages,
+    input.lastUserMessage,
+    input.exchangeNum,
+  )) {
+    return null;
+  }
+
+  if (userMessageWarrantsReceiveOnly(input.lastUserMessage, { exchangeNum: input.exchangeNum })) {
+    return null;
+  }
+
+  const ctx: QuestionValidationContext = buildValidationContext(input);
 
   for (const candidate of buildMindQuestionCandidates(input)) {
     if (isValidPlannedQuestion(candidate, ctx)) return candidate.trim();
@@ -202,6 +241,18 @@ export async function resolvePlannedQuestion(
   input: PlanQuestionFromMindInput,
   llmFallback: () => Promise<string>,
 ): Promise<{ question: string; source: PlannerSource }> {
+  if (input.openingSituation && presenceThreadBlocksPlannerProbe(
+    input.openingSituation,
+    input.priorUserMessages,
+    input.lastUserMessage,
+    input.exchangeNum,
+  )) {
+    return { question: "", source: "none" };
+  }
+
+  const ctx = buildValidationContext(input);
+  const priorPhilip = input.priorPhilipMessages ?? [];
+
   if (isMindPlannerEnabled()) {
     const mind = planQuestionFromMind(input);
     if (mind) return { question: mind, source: "mind" };
@@ -209,13 +260,21 @@ export async function resolvePlannedQuestion(
 
   try {
     const llm = (await llmFallback())?.trim();
-    if (llm) return { question: llm, source: "llm" };
+    if (llm && isValidPlannedQuestion(llm, ctx)) return { question: llm, source: "llm" };
   } catch {
     // fall through to territory fallback
   }
 
-  return {
-    question: pickFreshTerritoryQuestion(input.state, input.priorExplored),
-    source: "fallback",
-  };
+  for (const candidate of collectFallbackQuestionCandidates(input.state, input.priorExplored)) {
+    if (isValidPlannedQuestion(candidate, ctx)) {
+      return { question: candidate.trim(), source: "fallback" };
+    }
+  }
+
+  const unique = pickUniqueFallbackQuestion(input.state, input.priorExplored, priorPhilip);
+  if (unique && isValidPlannedQuestion(unique, ctx)) {
+    return { question: unique, source: "fallback" };
+  }
+
+  return { question: "", source: "none" };
 }

@@ -3,7 +3,12 @@ import {
   shouldOfferSessionSendOff,
   buildPostSendOffResponse,
   buildSendOffPushbackResponse,
+  buildPassivePresenceRecoveryResponse,
+  buildPresenceRuptureRecoveryResponse,
   detectsSendOffPushback,
+  detectPassivePresenceFrustration,
+  detectPresenceRupture,
+  priorPhilipUsedStockPresence,
   inventsUnsupportedDetail,
 } from "../../conversationState";
 import {
@@ -53,6 +58,40 @@ export function evaluatePreTurnGates(input: {
   const isSendOff = !isClosing && !alreadySentOff && !needsDependency
     && shouldOfferSessionSendOff(exchangeNum, philipMsgs, lastUser, { allUserMessages: userMsgs });
 
+  const priorTexts = philipMsgs.map((m) => m.content);
+  if (detectPresenceRupture(lastUser)) {
+    gates.push("presence_rupture_recovery");
+    return {
+      gates,
+      lane: "presence_rupture_recovery",
+      shortCircuitText: buildPresenceRuptureRecoveryResponse(lastUser, userMsgs.slice(0, -1), priorTexts),
+      isClosing: false,
+      alreadySentOff: false,
+      needsDependency,
+      isSendOff: false,
+      noQuestionMode: true,
+    };
+  }
+
+  if (priorPhilipUsedStockPresence(priorTexts) && detectPassivePresenceFrustration(lastUser)) {
+    gates.push("passive_presence_recovery");
+    return {
+      gates,
+      lane: "passive_presence_recovery",
+      shortCircuitText: buildPassivePresenceRecoveryResponse(
+        lastUser,
+        [],
+        userMsgs.slice(0, -1),
+        priorTexts,
+      ),
+      isClosing: false,
+      alreadySentOff: false,
+      needsDependency,
+      isSendOff: false,
+      noQuestionMode: false,
+    };
+  }
+
   // Send-off pushback beats closing detection — "That's enough?" after Philip sent them off is protest, not goodbye.
   if (alreadySentOff) {
     if (detectsSendOffPushback(lastUser)) {
@@ -69,7 +108,6 @@ export function evaluatePreTurnGates(input: {
       };
     }
     gates.push("already_sent_off", "post_send_off", "no_question_mode");
-    const priorTexts = philipMsgs.map((m) => m.content);
     return {
       gates,
       lane: "post_send_off",
@@ -131,13 +169,20 @@ export function resolveNoQuestionMode(input: {
   conversationStateBlock: string;
   conversationHistory: Array<{ role: string; content: string }>;
   conversationState?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null;
+  openingSituation?: string;
 }): boolean {
   const userMsgs = input.conversationHistory.filter(m => m.role === "user").map(m => m.content);
   const lastUser = userMsgs[userMsgs.length - 1] ?? "";
-  if (resolvePresenceLane(lastUser, input.conversationState)) return true;
-  if (!input.isFollowUp) return false;
   const philipMsgs = input.conversationHistory.filter(m => m.role === "assistant");
   const exchangeNum = Math.floor(input.conversationHistory.length / 2);
+  const presenceContext = {
+    priorUserMessages: userMsgs.slice(0, -1),
+    priorPhilipTexts: philipMsgs.map(m => m.content),
+    openingSituation: input.openingSituation ?? "",
+    exchangeNum,
+  };
+  if (resolvePresenceLane(lastUser, input.conversationState, presenceContext)) return true;
+  if (!input.isFollowUp) return false;
   const alreadySentOff = conversationHadSessionSendOff(philipMsgs);
   const willSendOff = !alreadySentOff
     && !needsDependencyRedirect(lastUser, philipMsgs, userMsgs)
@@ -153,6 +198,7 @@ export function applyPostTurnGates(input: {
   conversationHistory: Array<{ role: string; content: string }>;
   exchangeNum: number;
   conversationState?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null;
+  openingSituation?: string;
 }): { text: string; gates: PhilipGate[]; lane: PhilipLane | null } {
   const gates: PhilipGate[] = [];
   let text = input.text;
@@ -165,7 +211,12 @@ export function applyPostTurnGates(input: {
   const philipMsgs = claudeHistory.filter(m => m.role === "assistant");
   const recentPhilip = philipMsgs.slice(-4).map(m => m.content);
 
-  const presenceLane = resolvePresenceLane(lastUserMsg, input.conversationState);
+  const presenceLane = resolvePresenceLane(lastUserMsg, input.conversationState, {
+    priorUserMessages: userMsgs.slice(0, -1),
+    priorPhilipTexts: recentPhilip,
+    openingSituation: input.openingSituation ?? "",
+    exchangeNum: input.exchangeNum,
+  });
   if (presenceLane) {
     const beforePresence = text;
     text = enforcePresenceResponse(text, presenceLane, philipMsgs.length, recentPhilip);

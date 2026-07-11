@@ -5,7 +5,24 @@
 
 import {
   detectAlmostSaidIt,
+  detectRepetitionPushback,
   detectSacredPauseUserMessage,
+  detectSacredReceivePushback,
+  userContinuesSacredDisclosure,
+  conversationOpenedWithSacredConfession,
+  conversationOpenedAlmostSaidIt,
+  userStillHoveringAtDisclosure,
+  userMessageWarrantsReceiveOnly,
+  isSubstantiveDisclosure,
+  userSharedConcreteBeat,
+  buildReceiveFromDisclosure,
+  buildMirroredReceiveLine,
+  pickMirroredReceiveFromThread,
+  pickMinimalPresenceReceive,
+  priorPhilipRepeatedReceiveLine,
+  priorPhilipUsedStockPresence,
+  detectPassivePresenceFrustration,
+  detectPresenceRupture,
   buildStatePromptBlock,
   type ConversationState,
 } from "../conversationState.ts";
@@ -22,7 +39,16 @@ const ALMOST_SAID_RESPONSES = [
 const SACRED_PAUSE_RESPONSES = [
   "That took courage to say out loud.",
   "Thank you for trusting this room with that.",
+  "I'm glad you said that here.",
+  "That matters — thank you for saying it.",
+  "You didn't have to say that. I'm glad you did.",
 ];
+
+function stockLineRecentlyUsed(line: string, priorTexts: string[]): boolean {
+  const needle = line.trim().toLowerCase().slice(0, 18);
+  if (!needle) return false;
+  return priorTexts.some((text) => text.trim().toLowerCase().includes(needle));
+}
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -52,11 +78,105 @@ function seedFromText(text: string): number {
 export function resolvePresenceLane(
   userMessage: string,
   state?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null,
+  context?: {
+    priorUserMessages?: string[];
+    priorPhilipTexts?: string[];
+    openingSituation?: string;
+    exchangeNum?: number;
+  },
 ): PresenceLane | null {
-  if (state?.sacred_pause_warranted || detectSacredPauseUserMessage(userMessage)) {
+  if (detectPresenceRupture(userMessage)) return null;
+  if (detectRepetitionPushback(userMessage)) return null;
+
+  if (detectPassivePresenceFrustration(userMessage)) return null;
+
+  const priorPhilip = context?.priorPhilipTexts ?? [];
+  const priorUsers = context?.priorUserMessages ?? [];
+  const exchangeNum = context?.exchangeNum ?? 0;
+  if (priorPhilipRepeatedReceiveLine(priorPhilip)) return null;
+
+  if (priorPhilipUsedStockPresence(priorPhilip) && userSharedConcreteBeat(userMessage)) {
     return "sacred_pause";
   }
+
+  if (userMessageWarrantsReceiveOnly(userMessage, { exchangeNum })) {
+    return "sacred_pause";
+  }
+
+  if (isSubstantiveDisclosure(userMessage)) return null;
+
+  if (state?.sacred_pause_warranted || detectSacredPauseUserMessage(userMessage)) {
+    if (detectSacredReceivePushback(userMessage)) return null;
+    return "sacred_pause";
+  }
+
+  const openedSacred = conversationOpenedWithSacredConfession(
+    context?.openingSituation ?? "",
+    priorUsers,
+  );
+
+  if (
+    openedSacred
+    && exchangeNum > 0
+    && exchangeNum <= 6
+    && !detectPresenceRupture(userMessage)
+    && (
+      userContinuesSacredDisclosure(userMessage)
+      || detectSacredPauseUserMessage(userMessage)
+    )
+  ) {
+    return "sacred_pause";
+  }
+
+  const lastPhilip = priorPhilip[priorPhilip.length - 1] ?? "";
+  const lastWasSacredReceive = SACRED_PAUSE_RESPONSES.some((line) =>
+    lastPhilip.toLowerCase().includes(line.toLowerCase().slice(0, 18)),
+  );
+  if (lastWasSacredReceive) {
+    if (detectSacredReceivePushback(userMessage)) return null;
+    if (userContinuesSacredDisclosure(userMessage) || detectSacredPauseUserMessage(userMessage)) {
+      return "sacred_pause";
+    }
+    return null;
+  }
+
+  const openedAlmost = conversationOpenedAlmostSaidIt(
+    context?.openingSituation ?? "",
+    priorUsers,
+  );
+  if (
+    openedAlmost
+    && exchangeNum >= 1
+    && exchangeNum <= 6
+    && !isSubstantiveDisclosure(userMessage)
+    && !userSharedConcreteBeat(userMessage)
+    && !detectSacredReceivePushback(userMessage)
+    && userStillHoveringAtDisclosure(userMessage)
+  ) {
+    return "almost_said_it";
+  }
+
   if (state?.almost_said_it_detected || detectAlmostSaidIt(userMessage)) {
+    if (userSharedConcreteBeat(userMessage) || isSubstantiveDisclosure(userMessage)) {
+      return null;
+    }
+    const lastPhilip = priorPhilip[priorPhilip.length - 1] ?? "";
+    if (priorPhilipUsedStockPresence(priorPhilip) && !userContinuesSacredDisclosure(userMessage)) {
+      return null;
+    }
+    const stockLines = [...ALMOST_SAID_RESPONSES, ...SACRED_PAUSE_RESPONSES];
+    const lastWasStockPresence = stockLines.some((line) =>
+      lastPhilip.trim().toLowerCase() === line.toLowerCase()
+      || lastPhilip.toLowerCase().includes(line.toLowerCase().slice(0, 14)),
+    );
+    if (
+      lastWasStockPresence
+      && !detectAlmostSaidIt(userMessage)
+      && !detectSacredPauseUserMessage(userMessage)
+      && !userContinuesSacredDisclosure(userMessage)
+    ) {
+      return null;
+    }
     return "almost_said_it";
   }
   return null;
@@ -68,14 +188,40 @@ export function buildPresenceShortCircuitResponse(
   varietyIndex = 0,
   recentResponses: string[] = [],
 ): string {
+  const wordCount = countWords(seedText);
+  const mayMirror = lane === "sacred_pause"
+    ? (userSharedConcreteBeat(seedText) || isSubstantiveDisclosure(seedText) || wordCount >= 8)
+    : userSharedConcreteBeat(seedText);
+  if (mayMirror && wordCount >= 6) {
+    const mirrored = buildMirroredReceiveLine(seedText, recentResponses);
+    if (mirrored) return mirrored;
+  }
+
+  if (
+    lane === "sacred_pause"
+    && userSharedConcreteBeat(seedText)
+  ) {
+    const received = buildReceiveFromDisclosure(seedText, recentResponses);
+    if (received) return received;
+  }
+
+  if (priorPhilipUsedStockPresence(recentResponses)) {
+    const mirrored = buildMirroredReceiveLine(seedText, recentResponses);
+    if (mirrored) return mirrored;
+    return pickMinimalPresenceReceive(recentResponses) ?? "";
+  }
+
   const pool = lane === "almost_said_it" ? ALMOST_SAID_RESPONSES : SACRED_PAUSE_RESPONSES;
-  const recent = new Set(recentResponses.map((r) => r.trim().toLowerCase()));
+  const recentExact = new Set(recentResponses.map((r) => r.trim().toLowerCase()));
   for (let offset = 0; offset < pool.length; offset += 1) {
     const idx = (seedFromText(seedText) + varietyIndex + offset) % pool.length;
     const candidate = pool[idx] ?? pool[0];
-    if (!recent.has(candidate.trim().toLowerCase())) return candidate;
+    const key = candidate.trim().toLowerCase();
+    if (!recentExact.has(key) && !stockLineRecentlyUsed(candidate, recentResponses)) return candidate;
   }
-  return pool[(seedFromText(seedText) + varietyIndex) % pool.length] ?? pool[0];
+  const fallbackMirror = buildMirroredReceiveLine(seedText, recentResponses);
+  if (fallbackMirror) return fallbackMirror;
+  return pickMinimalPresenceReceive(recentResponses) ?? "";
 }
 
 export function enforcePresenceResponse(
@@ -110,8 +256,60 @@ export function tryPresenceShortCircuit(
   state?: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null,
   varietyIndex = 0,
   recentResponses: string[] = [],
+  context?: {
+    priorUserMessages?: string[];
+    priorPhilipTexts?: string[];
+    openingSituation?: string;
+    exchangeNum?: number;
+  },
 ): { lane: PresenceLane; text: string } | null {
-  const presenceLane = resolvePresenceLane(userMessage, state);
+  if (detectPresenceRupture(userMessage)) return null;
+  if (detectPassivePresenceFrustration(userMessage)) return null;
+  if (detectRepetitionPushback(userMessage)) return null;
+
+  const priorPhilip = context?.priorPhilipTexts ?? [];
+  if (priorPhilipRepeatedReceiveLine(priorPhilip)) return null;
+
+  const opening = context?.openingSituation ?? "";
+  const priorUsers = context?.priorUserMessages ?? [];
+  const inPresenceThread = opening && (
+    conversationOpenedWithSacredConfession(opening, [opening, ...priorUsers])
+    || conversationOpenedAlmostSaidIt(opening, [opening, ...priorUsers])
+  );
+
+  if (
+    inPresenceThread
+    && (
+      userSharedConcreteBeat(userMessage)
+      || isSubstantiveDisclosure(userMessage)
+      || (countWords(userMessage) >= 8 && !userStillHoveringAtDisclosure(userMessage))
+    )
+  ) {
+    const mirrored = pickMirroredReceiveFromThread(
+      userMessage,
+      context?.priorUserMessages ?? [],
+      priorPhilip,
+      context?.openingSituation ?? "",
+    ) ?? buildMirroredReceiveLine(userMessage, priorPhilip);
+    if (mirrored) {
+      return {
+        lane: "sacred_pause",
+        text: mirrored,
+      };
+    }
+  }
+
+  if (priorPhilipUsedStockPresence(priorPhilip) && userSharedConcreteBeat(userMessage)) {
+    const received = buildReceiveFromDisclosure(userMessage, priorPhilip);
+    if (received) {
+      return {
+        lane: "sacred_pause",
+        text: received,
+      };
+    }
+  }
+
+  const presenceLane = resolvePresenceLane(userMessage, state, context);
   if (!presenceLane) return null;
   return {
     lane: presenceLane,

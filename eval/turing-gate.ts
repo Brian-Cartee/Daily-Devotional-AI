@@ -1,8 +1,11 @@
 /**
- * Pre-deploy quality gate — runs golden 15 against live and exits non-zero on failure.
+ * Pre-deploy quality gate — runs golden 18 against live and exits non-zero on failure.
  *
  * Usage: cd eval && npm run turing:gate
  *        cd eval && npm run turing:gate -- --local
+ *
+ * Cost: defaults to Sonnet (~$6-8 full gate). Use `npm run turing:spot-gate` for iteration (~$3-5).
+ * Override: TURING_MODEL=claude-opus-4-8 npm run turing:gate  (deep review only, ~$65)
  */
 import { spawnSync } from "child_process";
 import path from "path";

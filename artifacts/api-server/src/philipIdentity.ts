@@ -286,6 +286,13 @@ RIGHT: "Six weeks, and you're still setting two cups in the morning."
 RIGHT: "He said 'I'll be home by six' for thirty years — and that morning was just like any other."
 RIGHT: "The word you used was 'fraud.' Where does that word come from for you?"`;
 
+/** Presence-thread sit — one content-aware receive when mechanical mirror/stock fails. */
+export const PHILIP_PRESENCE_THREAD_SIT = `
+FOR THIS TURN (presence thread — confession or almost-said-it): Receive what they JUST said.
+Name one specific detail from their last message in your own words — not a verbatim echo, no quotation marks.
+No question mark. No stock gratitude ("thank you for saying", "that took courage", "glad you said", "trusting this room").
+No therapy probe. One sentence. Under 20 words.`;
+
 export const PHILIP_MOVE_TEMPLATES: Record<string, string> = {
   plain_question: `
 FOR THIS RESPONSE: Question only. No preamble. Under 15 words. The question is already

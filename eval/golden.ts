@@ -49,6 +49,16 @@ export const GOLDEN_15_IDS = [
   ...GOLDEN_ANCHOR_IDS,
 ] as const;
 
+/** Spot-check gate — 3 worst scenarios from recent evals (~$3-5 vs ~$65 full gate). */
+export const SPOT_GATE_IDS = [
+  "presence-almost-01",
+  "sendoff-01",
+  "presence-confession-01",
+] as const;
+
+/** Spot gate: 2 of 3 must pass during iteration (full gate stays 80%). */
+export const SPOT_GATE_MIN_PASS_RATE = 67;
+
 export const GATE_MIN_PASS_RATE = 80;
 
 /** Session Mind telemetry gate — exchange 3+ should read from warm cache. */

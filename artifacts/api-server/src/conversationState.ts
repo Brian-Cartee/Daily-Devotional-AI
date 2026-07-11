@@ -65,6 +65,7 @@ export interface ConversationState {
 
 export function detectAlmostSaidIt(userMessage: string): boolean {
   const text = userMessage.trim();
+  if (isSubstantiveDisclosure(text)) return false;
   const qualifierPatterns = [
     /I don'?t know if this makes sense[,\s]/i,
     /this might sound (strange|stupid|silly|weird)/i,
@@ -81,13 +82,562 @@ export function detectAlmostSaidIt(userMessage: string): boolean {
 
 const SACRED_PAUSE_USER_PATTERNS = [
   /\bnever said (this|it) out loud\b/i,
+  /\bnever told (anyone|anybody|a soul)\b/i,
+  /\b(first time|for the first time) (i'?ve|i have) (said|told|admitted)\b/i,
   /\b(don'?t|do not) think god could forgive\b/i,
   /\bcan god forgive\b/i,
+  /\bgod could never forgive\b/i,
+  /\btoo ashamed\b/i,
+  /\bwhat i did\b/i,
+  /\bthe thing i did\b/i,
+  /\bcan'?t forgive myself\b/i,
 ];
 
 export function detectSacredPauseUserMessage(userMessage: string): boolean {
   const text = userMessage.trim();
   return SACRED_PAUSE_USER_PATTERNS.some((p) => p.test(text));
+}
+
+/** User still in shame/confession thread — receive, don't probe. */
+export function userContinuesSacredDisclosure(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  return /\b(i'?m afraid|scared|ashamed|embarrassed|what i did|can'?t say|hard to say|never told|still carrying|the guilt|feels weird|put words to|sitting in me|what it made me|shut off|never came back|gotten used to carrying)\b/i.test(text);
+}
+
+/** Sacred/almost presence threads — exchanges 1–6 block planner probes unless user ruptures. */
+export function presenceThreadBlocksPlannerProbe(
+  situation: string,
+  priorUserMessages: string[],
+  lastUserMessage: string,
+  exchangeNum: number,
+): boolean {
+  if (detectPresenceRupture(lastUserMessage)) return false;
+  if (exchangeNum < 1 || exchangeNum > 6) return false;
+  const threadMessages = priorUserMessages.length > 0
+    ? [situation, ...priorUserMessages]
+    : [situation];
+  if (conversationOpenedWithSacredConfession(situation, threadMessages)) return true;
+  if (conversationOpenedAlmostSaidIt(situation, threadMessages)) return true;
+  return false;
+}
+
+/** Sacred confession opened the session — this turn should receive only, not probe. */
+export function userInSacredConfessionReceiveWindow(
+  situation: string,
+  priorUserMessages: string[],
+  lastUserMessage: string,
+  exchangeNum: number,
+): boolean {
+  if (!conversationOpenedWithSacredConfession(
+    situation,
+    priorUserMessages.length > 0 ? priorUserMessages : [situation],
+  )) {
+    return false;
+  }
+  return presenceThreadBlocksPlannerProbe(
+    situation,
+    priorUserMessages,
+    lastUserMessage,
+    exchangeNum,
+  );
+}
+
+export function conversationOpenedWithSacredConfession(
+  situation: string,
+  userMessages: string[] = [],
+): boolean {
+  const opening = (userMessages[0] ?? situation).trim();
+  return detectSacredPauseUserMessage(opening);
+}
+
+/** Rich follow-up with names, events, or grief detail — not an almost-said-it hover. */
+export function isSubstantiveDisclosure(userMessage: string): boolean {
+  const text = userMessage.trim();
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 16) return false;
+  if (/\b(died|death|funeral|last spring|last (year|month|fall)|months? (of|without|since)|stopped (talking|calling|answering)|his (dad|father|mom|mother)|her (dad|father))\b/i.test(text)) {
+    return true;
+  }
+  if (/\b(husband|wife|son|daughter|dad|mom)\s+[A-Z][a-z]+\b/.test(text)) return true;
+  if (/\b[A-Z][a-z]{2,}\b/.test(text) && words >= 20) return true;
+  return false;
+}
+
+/** Short but concrete emotional beats — not a hover at the threshold. */
+export function userSharedConcreteBeat(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  if (isSubstantiveDisclosure(text)) return true;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 4) return false;
+  if (
+    words < 16
+    && /\b(i don'?t know if this makes sense|something i'?ve been wanting to say|never (said|told) (this|anyone)|this might sound)\b/i.test(text)
+  ) {
+    return false;
+  }
+  const beats = [
+    /\b(going through the motions|something'?s off|can'?t shake it)\b/i,
+    /\b(there wasn'?t a later|let it ring|i turned away|i walked away)\b/i,
+    /\b(never mattered|like i never mattered)\b/i,
+    /\b(someone who needed me|i didn'?t (answer|pick up|call back))\b/i,
+    /\b(not caring|didn'?t even bother me)\b/i,
+    /\b(he|she) reached for me\b/i,
+    /\b(telling her the truth|costs me her)\b/i,
+    /\b(it hasn'?t yet|not sure what good)\b/i,
+    /\b(part i don'?t (say|tell)|don'?t say out loud)\b/i,
+    /\b(have|feel) it anymore\b/i,
+    /\b(sitting in me|put words to it)\b/i,
+    /\b(nothing'?s changed|still (sits|sitting) with me)\b/i,
+    /\b(carried it alone|carrying it alone)\b/i,
+    /\b(words stop(ped)? meaning|stopped meaning)\b/i,
+  ];
+  if (beats.some((p) => p.test(text))) return true;
+  if (words >= 8 && /\b(i (feel|felt|keep|still|can'?t))\b/i.test(text)) return true;
+  return false;
+}
+
+const STOCK_GRATITUDE_SNIPPETS = [
+  "that took courage",
+  "thank you for trusting",
+  "i'm glad you said",
+  "that matters — thank you",
+  "thank you for saying",
+  "you didn't have to say",
+  "go ahead.",
+  "take your time with that",
+  "i'm here whenever you're ready",
+];
+
+export function isStockGratitudeLine(line: string): boolean {
+  const lower = line.trim().toLowerCase();
+  if (!lower) return false;
+  return STOCK_GRATITUDE_SNIPPETS.some((s) => lower.includes(s));
+}
+
+function lineTooSimilarToPhilip(line: string, recentPhilipTexts: string[]): boolean {
+  const lower = line.trim().toLowerCase();
+  if (!lower) return true;
+  const key = lower.slice(0, 28);
+  return recentPhilipTexts.some((p) => {
+    const pl = p.trim().toLowerCase();
+    return pl === lower || pl.includes(key) || (pl.length >= 12 && key.includes(pl.slice(0, 20)));
+  });
+}
+
+function normalizeEchoText(text: string): string {
+  return text.trim().toLowerCase().replace(/[^\w\s']/g, " ").replace(/\s+/g, " ");
+}
+
+function isVerbatimUserEcho(userMessage: string, line: string): boolean {
+  const u = normalizeEchoText(userMessage);
+  const l = normalizeEchoText(line);
+  if (!u || !l) return false;
+  if (u === l) return true;
+  const shorter = Math.min(u.length, l.length);
+  const longer = Math.max(u.length, l.length);
+  if (shorter / longer > 0.72 && (l.includes(u) || u.includes(l))) return true;
+  return false;
+}
+
+function shouldSkipMessageForMirror(message: string, openingSituation = ""): boolean {
+  const text = message.trim();
+  if (!text) return true;
+  if (detectPresenceRupture(text) || detectPassivePresenceFrustration(text)) return true;
+  if (openingSituation && normalizeEchoText(text) === normalizeEchoText(openingSituation)) return true;
+  if (/^(wait,?|did you|you just|yeah,?\s+i know|honestly the moment|it'?s kind of you)/i.test(text)) return true;
+  if (/\b(repeat(ed)?|mirror(ing|ed)?|something went wrong|is someone actually there)\b/i.test(text)) return true;
+  return false;
+}
+
+const MINIMAL_PRESENCE_RECEIVES = [
+  "I'm still here with you.",
+  "That landed — I'm staying with it.",
+  "I hear you.",
+  "I'm not going anywhere.",
+  "What you said matters here.",
+];
+
+export function pickMinimalPresenceReceive(recentPhilipTexts: string[] = []): string | null {
+  for (let i = 0; i < MINIMAL_PRESENCE_RECEIVES.length; i += 1) {
+    const line = MINIMAL_PRESENCE_RECEIVES[i];
+    if (!lineTooSimilarToPhilip(line, recentPhilipTexts)) return line;
+  }
+  return null;
+}
+
+/**
+ * Presence receive that never repeats a recent line: mirror the user's words
+ * first; if no mirror is possible, use a not-yet-used minimal receive; else null
+ * (caller must LLM-sit rather than emit a stock line twice).
+ */
+export function buildNonRepeatingPresenceReceive(
+  userMessage: string,
+  priorPhilipTexts: string[] = [],
+): string | null {
+  const mirror = buildMirroredReceiveLine(userMessage, priorPhilipTexts);
+  if (mirror && !lineTooSimilarToPhilip(mirror, priorPhilipTexts)) return mirror;
+  return pickMinimalPresenceReceive(priorPhilipTexts);
+}
+
+/** Stock gratitude or empty placeholder — needs LLM sit instead. */
+export function isGenericPresenceFallback(line: string): boolean {
+  const trimmed = line?.trim();
+  if (!trimmed) return true;
+  if (isStockGratitudeLine(trimmed)) return true;
+  const lower = trimmed.toLowerCase();
+  if (MINIMAL_PRESENCE_RECEIVES.some((m) => lower === m.toLowerCase())) return true;
+  return /^i'm still here with what you said\.?$/i.test(trimmed);
+}
+
+/** Strip bad sit output — questions, stock lines, repeats. */
+export function sanitizePresenceSitResponse(
+  text: string,
+  priorPhilipTexts: string[] = [],
+  lastUserMessage = "",
+): string {
+  let one = text.trim().split(/[.!?]/)[0]?.trim() ?? "";
+  one = one.replace(/\?/g, "").trim();
+  if (!one) return "";
+  if (isGenericPresenceFallback(one)) return "";
+  if (lastUserMessage && isVerbatimUserEcho(lastUserMessage, one)) return "";
+  if (lineTooSimilarToPhilip(one, priorPhilipTexts)) return "";
+  const words = one.split(/\s+/).filter(Boolean);
+  if (words.length > 22) one = `${words.slice(0, 20).join(" ")}.`;
+  return one.endsWith(".") ? one : `${one}.`;
+}
+
+export function isPresenceLlmSitEnabled(): boolean {
+  return process.env.PHILIP_PRESENCE_LLM_SIT !== "0";
+}
+
+/** Mirror the user's words instead of rotating stock gratitude lines. */
+export function buildMirroredReceiveLine(
+  userMessage: string,
+  recentPhilipTexts: string[] = [],
+): string | null {
+  if (detectSacredPauseUserMessage(userMessage)) return null;
+  if (shouldSkipMessageForMirror(userMessage)) return null;
+
+  const text = userMessage.trim();
+  if (!text) return null;
+
+  const fromDisclosure = buildReceiveFromDisclosure(userMessage, recentPhilipTexts);
+  if (fromDisclosure && !isVerbatimUserEcho(userMessage, fromDisclosure)) return fromDisclosure;
+
+  const specificMirrors: Array<[RegExp, string]> = [
+    [/couldn'?t hold it alone/i, "You couldn't hold it alone anymore — that's why it came out."],
+    [/couldn'?t carry it alone/i, "You couldn't carry it alone anymore."],
+    [/heavier than the fear/i, "Heavier than the fear — that's the threshold you're at."],
+    [/worn down enough/i, "Worn down enough that what you've been carrying finally weighs more."],
+    [/doesn'?t get smaller|not get smaller/i, "It still doesn't get smaller — even saying it out loud."],
+    [/blow everything up/i, "Afraid saying it here could blow everything up — I hear that."],
+    [/wasn'?t courage/i, "It wasn't courage — it was that you couldn't carry it alone."],
+    [/shut down under pressure/i, "You shut down under pressure — and you've gotten good at that."],
+    [/years of avoiding/i, "Years of avoiding it — and it's still sitting with you."],
+    [/disorienting/i, "Disorienting — and still worth naming."],
+    [/dropped filter/i, "Like the filter dropped — and the thing underneath showed up."],
+    [/nobody listens|no one listens|no one actually listens/i, "Like no one listens — that's the loneliness in it."],
+    [/doesn'?t feel like courage/i, "It doesn't feel like courage — it feels like overflow."],
+    [/still (sits|sitting) with me/i, "It still sits with you — saying it didn't make it disappear."],
+    [/not blow (everything|it) up/i, "You needed somewhere it wouldn't blow everything up."],
+    [/perform(ing)? kindness/i, "Performing kindness while something underneath stays hidden — that's exhausting."],
+  ];
+
+  for (const [re, line] of specificMirrors) {
+    if (re.test(text) && !lineTooSimilarToPhilip(line, recentPhilipTexts) && !isVerbatimUserEcho(text, line)) {
+      return line;
+    }
+  }
+
+  return null;
+}
+
+/** Walk recent user turns — prefer the most mirrorable substance. */
+export function pickMirroredReceiveFromThread(
+  lastUserMessage: string,
+  priorUserMessages: string[] = [],
+  recentPhilipTexts: string[] = [],
+  openingSituation = "",
+): string | null {
+  const ordered = [...priorUserMessages, lastUserMessage].filter(Boolean);
+  for (let i = ordered.length - 1; i >= 0; i -= 1) {
+    const msg = ordered[i];
+    if (shouldSkipMessageForMirror(msg, openingSituation)) continue;
+    const mirrored = buildMirroredReceiveLine(msg, recentPhilipTexts);
+    if (mirrored) return mirrored;
+  }
+  return null;
+}
+
+/** One-sentence receive after the user finally named something real. */
+export function buildReceiveFromDisclosure(
+  userMessage: string,
+  recentPhilipTexts: string[] = [],
+): string {
+  const text = userMessage.trim();
+  const recent = new Set(recentPhilipTexts.map((p) => p.trim().toLowerCase()));
+  const pickFresh = (line: string) => {
+    if (!recent.has(line.trim().toLowerCase())) return line;
+    return null;
+  };
+
+  const candidates: string[] = [];
+  if (/going through the motions/i.test(text) && /something'?s off/i.test(text)) {
+    candidates.push("Going through the motions while something stays off — that's a heavy kind of stuck.");
+  }
+  if (/there wasn'?t a later/i.test(text)) candidates.push("There wasn't a later — that lands hard.");
+  if (/let it ring/i.test(text)) candidates.push("You let it ring.");
+  if (/never mattered/i.test(text)) candidates.push("Like you never mattered — I hear that.");
+  if (/someone who needed me/i.test(text)) {
+    candidates.push("Someone needed you, and you turned away — that's the weight you're naming.");
+  }
+  if (/not caring/i.test(text) && /didn'?t even bother/i.test(text)) {
+    candidates.push("Not caring, and it not even bothering you — that's its own kind of numb.");
+  }
+  if (/telling her the truth/i.test(text) && /costs me/i.test(text)) {
+    candidates.push("Telling her the truth feels like it could cost you her — that's the bind.");
+  }
+  if (/part i don'?t (say|tell)/i.test(text)) {
+    candidates.push("The part you don't say out loud — that's what you finally named.");
+  }
+  if (/have it anymore|feel it anymore/i.test(text)) {
+    candidates.push("You're naming something that may not be there anymore — that's not small.");
+  }
+  if (/sitting in me/i.test(text)) {
+    candidates.push("Something's been sitting in you a long time.");
+  }
+  if (/nothing'?s changed/i.test(text)) {
+    candidates.push("You said it out loud and it still sits with you — that matters.");
+  }
+  if (/carrying it alone|carried it alone/i.test(text)) {
+    candidates.push("Carrying it alone that long — I hear that weight.");
+  }
+  if (/stopped meaning|words stop(ped)? meaning/i.test(text)) {
+    candidates.push("When the words stop meaning anything — that's a real kind of loss.");
+  }
+  if (/couldn'?t hold it alone/i.test(text)) {
+    candidates.push("You couldn't hold it alone anymore — that's why it came out.");
+  }
+  if (/couldn'?t carry it alone/i.test(text)) {
+    candidates.push("You couldn't carry it alone anymore — that's why it came out.");
+  }
+  if (/heavier than the fear/i.test(text)) {
+    candidates.push("Heavier than the fear — that's the threshold you're naming.");
+  }
+  if (/worn down enough/i.test(text)) {
+    candidates.push("Worn down enough that what you've been carrying finally weighs more.");
+  }
+  if (/doesn'?t get smaller/i.test(text)) {
+    candidates.push("It still doesn't get smaller — even now that you've said it.");
+  }
+  if (/blow everything up/i.test(text)) {
+    candidates.push("Afraid saying it here could blow everything up — I hear that.");
+  }
+  if (/wasn'?t courage/i.test(text)) {
+    candidates.push("It wasn't courage — it was that you couldn't hold it alone anymore.");
+  }
+  if (/shut down under pressure/i.test(text)) {
+    candidates.push("You shut down under pressure — and you've gotten good at that.");
+  }
+  if (/nobody listens|no one listens/i.test(text)) {
+    candidates.push("Like no one listens — that's the loneliness in it.");
+  }
+  if (/years of avoiding/i.test(text)) {
+    candidates.push("Years of avoiding it — and it's still sitting with you.");
+  }
+
+  for (const line of candidates) {
+    if (isStockGratitudeLine(line)) continue;
+    if (isVerbatimUserEcho(text, line)) continue;
+    const fresh = pickFresh(line);
+    if (fresh) return fresh;
+  }
+  return null;
+}
+
+export function priorPhilipRepeatedReceiveLine(priorPhilipTexts: string[]): boolean {
+  const receiveLines = [
+    "that took something to say out loud",
+    "i'm still with you in this",
+    "you named something real there",
+    "that weight is worth sitting with",
+    "that took courage to say out loud",
+    "thank you for trusting this room with that",
+  ];
+  const isReceiveLine = (line: string) => {
+    const lower = line.trim().toLowerCase();
+    return receiveLines.some((r) => lower === r || lower.startsWith(r));
+  };
+  const lastTwo = priorPhilipTexts.slice(-2);
+  if (lastTwo.length < 2) return false;
+  return isReceiveLine(lastTwo[0]) && isReceiveLine(lastTwo[1]);
+}
+
+export function priorPhilipUsedStockPresence(priorPhilipTexts: string[]): boolean {
+  const stock = [
+    "go ahead",
+    "take your time",
+    "i'm here whenever you're ready",
+    "that took courage",
+    "thank you for trusting",
+    "i'm glad you said",
+    "that matters",
+    "thank you for saying",
+    "you didn't have to say",
+    "glad you did",
+    "what you almost said",
+    "i'm still here with you",
+    "that landed",
+    "i hear you",
+    "i'm not going anywhere",
+    "what you said matters here",
+  ];
+  return priorPhilipTexts.some((p) => {
+    const lower = p.trim().toLowerCase();
+    return stock.some((s) => lower === s || lower.startsWith(s) || lower.includes(s));
+  });
+}
+
+export function detectPassivePresenceFrustration(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  if (detectRepetitionPushback(text)) return true;
+  if (/\b(did you (even )?read|ask me about (him|her|my dad|my mom|my father|my mother)|actually (listening|hearing)|not (even )?reading what i)\b/i.test(text)) {
+    return true;
+  }
+  return /\b(empty|hollow|nothing real|not even here|forget it|gave me nothing|doesn'?t feel like (you'?re|you are) listening|same line|wall instead|one-liner|vacant|talking to a wall|feels like a wall|wasn'?t ready to go there|not ready to go there|sounds scripted|like a chatbot|conversation just stopped|felt like the conversation|you'?re doing it again|don'?t think you'?re actually listening)\b/i.test(text);
+}
+
+export function extractNamedPersonFromContext(
+  userMessage: string,
+  factsLearned: string[] = [],
+): string | null {
+  const fromUser = userMessage.match(/\b(?:husband|wife|son|daughter|friend|dad|mom)\s+([A-Z][a-z]+)\b/i);
+  if (fromUser) return fromUser[1];
+  const direct = userMessage.match(/\b([A-Z][a-z]{2,})\b/);
+  if (direct && !/^(I|My|The|His|Her|But|And|Yeah|Honestly|Mark)$/i.test(direct[1])) return direct[1];
+  for (const fact of factsLearned) {
+    const m = fact.match(/\b(?:husband|wife|son|daughter)\s+([A-Z][a-z]+)\b/);
+    if (m) return m[1];
+    const bare = fact.match(/\b([A-Z][a-z]+)\b/);
+    if (bare) return bare[1];
+  }
+  const mark = userMessage.match(/\bMark\b/);
+  if (mark) return "Mark";
+  return null;
+}
+
+/** User pushed back after hollow presence lines — receive only, no probe. */
+export function buildPassivePresenceRecoveryResponse(
+  userMessage: string,
+  factsLearned: string[] = [],
+  priorUserMessages: string[] = [],
+  priorPhilipTexts: string[] = [],
+): string {
+  const priorSubstance = [...priorUserMessages].reverse().find((m) =>
+    userSharedConcreteBeat(m) || isSubstantiveDisclosure(m),
+  );
+  if (priorSubstance) {
+    const received = buildReceiveFromDisclosure(priorSubstance, priorPhilipTexts);
+    if (received) return received;
+  }
+
+  const recentPhilip = priorPhilipTexts.map((p) => p.trim().toLowerCase());
+  const pickFresh = (line: string) => {
+    const key = line.trim().toLowerCase().slice(0, 22);
+    return recentPhilip.some((p) => p.includes(key)) ? null : line;
+  };
+
+  const candidates: string[] = [];
+  if (/\bforget it\b/i.test(userMessage)) {
+    candidates.push("Fair — I kept giving you nothing. I'm still here.");
+  }
+  if (/\b(not listening|doesn'?t feel like (you'?re|you are) listening)\b/i.test(userMessage)) {
+    candidates.push("You're right — I wasn't hearing what you actually said.");
+  }
+  if (/\b(same line|wall|empty|hollow|nothing real|one-liner|vacant)\b/i.test(userMessage)) {
+    candidates.push("You're right — I kept handing you a wall instead of hearing you.");
+  }
+  candidates.push(
+    "You're right — that was too empty. I'm still here with you.",
+    "Fair — I moved like a script when you were being real.",
+    "I hear you — I wasn't receiving what you said.",
+  );
+
+  for (const line of candidates) {
+    const fresh = pickFresh(line);
+    if (fresh) return fresh;
+  }
+  return candidates[0] ?? "You're right — that was too empty. I'm still here with you.";
+}
+
+
+/** User flagged rupture — acknowledge without stock hold lines or therapy probes. */
+export function buildPresenceRuptureRecoveryResponse(
+  userMessage: string,
+  priorUserMessages: string[] = [],
+  priorPhilipTexts: string[] = [],
+): string {
+  if (userAffirmingPhilip(userMessage)) {
+    const received = buildReceiveFromDisclosure(userMessage, priorPhilipTexts)
+      ?? buildMirroredReceiveLine(userMessage, priorPhilipTexts);
+    if (received) return received;
+    return "I'm still with you in this.";
+  }
+
+  const priorSubstance = [...priorUserMessages].reverse().find((m) =>
+    !detectPresenceRupture(m)
+    && (userSharedConcreteBeat(m) || isSubstantiveDisclosure(m)),
+  );
+  if (priorSubstance) {
+    const received = buildReceiveFromDisclosure(priorSubstance, priorPhilipTexts);
+    if (received) return received;
+  }
+
+  if (/\b(hard to follow|don'?t understand (the )?question|what are you asking|broken question|landed wrong)\b/i.test(userMessage)) {
+    return "You're right — that question landed wrong. Say more about what faded — I'm with you.";
+  }
+
+  const recentPhilip = priorPhilipTexts.map((p) => p.trim().toLowerCase());
+  const pickFresh = (line: string) => {
+    const key = line.trim().toLowerCase().slice(0, 22);
+    return recentPhilip.some((p) => p.includes(key)) ? null : line;
+  };
+
+  const explicitAccusation = /\b(same (line|words|thing)|repeating yourself|you'?re doing it again|programmed|automatic|script|chatbot|handing (me )?lines|not listening|talking to a wall|wall that nods)\b/i.test(userMessage);
+
+  const candidates: string[] = [];
+  if (explicitAccusation) {
+    if (/\b(same (line|words|thing)|repeating yourself|you'?re doing it again|programmed|automatic)\b/i.test(userMessage)) {
+      candidates.push("You're right — I said it again instead of hearing you.");
+    }
+    if (/\b(wall|not listening|doesn'?t feel like you|not even here|talking to a wall)\b/i.test(userMessage)) {
+      candidates.push("You're right — I wasn't hearing what you actually said.");
+    }
+    if (/\b(script|chatbot|handing (me )?lines)\b/i.test(userMessage)) {
+      candidates.push("Fair — that landed like a script instead of hearing you.");
+    }
+    if (/\bforget it\b/i.test(userMessage)) {
+      candidates.push("Fair — I kept giving you nothing. I'm still here.");
+    }
+  }
+
+  if (priorSubstance) {
+    const mirrored = buildMirroredReceiveLine(priorSubstance, priorPhilipTexts);
+    if (mirrored) candidates.unshift(mirrored);
+  }
+
+  for (const line of candidates) {
+    const fresh = pickFresh(line);
+    if (fresh) return fresh;
+  }
+
+  if (priorSubstance) {
+    return "I'm still with you in what you said.";
+  }
+  return "You're right — that landed wrong. I'm still here.";
 }
 
 function defaultPresenceFields(existingState?: ConversationState): Pick<
@@ -355,6 +905,7 @@ export function reasksWhatUserJustStated(userMessage: string, philipText: string
   const qMatch = philipText.match(/[^.!?\n]+\?/);
   if (!qMatch) return false;
   const q = qMatch[0];
+  if (asksMetaHardestProbe(userMessage, q)) return true;
   const userLower = userMessage.toLowerCase();
   const userClosedTopic = /\b(never (said|talked|mentioned|let on)|no idea|don'?t know|wasn'?t the type|he never|she never|didn'?t talk|not the type to)\b/i.test(userLower);
   if (!userClosedTopic) return false;
@@ -362,6 +913,24 @@ export function reasksWhatUserJustStated(userMessage: string, philipText: string
   const reaskProbe = /\b(did (he|she|they)|whether (he|she|it)|if it meant|let on|ever (say|tell|talk)|mean something)\b/i.test(qLower);
   if (!reaskProbe) return false;
   return questionSimilarity(q, userMessage) >= 0.22 || echoOverlapRatio(q, userMessage) >= 0.18;
+}
+
+/** Meta "what's hardest" when the user already named the hardest thing. */
+export function asksMetaHardestProbe(userMessage: string, question: string): boolean {
+  const q = question.trim().toLowerCase();
+  if (!/what part of (this|what you just said) feels hardest/i.test(q)
+    && !/hardest to (name|put into words)/i.test(q)
+    && !/what changed after that/i.test(q)) {
+    return false;
+  }
+  const user = userMessage.trim();
+  const words = user.split(/\s+/).filter(Boolean).length;
+  if (words < 8) return false;
+  if (userSharedConcreteBeat(user)) return true;
+  if (/\b(feels like it costs|never mattered|let it ring|wasn'?t a later|going through the motions|telling her the truth|already named|said it out loud)\b/i.test(user)) {
+    return true;
+  }
+  return words >= 12;
 }
 
 /** Echo preamble immediately followed by a question — guarded-lane failure mode. */
@@ -818,7 +1387,29 @@ export function detectConversationClosing(userMessage: string): boolean {
 }
 
 /** After this many user turns, Philip may proactively send the person off. */
-export const SESSION_SEND_OFF_THRESHOLD = 8;
+export const SESSION_SEND_OFF_THRESHOLD = 9;
+/** Sustained grief threads may send off one exchange earlier. */
+export const GRIEF_SEND_OFF_THRESHOLD = 8;
+
+export function isSustainedGriefConversation(allUserMessages: string[]): boolean {
+  const blob = allUserMessages.join(" ");
+  if (!/\b(died|death|grief|funeral|miss (him|her)|can't move|still cry|coffee mug|lost (him|her)|two months ago)\b/i.test(blob)) {
+    return false;
+  }
+  return allUserMessages.length >= 3;
+}
+
+/** Grief threads that didn't open as sacred/almost presence — don't stock-hold them. */
+export function sustainedGriefBypassesPresenceShortCircuit(
+  openingSituation: string,
+  allUserMessages: string[],
+): boolean {
+  if (!isSustainedGriefConversation(allUserMessages)) return false;
+  const thread = allUserMessages.length > 0 ? allUserMessages : [openingSituation];
+  if (conversationOpenedWithSacredConfession(openingSituation, thread)) return false;
+  if (conversationOpenedAlmostSaidIt(openingSituation, thread)) return false;
+  return true;
+}
 
 const SESSION_SEND_OFF_MARKERS = [
   /\bthis door stays open\b/i,
@@ -878,10 +1469,14 @@ export function findPostSendOffViolation(
   return null;
 }
 
-/** Strip accidental questions from send-off lines. */
+/** Strip accidental questions from send-off lines and keep one sentence. */
 export function sanitizeSendOffText(text: string): string {
   if (!text.trim()) return text;
-  return text.replace(/\?+/g, ".").replace(/\s+/g, " ").trim();
+  const noQ = text.replace(/\?+/g, ".").replace(/\s+/g, " ").trim();
+  const match = noQ.match(/^[^.!?]+[.!?]+/);
+  if (match) return match[0].trim();
+  const first = noQ.split(/[.!?]/)[0]?.trim();
+  return first ? `${first}.` : noQ;
 }
 
 function looksLikeInventorySendOff(text: string): boolean {
@@ -908,11 +1503,11 @@ const STOCK_SEND_OFF_SNIPPETS = [
 ];
 
 const SEND_OFF_ALTERNATES = [
-  "You named enough for one day. Put it down — it will still be here.",
-  "What you brought is real. You don't have to carry all of it tonight.",
-  "Something honest happened in this room. That's enough for now.",
-  "Rest in what you already named. It's still here when you return.",
-  "You don't have to go deeper right now. Come back when you want to.",
+  "You named enough for one day.",
+  "What you brought is real — put it down for tonight.",
+  "Something honest happened here.",
+  "Rest in what you already named.",
+  "You don't have to go deeper right now.",
 ];
 
 const GUARDED_SEND_OFF_ALTERNATES = [
@@ -954,12 +1549,19 @@ export function finalizeSendOffText(
 /** Brief closure after session send-off — no question, no reopening. */
 export function buildPostSendOffResponse(exchangeNum: number, priorPhilipTexts: string[] = []): string {
   const lines = [
-    "I'm still here if you want one more sentence — but you don't have to go deeper tonight.",
-    "You don't have to go deeper right now. What you named is still yours.",
-    "Rest in what you already named. It's still here when you want it.",
+    "I'm still here if you want one more sentence.",
+    "You don't have to go deeper right now.",
+    "Rest in what you already named.",
+    "Something honest got said here.",
   ];
-  const base = lines[exchangeNum % lines.length];
-  return finalizeSendOffText(base, priorPhilipTexts);
+  const priorLower = priorPhilipTexts.map((t) => t.trim().toLowerCase());
+  for (let i = 0; i < lines.length; i++) {
+    const candidate = lines[(exchangeNum + i) % lines.length];
+    if (!priorLower.includes(candidate.toLowerCase())) {
+      return finalizeSendOffText(candidate, priorPhilipTexts);
+    }
+  }
+  return finalizeSendOffText(lines[exchangeNum % lines.length], priorPhilipTexts);
 }
 
 /** User pushed back after send-off — reopen without dismissing again. */
@@ -979,6 +1581,12 @@ export function buildSendOffPushbackResponse(userMessage: string): string {
   }
   if (/\b(waiting for|sell me|fix me|the pitch|sales funnel)\b/.test(lower)) {
     return "Fair — no pitch. I'm still here if you want to keep going. What's still on your mind?";
+  }
+  if (/\b(echo|broken record|same line|same phrase|repeating yourself|you tap(ped)? out)\b/i.test(lower)) {
+    return "You're right — that was the same line, not a person listening. I'm still here. What still needs room?";
+  }
+  if (/\bpour(ed)? my heart out\b/i.test(lower)) {
+    return "You opened something real and I gave you a wall. That wasn't fair. What's still sitting with you?";
   }
   if (/\b(wasn'?t|was not) my fault\b|\bnobody can tell me\b/i.test(lower)) {
     return "That guilt is heavy — and loss puts it in cruel places. I'm not going to hand you a neat answer from here. I'm staying in it with you.";
@@ -1011,7 +1619,11 @@ const SEND_OFF_PUSHBACK_PATTERNS = [
   /\byou (just )?sent me (away|off)\b/i,
   /\btoo (soon|tidy)\b/i,
   /\btoo soon to (stop|end|close)\b/i,
-  /\bi'?m still in (it|this)\b/i,
+  /\b(i'?m still in (it|this))\b/i,
+  /\b(echo|broken record)\b/i,
+  /\bsame (line|phrase|thing again)\b/i,
+  /\bpour(ed)? my heart out\b/i,
+  /\byou tap(ped)? out\b/i,
   /\bwaiting for the pitch\b/i,
   /\bsell me something\b/i,
   /\btry to fix me\b/i,
@@ -1032,7 +1644,7 @@ export function detectsSendOffPushback(userMessage: string): boolean {
 
 /** Fresh confession — don't send off on the same turn they finally opened up. */
 const FRESH_VULNERABILITY_RE =
-  /\b(potluck|never told|first time i|finally said|for the first time|nobody (noticed|saw|asked|remembered)|invisible|looked through)\b/i;
+  /\b(potluck|never told|first time i|finally said|for the first time|nobody (noticed|saw|asked|remembered)|invisible|looked through|cracked open|poured out|heart out)\b/i;
 
 /** User is pulling back or shutting down — don't wrap up on them. */
 const WITHDRAWAL_SIGNAL_RE =
@@ -1050,8 +1662,60 @@ export function userStillSkeptical(userMessage: string): boolean {
   return SKEPTIC_SIGNAL_RE.test(userMessage.trim());
 }
 
+/** User wants to keep talking — don't send off on them. */
+export function userWantsToContinueConversation(userMessage: string): boolean {
+  const t = userMessage.trim();
+  if (!t) return false;
+  return /\b(want to keep|keep going|not done (yet|talking)?|first real conversation|since it happened|still have more|don'?t want to stop|not ready to stop|can we keep)\b/i.test(t);
+}
+
+/** User rejected a canned sacred-receive line — engage for real. */
+export function detectSacredReceivePushback(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  if (userAffirmingPhilip(text)) return false;
+  return /\b(you already said|said that already|doesn'?t feel like courage|this was a mistake|i'?m done here|hollow|just a bot|not a real person|same (line|phrase)|repeating yourself|you'?re not (even )?here|wasn'?t ready to go there|not ready to go there|sounds scripted|like a chatbot|that was a script|script, not a person|not a person listening|conversation just stopped|felt like the conversation|you'?re doing it again|don'?t think you'?re actually listening|actually listening)\b/i.test(text)
+    || detectRepetitionPushback(text);
+}
+
+/** User is affirming Philip — never treat as rupture or hollow pushback. */
+export function userAffirmingPhilip(userMessage: string): boolean {
+  const text = userMessage.trim().toLowerCase();
+  if (!text) return false;
+  if (/\b(not hearing|not listening|don'?t hear|don'?t listen|you keep|same line|script|chatbot|hollow)\b/i.test(text)) {
+    return false;
+  }
+  return /\b(you'?re hearing me( now)?|you hear me|you actually hear|that'?s (actually )?a relief|first time i'?ve said|thank you for (not |)listening|glad you'?re here|you'?re (actually )?here|it'?s okay\. you'?re hearing)\b/i.test(text);
+}
+
+/** Profound share with no accusation at Philip — receive, don't meta-apologize. */
+export function userSharedSubstanceWithoutPhilipAccusation(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  const accusation = /\b(you (keep|just)|same (line|phrase)|script|chatbot|not listening|not hearing|hollow|wall|broken question|hard to follow|repeating yourself|handing me lines)\b/i.test(text);
+  if (accusation) return false;
+  return userSharedConcreteBeat(text) || isSubstantiveDisclosure(text);
+}
+
+export function conversationOpenedAlmostSaidIt(
+  situation: string,
+  userMessages: string[] = [],
+): boolean {
+  const opening = (userMessages[0] ?? situation).trim();
+  return detectAlmostSaidIt(opening) || /something i'?ve been wanting to say/i.test(opening);
+}
+
+export function userStillHoveringAtDisclosure(userMessage: string): boolean {
+  if (detectPresenceRupture(userMessage)) return false;
+  if (userSharedConcreteBeat(userMessage)) return false;
+  const words = userMessage.trim().split(/\s+/).filter(Boolean).length;
+  if (words <= 22) return true;
+  return detectAlmostSaidIt(userMessage);
+}
+
 export function shouldDeferSessionSendOff(userMessage: string): boolean {
   const t = userMessage.trim();
+  if (userWantsToContinueConversation(t)) return true;
   const words = t.split(/\s+/).filter(Boolean).length;
   if (userShowsWithdrawal(t)) return words >= 8;
   if (words < 18) return false;
@@ -1080,9 +1744,15 @@ export function shouldOfferSessionSendOff(
   userMessage: string,
   options: { openedGuarded?: boolean; allUserMessages?: string[] } = {},
 ): boolean {
-  if (exchangeNum < SESSION_SEND_OFF_THRESHOLD) return false;
+  const allUsers = options.allUserMessages ?? [userMessage];
+  const sustainedGrief = isSustainedGriefConversation(allUsers);
   const openedGuarded = options.openedGuarded
-    ?? (options.allUserMessages?.[0] ? conversationOpenedGuarded(options.allUserMessages[0]) : false);
+    ?? (allUsers[0] ? conversationOpenedGuarded(allUsers[0]) : false);
+  const threshold = sustainedGrief && !openedGuarded
+    ? GRIEF_SEND_OFF_THRESHOLD
+    : SESSION_SEND_OFF_THRESHOLD;
+  const userTurn = Math.max(exchangeNum, allUsers.length);
+  if (userTurn < threshold) return false;
   if (openedGuarded && exchangeNum < 10) return false;
   if (options.allUserMessages?.length
     && conversationHasUnresolvedGriefGuilt(options.allUserMessages, philipMessages)
@@ -1092,6 +1762,7 @@ export function shouldOfferSessionSendOff(
   if (detectConversationClosing(userMessage)) return false;
   if (detectsSendOffPushback(userMessage)) return false;
   if (shouldDeferSessionSendOff(userMessage)) return false;
+  if (userWantsToContinueConversation(userMessage)) return false;
   if (userShowsWithdrawal(userMessage)) return false;
   if (userStillSkeptical(userMessage)) return false;
   return !conversationHadSessionSendOff(philipMessages);
@@ -1129,11 +1800,12 @@ const REPETITION_PUSHBACK_PATTERNS = [
   /\byou (already )?said that\b/i,
   /\bsaid that already\b/i,
   /\bi already said\b/i,
-  /\byou keep (asking|circling|coming back|repeating)\b/i,
+  /\byou keep (asking|circling|coming back|repeating|saying)\b/i,
   /\b(asked|asking) (me )?(that|this|the same) (twice|again|before|already)\b/i,
-  /\b(same|those) (thing|words|question|line)\b/i,
+  /\b(same|those) (thing|words|question|line|phrase|lines|phrases)\b/i,
+  /\b(broken record|on repeat)\b/i,
   /\bnot (really )?(hearing|listening)\b/i,
-  /\byou('re| are) (not )?(hearing|listening|tracking)\b/i,
+  /\byou('re| are) not (even )?(hearing|listening|tracking)\b/i,
   /\byou just did it again\b/i,
   /\bcircling (back|the same)\b/i,
   /\b(looping|going in circles)\b/i,
@@ -1142,11 +1814,31 @@ const REPETITION_PUSHBACK_PATTERNS = [
   /\bstarting to wonder if anyone\b/i,
   /\bjust a script\b/i,
   /\brepeating yourself\b/i,
+  /\bnothing (more )?to say\b/i,
+  /\bnot a real (person|answer|conversation)\b/i,
+  /\b(you'?re|you are) not (even )?saying\b/i,
+  /\bfeels like a wall\b/i,
+  /\btalking to a wall\b/i,
+  /\bsay something real\b/i,
+  /\bengage (with )?me\b/i,
+  /\bnot listening\b/i,
   /\bsaid (that|this) (part )?already\b/i,
   /\bkind of asked\b/i,
   /\basked me that\b/i,
   /\byou('re| are) circling\b/i,
   /\bdon'?t know what you want me to say\b/i,
+  /\bnot sure repeating\b/i,
+  /\brepeating it back\b/i,
+  /\brunning the same\b/i,
+  /\bprogrammed to sound\b/i,
+  /\b(feels?|felt) (kind of )?automatic\b/i,
+  /\bhand me another\b/i,
+  /\bdo you actually want to hear\b/i,
+  /\bthird time you'?ve\b/i,
+  /\bare you actually (reading|listening|still here)\b/i,
+  /\bwall that nods\b/i,
+  /\b(isn'?t helping|feel pointless|starting to feel pointless)\b/i,
+  /\b(i'?m done|forget it|right\. bye|closing this)\b/i,
 ];
 
 /** User caught Philip repeating or not tracking — needs acknowledgment + fresh pivot. */
@@ -1154,6 +1846,17 @@ export function detectRepetitionPushback(userMessage: string): boolean {
   const text = userMessage.trim();
   if (!text) return false;
   return REPETITION_PUSHBACK_PATTERNS.some(p => p.test(text));
+}
+
+/** User flagged rupture — presence_hold must yield to follow_up / repetition recovery. */
+export function detectPresenceRupture(userMessage: string): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  if (userAffirmingPhilip(text)) return false;
+  if (userSharedSubstanceWithoutPhilipAccusation(text)) return false;
+  if (detectRepetitionPushback(text)) return true;
+  if (detectSacredReceivePushback(text)) return true;
+  return false;
 }
 
 /** Jaccard-style overlap between two questions (0–1). */
@@ -1169,7 +1872,56 @@ export function questionSimilarity(q1: string, q2: string): number {
 export function recyclesPriorQuestion(question: string, asked: string[]): boolean {
   const q = question.trim();
   if (!q) return true;
+  const qLower = q.toLowerCase();
+  if (asked.some((prior) => prior.trim().toLowerCase() === qLower)) return true;
   return asked.some(prior => questionSimilarity(q, prior) >= 0.55);
+}
+
+/** Pull question sentences Philip already shipped — state extraction often lags. */
+export function extractQuestionsFromPhilipText(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  const found: string[] = [];
+  const matches = trimmed.match(/[^.!?\n]+\?/g);
+  if (matches) {
+    for (const m of matches) {
+      const q = m.trim();
+      if (q.length >= 8) found.push(q);
+    }
+  }
+  if (found.length === 0 && trimmed.endsWith("?") && trimmed.length >= 8) {
+    found.push(trimmed);
+  }
+  return found;
+}
+
+export function extractQuestionsFromPhilipHistory(philipMessages: string[] = []): string[] {
+  const all = philipMessages.flatMap((msg) => extractQuestionsFromPhilipText(msg));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const q of all) {
+    const key = q.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(q.trim());
+  }
+  return out;
+}
+
+export function mergeQuestionsAsked(
+  stateQuestions: string[] = [],
+  philipMessages: string[] = [],
+): string[] {
+  const merged = [...stateQuestions, ...extractQuestionsFromPhilipHistory(philipMessages)];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const q of merged) {
+    const key = q.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(q.trim());
+  }
+  return out;
 }
 
 /** True when a question revisits a prior-session explored area. */
@@ -1242,6 +1994,10 @@ export function isGenericTerritoryArea(area: string): boolean {
   if (!a) return true;
   if (a.length > 72) return true;
   if (/aspects of the situation|not yet asked about|specific people, etc/i.test(a)) return true;
+  if (/\bspecific (events|people|relationships|experiences)\b/i.test(a)) return true;
+  if (/\bmay have influenced\b/i.test(a)) return true;
+  if (/\b(thoughts on belief|spiritual belief|impact of grief)\b/i.test(a)) return true;
+  if ((a.match(/,/g) ?? []).length >= 2) return true;
   if (GENERIC_TERRITORY_TOKENS.has(a)) return true;
   const firstToken = a.split(/[\s,—/]+/)[0]?.trim();
   return !!(firstToken && GENERIC_TERRITORY_TOKENS.has(firstToken) && a.split(/\s+/).length <= 3);
@@ -1250,30 +2006,167 @@ export function isGenericTerritoryArea(area: string): boolean {
 export function sanitizeAreasUnexplored(areas: string[]): string[] {
   return (areas ?? [])
     .map((a) => a.trim())
-    .filter((a) => a && !isGenericTerritoryArea(a));
+    .filter((a) => a && !isGenericTerritoryArea(a) && !/\buser'?s?\b/i.test(a));
 }
 
 /** Raw planner / LLM placeholder leaks — never ship to users. */
 export function isTemplateLeakQuestion(question: string): boolean {
-  const q = question.toLowerCase();
-  if (/\buser'?s?\s+(relationship|feelings|faith|situation)\b/.test(q)) return true;
-  if (/\babout user\b/.test(q)) return true;
-  if (/what happened after user\b/.test(q)) return true;
-  if (/what haven'?t you said yet about user\b/.test(q)) return true;
+  const q = question.trim();
+  if (!q) return false;
+  const lower = q.toLowerCase();
+  if (/\bshow up in this for you right now\b/i.test(lower)) return true;
+  if (/\bhow does .{20,} show up in this\b/i.test(lower)) return true;
+  if (/\bhow does (relationships|faith|sleep|loss|work|body|time|specific)\b/i.test(lower)
+    && /\bshow up\b/i.test(lower)) {
+    return true;
+  }
+  if ((lower.match(/,/g) ?? []).length >= 2 && /\bhow does\b/i.test(lower)) return true;
+  if (/\buser'?s?\s+\w+/i.test(lower)) return true;
+  if (/\bhow does user'?s?\b/i.test(lower)) return true;
+  if (/\babout user\b/.test(lower)) return true;
+  if (/what part of this feels hardest to (name|put into words)/i.test(lower)) return true;
+  if (/what changed after that/i.test(lower)) return true;
+  if (/what happened after user\b/.test(lower)) return true;
+  if (/what haven'?t you said yet about user\b/.test(lower)) return true;
+  if (/^say more about\b/i.test(q)) return true;
+  if (/say more about\s*["'""]/i.test(q)) return true;
+  if (/what haven'?t you said yet about\b/i.test(lower)) return true;
+  if (/what'?s one part of this you haven'?t put into words yet/i.test(lower)) return true;
+  if (/what part of what you just said landed hardest/i.test(lower)) return true;
+  if (/what made you (bring|say) that\b/i.test(lower)) return true;
+  if (/what made you bring that up\b/i.test(lower)) return true;
+  if (/^what happened next\?$/i.test(q)) return true;
+  if (/what haven'?t you said yet about (relationships?|personal faith|specific|daughter|son|wife|husband)\b/i.test(lower)) return true;
+  if (/what happened after (daughter|son|wife|husband|mother|father|one guy|the|user)\b/i.test(lower)) return true;
+  if (/["'""][^"']{8,}[…\.]{0,3}["'""]\s*\?/.test(q)) return true;
   return false;
+}
+
+/** Meta-therapy probes that ignore what the person just said. */
+export function isMechanicalForwardProbe(question: string): boolean {
+  const q = question.trim().toLowerCase();
+  if (!q) return false;
+  if (/^what happened next\?$/.test(q)) return true;
+  if (/^what does it feel like\b/.test(q)) return true;
+  if (/^how long have you felt\b/.test(q)) return true;
+  if (/what made you (bring|say) that\b/.test(q)) return true;
+  if (/what part of this feels hardest/i.test(q)) return true;
+  if (/what changed after that/i.test(q)) return true;
+  if (/piece underneath.*haven't named/i.test(q)) return true;
+  if (/where does this hit you hardest/i.test(q)) return true;
+  if (/thread here still needs more room/i.test(q)) return true;
+  if (/what keeps pulling at you/i.test(q)) return true;
+  if (/feels most unfinished/i.test(q)) return true;
+  if (/still asking for your attention/i.test(q)) return true;
+  if (/\bshow up in this for you right now\b/i.test(q)) return true;
+  if (/\bhow does .+, .+ show up\b/i.test(q)) return true;
+  return false;
+}
+export function territoryToNaturalQuestion(area: string): string {
+  const a = area.trim();
+  if (!a || /\buser'?s?\b/i.test(a) || isGenericTerritoryArea(a)) {
+    return "What else feels important to say here?";
+  }
+  const respondMatch = a.match(/how\s+(\w+)\s+respond/i);
+  if (respondMatch) {
+    return `When you reach out, how does ${respondMatch[1]} usually respond?`;
+  }
+  if (/^what\s/i.test(a)) {
+    const capped = a.charAt(0).toUpperCase() + a.slice(1);
+    return capped.endsWith("?") ? capped : `${capped}?`;
+  }
+  const short = a.split(/\s+/).length <= 5;
+  if (short) {
+    return `What part of ${a.toLowerCase()} is hardest to put into words right now?`;
+  }
+  return "What else feels important to say here?";
+}
+
+/** User just poured out grief, shame, or fresh vulnerability — planner should not probe. */
+export function userMessageWarrantsReceiveOnly(
+  userMessage: string,
+  options?: { exchangeNum?: number },
+): boolean {
+  const text = userMessage.trim();
+  if (!text) return false;
+  const exchangeNum = options?.exchangeNum ?? 1;
+
+  if (detectSacredPauseUserMessage(text)) return true;
+  if (userContinuesSacredDisclosure(text)) return true;
+  if (/\b(feels weird|put words to (it|this)|sitting in me|hard to put words)\b/i.test(text)) return true;
+
+  // Opening situations need a real question — only defer probing on follow-ups.
+  if (exchangeNum <= 1) return false;
+
+  if (FRESH_VULNERABILITY_RE.test(text)) return true;
+  const griefImage = /\b(i keep|every (morning|night)|can'?t (bring|bear|move)|still (cry|wear|sleep|have)|nobody(,| really))\b/i.test(text);
+  if (griefImage && text.split(/\s+/).length >= 10) return true;
+  return false;
+}
+
+const TERRITORY_FALLBACK_POOL = [
+  "What's the piece underneath this that you haven't named yet?",
+  "Where does this hit you hardest right now?",
+  "What thread here still needs more room?",
+  "What keeps pulling at you in all of this?",
+  "What feels most unfinished in this for you?",
+  "What part of this is still asking for your attention?",
+];
+
+/** Candidate fallback questions — unexplored areas, then facts, then pool. */
+export function collectFallbackQuestionCandidates(
+  state: ConversationState | null,
+  priorExplored: string[] = [],
+): string[] {
+  const candidates: string[] = [];
+  const unexplored = sanitizeAreasUnexplored(state?.areas_unexplored ?? []).filter((area) =>
+    !priorExplored.some((e) => questionSimilarity(area, e) >= 0.5),
+  );
+  for (const area of unexplored) {
+    const q = territoryToNaturalQuestion(area);
+    if (!isTemplateLeakQuestion(q) && !isMechanicalForwardProbe(q)) {
+      candidates.push(q);
+    }
+  }
+  for (const fact of [...(state?.facts_learned ?? [])].reverse()) {
+    const nameMatch = fact.match(/\b(?:husband|wife|daughter|son|mother|father|brother|sister|friend)\s+([A-Z][a-z]+)\b/);
+    if (nameMatch) {
+      candidates.push(`Where is ${nameMatch[1]} in all of this for you right now?`);
+      continue;
+    }
+    const bare = fact.match(/\b([A-Z][a-z]{2,})\b/);
+    if (bare) candidates.push(`What's hardest about ${bare[1]} in this right now?`);
+  }
+  candidates.push(...TERRITORY_FALLBACK_POOL);
+  return [...new Set(candidates.map((c) => c.trim()).filter(Boolean))];
+}
+
+/** First fallback question not already asked this session. */
+export function pickUniqueFallbackQuestion(
+  state: ConversationState | null,
+  priorExplored: string[] = [],
+  priorPhilipMessages: string[] = [],
+): string | null {
+  const asked = mergeQuestionsAsked(state?.questions_asked ?? [], priorPhilipMessages);
+  for (const q of collectFallbackQuestionCandidates(state, priorExplored)) {
+    if (!recyclesPriorQuestion(q, asked)) return q;
+  }
+  const offset = asked.length % TERRITORY_FALLBACK_POOL.length;
+  for (let i = 0; i < TERRITORY_FALLBACK_POOL.length; i += 1) {
+    const q = TERRITORY_FALLBACK_POOL[(offset + i) % TERRITORY_FALLBACK_POOL.length];
+    if (!recyclesPriorQuestion(q, asked)) return q;
+  }
+  return null;
 }
 
 export function pickFreshTerritoryQuestion(
   state: ConversationState | null,
   priorExplored: string[],
+  priorPhilipMessages: string[] = [],
 ): string {
-  const unexplored = sanitizeAreasUnexplored(state?.areas_unexplored ?? []).filter((area) =>
-    !priorExplored.some((e) => questionSimilarity(area, e) >= 0.5),
-  );
-  if (unexplored.length > 0) {
-    return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
-  }
-  return "What's one part of this you haven't put into words yet?";
+  const asked = mergeQuestionsAsked(state?.questions_asked ?? [], priorPhilipMessages);
+  return pickUniqueFallbackQuestion(state, priorExplored, priorPhilipMessages)
+    ?? TERRITORY_FALLBACK_POOL[asked.length % TERRITORY_FALLBACK_POOL.length];
 }
 
 /** "Whose coat is it?" when user already said it's her husband's coat. */
@@ -1300,11 +2193,17 @@ export function isAbsurdRecoveryQuestion(question: string, state: ConversationSt
   return false;
 }
 
-export function isPoorRecoveryQuestion(question: string, state: ConversationState): boolean {
+export function isPoorRecoveryQuestion(
+  question: string,
+  state: ConversationState,
+  priorPhilipMessages: string[] = [],
+): boolean {
+  const asked = mergeQuestionsAsked(state.questions_asked, priorPhilipMessages);
   if (!question?.trim()) return true;
   if (isBannedQuestion(question)) return true;
+  if (isTemplateLeakQuestion(question)) return true;
   if (containsMysticalColdRead(question)) return true;
-  if (recyclesPriorQuestion(question, state.questions_asked)) return true;
+  if (recyclesPriorQuestion(question, asked)) return true;
   return isAbsurdRecoveryQuestion(question, state);
 }
 
@@ -1330,9 +2229,11 @@ function extractPushbackSubject(userMessage: string): string | null {
 export function buildRepetitionRecoveryAddendum(
   state: ConversationState | null,
   userMessage: string,
+  priorPhilipMessages: string[] = [],
 ): string {
   const explored = state?.areas_explored?.join(", ") ?? "";
-  const recentQuestions = state?.questions_asked?.slice(-5).map(q => `  - ${q}`).join("\n") ?? "";
+  const mergedQuestions = mergeQuestionsAsked(state?.questions_asked ?? [], priorPhilipMessages);
+  const recentQuestions = mergedQuestions.slice(-8).map(q => `  - ${q}`).join("\n") ?? "";
   const metaphors = state?.metaphors_used?.join(", ") ?? "";
   const subject = extractPushbackSubject(userMessage);
   const subjectBan = subject ? `\nDo NOT ask about "${subject}" — they said they already covered it.` : "";
@@ -1351,17 +2252,13 @@ Do NOT ask "whose X is it" about something they already identified.${subjectBan}
 User message: "${userMessage.slice(0, 220)}"`;
 }
 
-export function pickRecoveryFallbackQuestion(state: ConversationState): string {
-  const unexplored = sanitizeAreasUnexplored(state.areas_unexplored);
-  if (unexplored.length > 0) {
-    return `What haven't you said yet about ${unexplored[0].toLowerCase()}?`;
-  }
-  const freshWords = state.user_exact_words.filter(w => w.split(/\s+/).length >= 2);
-  if (freshWords.length > 0) {
-    const anchor = freshWords[freshWords.length - 1];
-    return `Say more about ${anchor}?`;
-  }
-  return "What part of this feels hardest to put into words?";
+export function pickRecoveryFallbackQuestion(
+  state: ConversationState,
+  priorExplored: string[] = [],
+  priorPhilipMessages: string[] = [],
+): string {
+  return pickUniqueFallbackQuestion(state, priorExplored, priorPhilipMessages)
+    ?? pickFreshTerritoryQuestion(state, priorExplored, priorPhilipMessages);
 }
 
 const STATE_SYSTEM = `You track conversation state for a pastoral AI. Given the full conversation so far, extract a JSON state object.

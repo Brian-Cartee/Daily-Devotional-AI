@@ -9,7 +9,7 @@ import {
   detectGuardedEntry,
   TALK_IT_THROUGH_GUARDED_FOLLOW_UP,
 } from "../../talkItThroughPrompt";
-import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM, PHILIP_GUARDED_SESSION_SEND_OFF } from "../../philipIdentity";
+import { PHILIP_CLOSING_SYSTEM, PHILIP_SESSION_SEND_OFF_SYSTEM, PHILIP_GUARDED_SESSION_SEND_OFF, PHILIP_PRESENCE_THREAD_SIT } from "../../philipIdentity";
 import { buildMemoryPromptNote } from "../../lib/userMemory";
 import {
   appendPriorSessionToPlannerState,
@@ -24,7 +24,10 @@ import {
   detectRepetitionPushback,
   buildRepetitionRecoveryAddendum,
   pickRepetitionAcknowledgment,
+  recyclesPriorQuestion,
+  mergeQuestionsAsked,
   pickRecoveryFallbackQuestion,
+  pickUniqueFallbackQuestion,
   isPoorRecoveryQuestion,
   shouldRejectPriorExploredQuestion,
   pickFreshTerritoryQuestion,
@@ -35,6 +38,11 @@ import {
   getFormulaStreak,
   getLiteraryCooldownRemaining,
   detectPassiveSuicidalIdeation,
+  detectPassivePresenceFrustration,
+  detectPresenceRupture,
+  priorPhilipUsedStockPresence,
+  buildPassivePresenceRecoveryResponse,
+  buildPresenceRuptureRecoveryResponse,
   userMessageHasFreshDetail,
   getEchoStreak,
   extractPhilipOpeners,
@@ -42,6 +50,20 @@ import {
   isBannedQuestion,
   isPureEcho,
   containsMysticalColdRead,
+  isTemplateLeakQuestion,
+  opensWithQuotedEcho,
+  userMessageWarrantsReceiveOnly,
+  presenceThreadBlocksPlannerProbe,
+  buildReceiveFromDisclosure,
+  pickMirroredReceiveFromThread,
+  isGenericPresenceFallback,
+  buildNonRepeatingPresenceReceive,
+  sanitizePresenceSitResponse,
+  isPresenceLlmSitEnabled,
+  userStillHoveringAtDisclosure,
+  conversationHadSessionSendOff,
+  shouldOfferSessionSendOff,
+  sustainedGriefBypassesPresenceShortCircuit,
   finalizeSendOffText,
   opensWithEchoThenReasks,
   reasksWhatUserJustStated,
@@ -98,7 +120,10 @@ import {
 } from "./gates";
 import {
   bootstrapPresenceStateBlock,
+  buildPresenceShortCircuitResponse,
+  resolvePresenceLane,
 } from "../../lib/presenceEnforcement";
+import { needsDependencyRedirect } from "../../guidanceSafety";
 import type {
   GuidanceTurnResult,
   PhilipGate,
@@ -204,8 +229,10 @@ const conversationHistory: OpenAI.Chat.ChatCompletionMessageParam[] = canonicalH
 
 const lastUserForPresence = (() => {
   const fromHistory = [...conversationHistory].reverse().find(m => m.role === "user")?.content;
-  const raw = (phase1UserReply?.trim() || (typeof fromHistory === "string" ? fromHistory : "") || situationText).trim();
-  return raw;
+  if (typeof fromHistory === "string" && fromHistory.trim()) {
+    return fromHistory.trim();
+  }
+  return (phase1UserReply?.trim() || situationText).trim();
 })();
 
 const nameNote = userName
@@ -553,13 +580,17 @@ const validateAndFixQuestion = async (
 ): Promise<string> => {
   const lastUser = [...history].reverse().find(m => m.role === "user")?.content ?? "";
   const userMsgs = history.filter(m => m.role === "user").map(m => m.content);
+  const priorPhilipMsgs = history.filter(m => m.role === "assistant").map(m => m.content);
+  const mergedAsked = mergeQuestionsAsked(conversationState?.questions_asked ?? [], priorPhilipMsgs);
   const factsLearned = conversationState?.facts_learned ?? [];
   const priorExplored = crossSessionExplored;
 
   const isInvalid = (q: string) =>
     !q?.trim()
     || isBannedQuestion(q)
+    || isTemplateLeakQuestion(q)
     || containsMysticalColdRead(q)
+    || recyclesPriorQuestion(q, mergedAsked)
     || questionInventsRelationship(q, userMsgs, factsLearned)
     || inventsUnsupportedDetail(q, userMsgs, factsLearned, Math.floor(history.length / 2))
     || shouldRejectPriorExploredQuestion(q, priorExplored, lastUser)
@@ -570,6 +601,8 @@ const validateAndFixQuestion = async (
   const revisitsPrior = shouldRejectPriorExploredQuestion(question, priorExplored, lastUser);
   const rejectionNote = revisitsPrior
     ? `\n\n[REJECTED — revisits prior session explored area (${priorExplored.join("; ")}). Pick fresh territory not listed under PRIOR SESSION — DO NOT RE-ASK.]`
+    : recyclesPriorQuestion(question, mergedAsked)
+      ? "\n\n[REJECTED — repeats a question Philip already asked this session. Pick fresh territory only.]"
     : questionInventsRelationship(question, userMsgs, factsLearned)
       ? "\n\n[REJECTED — names a person or relationship the user never mentioned. Ask only about what they actually named.]"
       : "\n\n[REJECTED QUESTION — banned pattern (feel-like, date anchor, session history, or mystical cold-read). Plain concrete question only. No 'carrying something'. No 'isn't it?']";
@@ -583,8 +616,8 @@ const validateAndFixQuestion = async (
     if (retried && !isInvalid(retried)) return retried;
   } catch { /* keep original */ }
 
-  if (revisitsPrior) {
-    const fallback = pickFreshTerritoryQuestion(conversationState, priorExplored);
+  if (revisitsPrior || recyclesPriorQuestion(question, mergedAsked)) {
+    const fallback = pickFreshTerritoryQuestion(conversationState, priorExplored, priorPhilipMsgs);
     if (!isInvalid(fallback)) return fallback;
   }
 
@@ -664,26 +697,144 @@ const voiceLabPresenceState = philipVoiceLab
   : conversationState;
 
 const exchangeNumForPresence = Math.floor(conversationHistory.length / 2);
-const priorPhilipTexts = (conversationHistory as Array<{ role: string; content: string }>)
+const allPriorPhilipTexts = (conversationHistory as Array<{ role: string; content: string }>)
   .filter(m => m.role === "assistant")
-  .slice(-4)
   .map(m => m.content);
-const presenceHold = tryPresenceShortCircuit(
-  lastUserForPresence,
-  voiceLabPresenceState,
-  exchangeNumForPresence,
+const priorPhilipTexts = allPriorPhilipTexts.slice(-8);
+const priorUserTexts = (conversationHistory as Array<{ role: string; content: string }>)
+  .filter(m => m.role === "user")
+  .map(m => m.content);
+const presenceContext = {
+  priorUserMessages: priorUserTexts.slice(0, -1),
   priorPhilipTexts,
-);
-if (presenceHold) {
-  phase2Text = presenceHold.text;
-  lane = "presence_hold";
-  recordGate(
-    gates,
-    presenceHold.lane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause",
+  openingSituation: situationText,
+  exchangeNum: exchangeNumForPresence,
+};
+const presenceRupture = isFollowUp && detectPresenceRupture(lastUserForPresence);
+const assistantHistory = (conversationHistory as Array<{ role: string; content: string }>)
+  .filter(m => m.role === "assistant");
+const sendOffDue = isFollowUp
+  && !conversationStateBlock.includes("CLOSING")
+  && !conversationHadSessionSendOff(assistantHistory.map(m => ({ content: m.content })))
+  && !needsDependencyRedirect(lastUserForPresence, assistantHistory, priorUserTexts)
+  && !presenceRupture
+  && shouldOfferSessionSendOff(
+    exchangeNumForPresence,
+    assistantHistory.map(m => ({ content: m.content })),
+    lastUserForPresence,
+    { allUserMessages: [...priorUserTexts, lastUserForPresence] },
   );
+const ruptureRecovery = presenceRupture
+  ? buildPresenceRuptureRecoveryResponse(
+    lastUserForPresence,
+    priorUserTexts,
+    allPriorPhilipTexts,
+  )
+  : null;
+const passiveRecovery = !presenceRupture && !sendOffDue
+  && isFollowUp
+  && priorPhilipUsedStockPresence(allPriorPhilipTexts)
+  && detectPassivePresenceFrustration(lastUserForPresence)
+  ? buildPassivePresenceRecoveryResponse(
+    lastUserForPresence,
+    conversationState?.facts_learned ?? [],
+    priorUserTexts,
+    allPriorPhilipTexts,
+  )
+  : null;
+const griefBypassPresence = isFollowUp && sustainedGriefBypassesPresenceShortCircuit(
+  situationText,
+  [...priorUserTexts, lastUserForPresence],
+);
+const presenceHold = presenceRupture || sendOffDue || passiveRecovery || ruptureRecovery || griefBypassPresence
+  ? null
+  : tryPresenceShortCircuit(
+    lastUserForPresence,
+    voiceLabPresenceState,
+    exchangeNumForPresence,
+    allPriorPhilipTexts,
+    presenceContext,
+  );
+if (ruptureRecovery) {
+  phase2Text = ruptureRecovery;
+  lane = "presence_rupture_recovery";
+  recordGate(gates, "presence_rupture_recovery");
   usedMechanicalConstruction = true;
   metadata.mechanical = true;
   engine = null;
+} else if (passiveRecovery) {
+  phase2Text = passiveRecovery;
+  lane = "passive_presence_recovery";
+  recordGate(gates, "passive_presence_recovery");
+  usedMechanicalConstruction = true;
+  metadata.mechanical = true;
+  engine = null;
+} else if (presenceHold) {
+  const mechanicalText = presenceHold.text?.trim() ?? "";
+  const needsLlmSit = !mechanicalText
+    || isGenericPresenceFallback(mechanicalText);
+  const inPresenceThread = presenceThreadBlocksPlannerProbe(
+    situationText,
+    priorUserTexts.slice(0, -1),
+    lastUserForPresence,
+    exchangeNumForPresence,
+  );
+  // Fix A: once Philip has leaned on any stock presence line, a repeat is a
+  // loop — escape to a real, specific receive (LLM sit) rather than rotating
+  // through the comfort pool again. Applies even outside strict sacred threads.
+  const stockLoopForming = priorPhilipUsedStockPresence(allPriorPhilipTexts);
+  const nonRepeatingMechanical = needsLlmSit
+    ? buildNonRepeatingPresenceReceive(lastUserForPresence, allPriorPhilipTexts)
+    : mechanicalText;
+  if (
+    needsLlmSit
+    && (inPresenceThread || stockLoopForming)
+    && isPresenceLlmSitEnabled()
+    && process.env.ANTHROPIC_API_KEY
+  ) {
+    recordGate(gates, "presence_llm_sit");
+    engine = "claude";
+    lane = "presence_hold";
+    const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
+    const rawSit = await generatePhase2WithClaude(
+      systemMsg + PHILIP_MOVE_TEMPLATES.sit + PHILIP_PRESENCE_THREAD_SIT,
+      claudeHistory,
+      "",
+      60,
+    );
+    phase2Text = sanitizePresenceSitResponse(rawSit, allPriorPhilipTexts, lastUserForPresence);
+    if (!phase2Text) {
+      phase2Text = nonRepeatingMechanical
+        || mechanicalText
+        || buildPresenceShortCircuitResponse(
+          presenceHold.lane,
+          lastUserForPresence,
+          exchangeNumForPresence,
+          allPriorPhilipTexts,
+        );
+    }
+    recordGate(
+      gates,
+      presenceHold.lane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause",
+    );
+    usedMechanicalConstruction = !phase2Text || isGenericPresenceFallback(phase2Text);
+    metadata.mechanical = usedMechanicalConstruction;
+    engine = usedMechanicalConstruction ? null : engine;
+  } else {
+    // LLM sit disabled / unavailable — never repeat a stock line: prefer a
+    // fresh mirror, then a not-yet-used minimal receive, then last-resort text.
+    phase2Text = (needsLlmSit
+      ? (nonRepeatingMechanical || mechanicalText)
+      : mechanicalText) || "I'm here with you in this.";
+    lane = "presence_hold";
+    recordGate(
+      gates,
+      presenceHold.lane === "almost_said_it" ? "presence_almost_said_it" : "presence_sacred_pause",
+    );
+    usedMechanicalConstruction = true;
+    metadata.mechanical = true;
+    engine = null;
+  }
 } else if (isFollowUp && process.env.ANTHROPIC_API_KEY) {
     const claudeHistory = conversationHistory as Array<{ role: "user" | "assistant"; content: string }>;
     const exchangeNumEarly = Math.floor(conversationHistory.length / 2);
@@ -728,8 +879,16 @@ if (presenceHold) {
       const lastAssistantMsg = philipMsgs[philipMsgs.length - 1]?.content ?? "";
       const lastWasSit = !lastAssistantMsg.includes("?");
       const formulaStreak = getFormulaStreak(philipMsgs);
-      const forceSit = detectPassiveSuicidalIdeation(lastUserMsg);
       const priorUserMsgs = claudeHistory.filter(m => m.role === "user").slice(0, -1).map(m => m.content);
+      const presenceThreadReceive = presenceThreadBlocksPlannerProbe(
+        situationText,
+        priorUserMsgs,
+        lastUserMsg,
+        exchangeNum,
+      );
+      const forceSit = detectPassiveSuicidalIdeation(lastUserMsg)
+        || userMessageWarrantsReceiveOnly(lastUserMsg, { exchangeNum })
+        || presenceThreadReceive;
       const hasNewDetail = userMessageHasFreshDetail(lastUserMsg, priorUserMsgs);
       const movesUsed = conversationState?.moves_used ?? [];
       const userMsgs = claudeHistory.filter(m => m.role === "user");
@@ -788,6 +947,7 @@ if (presenceHold) {
         });
 
         if (!forceSit) {
+          const priorPhilipForPlanner = philipMsgs.map(m => m.content);
           const resolved = await resolvePlannedQuestion({
             state: conversationState,
             lastUserMessage: lastUserMsg,
@@ -797,15 +957,21 @@ if (presenceHold) {
             isGuardedUser,
             move: selectedMove,
             repetitionRecovery: isRepetitionPushback,
+            priorPhilipMessages: priorPhilipForPlanner,
+            openingSituation: situationText,
           }, async () => {
             const plannerState = isRepetitionPushback
               ? augmentPlannerState(
-                  conversationStateBlock + buildRepetitionRecoveryAddendum(conversationState, lastUserMsg),
+                  conversationStateBlock + buildRepetitionRecoveryAddendum(
+                    conversationState,
+                    lastUserMsg,
+                    priorPhilipForPlanner,
+                  ),
                 )
               : augmentPlannerState(conversationStateBlock);
             const raw = await generateNextQuestion(plannerState, claudeHistory, isGuardedUser);
             let validated = await validateAndFixQuestion(raw, plannerState, claudeHistory, isGuardedUser);
-            if (isRepetitionPushback && isPoorRecoveryQuestion(validated, conversationState)) {
+            if (isRepetitionPushback && isPoorRecoveryQuestion(validated, conversationState, priorPhilipForPlanner)) {
               const retried = await generateNextQuestion(
                 plannerState + "\n\n[REJECTED — repeats prior questions or known facts. Pick unexplored territory only. No 'whose X is it'.]",
                 claudeHistory,
@@ -817,9 +983,129 @@ if (presenceHold) {
           });
           nextQuestion = resolved.question;
           plannerSource = resolved.source;
-          if (isRepetitionPushback && isPoorRecoveryQuestion(nextQuestion, conversationState)) {
-            nextQuestion = pickRecoveryFallbackQuestion(conversationState);
-            plannerSource = "fallback";
+          if (isRepetitionPushback && (!nextQuestion || isPoorRecoveryQuestion(nextQuestion, conversationState, priorPhilipForPlanner))) {
+            if (!presenceThreadReceive) {
+              nextQuestion = pickUniqueFallbackQuestion(conversationState, priorExplored, priorPhilipForPlanner)
+                ?? pickRecoveryFallbackQuestion(conversationState, priorExplored, priorPhilipForPlanner);
+              if (nextQuestion && isPoorRecoveryQuestion(nextQuestion, conversationState, priorPhilipForPlanner)) {
+                nextQuestion = "";
+              }
+              plannerSource = "fallback";
+            } else {
+              nextQuestion = "";
+              plannerSource = "none";
+            }
+          }
+        }
+
+        if (presenceThreadReceive && !phase2Text && forceSit) {
+          const priorPhilipContents = philipMsgs.map(m => m.content);
+          let presenceGate: PhilipGate = "presence_sacred_pause";
+          let mechanicalText: string | null = null;
+
+          const presenceReceive = tryPresenceShortCircuit(
+            lastUserMsg,
+            conversationState,
+            exchangeNum,
+            priorPhilipContents,
+            {
+              priorUserMessages: priorUserMsgs,
+              priorPhilipTexts: priorPhilipContents,
+              openingSituation: situationText,
+              exchangeNum,
+            },
+          );
+          if (presenceReceive?.text && !isGenericPresenceFallback(presenceReceive.text)) {
+            mechanicalText = presenceReceive.text;
+            presenceGate = presenceReceive.lane === "almost_said_it"
+              ? "presence_almost_said_it"
+              : "presence_sacred_pause";
+          }
+
+          if (!mechanicalText) {
+            const mirrored = pickMirroredReceiveFromThread(
+              lastUserMsg,
+              priorUserMsgs,
+              priorPhilipContents,
+              situationText,
+            );
+            if (mirrored && !isGenericPresenceFallback(mirrored)) {
+              mechanicalText = mirrored;
+            }
+          }
+
+          if (!mechanicalText) {
+            const laneHint = resolvePresenceLane(lastUserMsg, conversationState, {
+              priorUserMessages: priorUserMsgs,
+              priorPhilipTexts: priorPhilipContents,
+              openingSituation: situationText,
+              exchangeNum,
+            });
+            if (laneHint === "almost_said_it" && userStillHoveringAtDisclosure(lastUserMsg)) {
+              const stockHold = buildPresenceShortCircuitResponse(
+                "almost_said_it",
+                lastUserMsg,
+                exchangeNum,
+                priorPhilipContents,
+              );
+              if (stockHold && !isGenericPresenceFallback(stockHold)) {
+                mechanicalText = stockHold;
+                presenceGate = "presence_almost_said_it";
+              }
+            }
+          }
+
+          if (mechanicalText) {
+            phase2Text = mechanicalText;
+            lane = "presence_hold";
+            recordGate(gates, presenceGate);
+            usedMechanicalConstruction = true;
+            metadata.mechanical = true;
+            engine = null;
+          } else if (process.env.ANTHROPIC_API_KEY && isPresenceLlmSitEnabled()) {
+            recordGate(gates, "presence_llm_sit");
+            engine = "claude";
+            lane = "presence_hold";
+            const rawSit = await generatePhase2WithClaude(
+              systemMsg + PHILIP_MOVE_TEMPLATES.sit + PHILIP_PRESENCE_THREAD_SIT,
+              claudeHistory,
+              "",
+              60,
+            );
+            phase2Text = sanitizePresenceSitResponse(rawSit, priorPhilipContents, lastUserMsg);
+            if (!phase2Text) {
+              phase2Text = buildPresenceShortCircuitResponse(
+                "almost_said_it",
+                lastUserMsg,
+                exchangeNum,
+                priorPhilipContents,
+              );
+              recordGate(gates, "presence_almost_said_it");
+              usedMechanicalConstruction = true;
+              metadata.mechanical = true;
+              engine = null;
+            } else {
+              recordGate(gates, "presence_sacred_pause");
+              usedMechanicalConstruction = true;
+              metadata.mechanical = false;
+            }
+          } else {
+            phase2Text = buildPresenceShortCircuitResponse(
+              resolvePresenceLane(lastUserMsg, conversationState, {
+                priorUserMessages: priorUserMsgs,
+                priorPhilipTexts: priorPhilipContents,
+                openingSituation: situationText,
+                exchangeNum,
+              }) ?? "sacred_pause",
+              lastUserMsg,
+              exchangeNum,
+              priorPhilipContents,
+            );
+            lane = "presence_hold";
+            recordGate(gates, "presence_sacred_pause");
+            usedMechanicalConstruction = true;
+            metadata.mechanical = true;
+            engine = null;
           }
         }
 
@@ -830,12 +1116,12 @@ if (presenceHold) {
           if (forceSit) recordGate(gates, "force_sit");
 
           if (selectedMove === "plain_question" && nextQuestion) {
-            if (exchangeNum <= 2) {
+            if (exchangeNum <= 2 || isTemplateLeakQuestion(nextQuestion) || opensWithQuotedEcho(nextQuestion)) {
               phase2Text = await generatePhase2WithClaude(
                 systemMsg + PHILIP_MOVE_TEMPLATES.plain_question
-                  + "\n\n[REQUIRED: One short sentence that recognizes what they just said — their words, their weight — before your question. Never open with a territory template.]",
+                  + "\n\n[REQUIRED: One short sentence that recognizes what they just said — their words, their weight — before your question. Never open with a territory template. No 'Say more about'. No 'What haven't you said yet about'.]",
                 claudeHistory,
-                nextQuestion,
+                isTemplateLeakQuestion(nextQuestion) || opensWithQuotedEcho(nextQuestion) ? "" : nextQuestion,
                 80,
               );
               phase2Text = enforceAntiEcho(phase2Text, lastUserMsg, priorOpeners, nextQuestion, selectedMove, bannedMetaphors, exchangeNum, allUserMsgTexts);
@@ -905,6 +1191,7 @@ if (presenceHold) {
     conversationStateBlock,
     conversationHistory,
     conversationState,
+    openingSituation: situationText,
   });
   if (noQuestionMode) recordGate(gates, "no_question_mode");
 
@@ -915,6 +1202,7 @@ if (presenceHold) {
     conversationHistory,
     exchangeNum: exchangeForMode,
     conversationState: voiceLabPresenceState,
+    openingSituation: situationText,
   });
   phase2Text = postTurn.text;
   for (const g of postTurn.gates) recordGate(gates, g);
@@ -927,6 +1215,9 @@ if (presenceHold) {
   // Closing / post-send-off lanes must never leak a "?" — LLM ignores the prompt sometimes.
   if (noQuestionMode && lane !== "sendoff_reopen") {
     phase2Text = sanitizeSendOffText(phase2Text);
+    if (lane === "session_send_off" || lane === "post_send_off" || postTurn.gates.includes("session_send_off")) {
+      phase2Text = sanitizeSendOffText(phase2Text);
+    }
   }
 
   const qCount = questionMarkCount(phase2Text);
