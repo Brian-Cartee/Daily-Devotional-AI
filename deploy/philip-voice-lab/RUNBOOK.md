@@ -202,7 +202,16 @@ Use lab-specific `sessionId` prefixes (e.g. `philip-lab-device-…`) so producti
 
 ---
 
-## 10. Validation checklist (before device test)
+## 10. Device install and deep link
+
+- **iOS bundle:** `com.shepherdspath.app.philip-lab` (separate from production `com.shepherdspath.app`)
+- **EAS profile:** `philip-lab` — internal distribution to registered test devices
+- **Lab API auth:** build-time `EXPO_PUBLIC_PHILIP_VOICE_LAB_KEY` (EAS preview env) must match server `PHILIP_VOICE_LAB_SECRET`
+- **Open lab screen:** `shepherdspath://philip-voice-lab` — do **not** put the lab key in the URL
+
+---
+
+## 11. Validation checklist (before device test)
 
 - [ ] `bash scripts/philip-voice-lab-preflight.sh` passes
 - [ ] `pm2 status` shows `philip-lab-api` + `philip-voice-agent` only (no duplicate `api-server`)
