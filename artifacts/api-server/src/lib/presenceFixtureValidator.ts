@@ -10,7 +10,7 @@ import {
   type DepthLayer,
   type PermissionLevel,
   type WeightLevel,
-} from "../conversationState.ts";
+} from "../conversationState";
 
 export interface PresenceResponseRules {
   maxWords?: number;

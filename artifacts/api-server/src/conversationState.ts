@@ -375,7 +375,7 @@ export function pickMirroredReceiveFromThread(
 export function buildReceiveFromDisclosure(
   userMessage: string,
   recentPhilipTexts: string[] = [],
-): string {
+): string | null {
   const text = userMessage.trim();
   const recent = new Set(recentPhilipTexts.map((p) => p.trim().toLowerCase()));
   const pickFresh = (line: string) => {

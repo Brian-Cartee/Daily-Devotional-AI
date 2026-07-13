@@ -349,7 +349,7 @@ if (shouldExtractState && conversationHistory.length > 0) {
   try {
     if (cachedSessionMind) stateSource = "cache";
     const state = await generateConversationState(
-      openai,
+      openai as Parameters<typeof generateConversationState>[0],
       situationText,
       conversationHistory as Array<{ role: "user" | "assistant"; content: string }>,
       cachedSessionMind?.state,
@@ -692,9 +692,13 @@ let nextQuestion = "";
 let plannerSource: PlannerSource = "none";
 let usedMechanicalConstruction = false;
 
-const voiceLabPresenceState = philipVoiceLab
-  ? { ...conversationState, almost_said_it_detected: false }
-  : conversationState;
+const voiceLabPresenceState: Pick<ConversationState, "almost_said_it_detected" | "sacred_pause_warranted"> | null =
+  philipVoiceLab
+    ? {
+        almost_said_it_detected: false,
+        sacred_pause_warranted: conversationState?.sacred_pause_warranted ?? false,
+      }
+    : conversationState;
 
 const exchangeNumForPresence = Math.floor(conversationHistory.length / 2);
 const allPriorPhilipTexts = (conversationHistory as Array<{ role: string; content: string }>)
@@ -843,7 +847,7 @@ if (ruptureRecovery) {
     const preTurn = evaluatePreTurnGates({
       isFollowUp: true,
       conversationStateBlock,
-      conversationHistory,
+      conversationHistory: conversationHistory as Array<{ role: string; content: string }>,
     });
     for (const g of preTurn.gates) recordGate(gates, g);
     const isClosing = preTurn.isClosing;
@@ -1189,7 +1193,7 @@ if (ruptureRecovery) {
   const noQuestionMode = resolveNoQuestionMode({
     isFollowUp: !!isFollowUp,
     conversationStateBlock,
-    conversationHistory,
+    conversationHistory: conversationHistory as Array<{ role: string; content: string }>,
     conversationState,
     openingSituation: situationText,
   });
@@ -1199,7 +1203,7 @@ if (ruptureRecovery) {
     text: phase2Text,
     isFollowUp: !!isFollowUp,
     noQuestionMode,
-    conversationHistory,
+    conversationHistory: conversationHistory as Array<{ role: string; content: string }>,
     exchangeNum: exchangeForMode,
     conversationState: voiceLabPresenceState,
     openingSituation: situationText,

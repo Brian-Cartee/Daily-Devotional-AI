@@ -25,8 +25,8 @@ import {
   detectPresenceRupture,
   buildStatePromptBlock,
   type ConversationState,
-} from "../conversationState.ts";
-import { hasScriptureReference } from "./presenceFixtureValidator.ts";
+} from "../conversationState";
+import { hasScriptureReference } from "./presenceFixtureValidator";
 
 export type PresenceLane = "almost_said_it" | "sacred_pause";
 
