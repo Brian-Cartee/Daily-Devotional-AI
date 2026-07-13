@@ -9,17 +9,21 @@ function parseLabUrl(url: string): URL | null {
   }
 }
 
-/** Validates deep link key when EXPO_PUBLIC_PHILIP_VOICE_LAB_KEY is set. */
+/** Validates lab deep links. Build-time key is used for API auth; URL must not carry ?key=. */
 export function isValidPhilipVoiceLabUrl(url: string): boolean {
   if (!isPhilipVoiceLabEnabled()) return false;
   if (!url.includes("philip-voice-lab")) return false;
 
-  const expectedKey = philipVoiceLabKey();
-  if (!expectedKey) return true;
-
   const parsed = parseLabUrl(url);
   if (!parsed) return false;
-  return parsed.searchParams.get("key") === expectedKey;
+
+  const urlKey = parsed.searchParams.get("key");
+  if (urlKey) {
+    const expectedKey = philipVoiceLabKey();
+    return expectedKey ? urlKey === expectedKey : false;
+  }
+
+  return true;
 }
 
 export function isPhilipVoiceLabDeepLink(url: string): boolean {
