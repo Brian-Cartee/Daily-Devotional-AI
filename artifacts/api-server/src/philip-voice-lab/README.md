@@ -77,12 +77,38 @@ pm2 save
 
 Stop: `pm2 stop philip-voice-agent`
 
+## API base (loopback)
+
+The agent, guidance client, and session timeline all resolve the main API via
+`PHILIP_VOICE_LAB_API_BASE`, defaulting to `http://127.0.0.1:8080`. Set the env
+var to point at another port without code changes.
+
+The mobile lab shell uses `EXPO_PUBLIC_API_URL` (production URL in the
+`philip-lab` EAS profile) for session minting and health checks against the
+server's gated `/api/internal/philip-voice/*` routes.
+
+## Follow-up: barge-in modules (not wired yet)
+
+These modules are preserved for a later integration pass. **They are not
+imported by `roomLoop.mjs` in the current candidate.** The first device test
+uses `publishMp3ToSourceDetached` plus the `playbackQueue` early-mic path.
+
+| Module | Purpose |
+|--------|---------|
+| `interruptionConfig.mjs` | Env-tunable barge-in thresholds |
+| `interruptionMonitor.mjs` | Sustained-energy interruption detection |
+| `playbackController.mjs` | Async playback with protect window + cancel |
+| `playbackLog.mjs` | Structured playback/interruption logging |
+
+To wire: replace the detached-publish block in `runPhilipLabTurn` with
+`PlaybackController` and re-enable interruption monitoring in the mic loop.
+
 ## Next integration steps (not in this skeleton)
 
-1. Tune VAD thresholds for noisy environments / shorter pauses
-2. Optional: `@livekit/agents` framework for production-grade turn detection
-3. Streaming TTS via `/api/tts/stream` to reduce time-to-first-byte
-4. Re-arm listen after playback (turn loop)
+1. Wire `PlaybackController` + `InterruptionMonitor` (modules above)
+2. Tune VAD thresholds for noisy environments / shorter pauses
+3. Optional: `@livekit/agents` framework for production-grade turn detection
+4. Streaming TTS via `/api/tts/stream` to reduce time-to-first-byte
 
 Prompt/theology: unchanged — always via `/api/guidance/phase1`.
 

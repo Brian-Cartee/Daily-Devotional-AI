@@ -5,7 +5,31 @@ import { spawn } from "node:child_process";
 
 const DEFAULT_SAMPLE_RATE = Number(process.env.PHILIP_VOICE_LAB_SAMPLE_RATE || 48000);
 
-function delay(ms) {
+export function envInt(name, fallback) {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** VAD tuning for Voice Lab — override via env without code changes. */
+export function vadConfigFromEnv() {
+  return {
+    sampleRate: DEFAULT_SAMPLE_RATE,
+    silenceMs: envInt("PHILIP_VOICE_LAB_VAD_SILENCE_MS", 900),
+    minSpeechMs: envInt("PHILIP_VOICE_LAB_VAD_MIN_SPEECH_MS", 380),
+    maxUtteranceMs: envInt("PHILIP_VOICE_LAB_VAD_MAX_MS", 45000),
+    energyThreshold: envInt("PHILIP_VOICE_LAB_VAD_ENERGY", 450),
+  };
+}
+
+export function pcmDurationMs(pcmBuffer, sampleRate = DEFAULT_SAMPLE_RATE) {
+  const samples = Math.floor(pcmBuffer.byteLength / 2);
+  if (!samples || !sampleRate) return 0;
+  return Math.round((samples / sampleRate) * 1000);
+}
+
+export function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -158,65 +182,130 @@ export class UtteranceCollector {
   }
 }
 
-export async function publishPcmToSource(
-  pcmBuffer,
-  source,
-  sampleRate = DEFAULT_SAMPLE_RATE,
-  audioFrameFactory,
-) {
-  const createAudioFrame = audioFrameFactory || (async (chunk) => {
+/**
+ * Lazily construct a LiveKit AudioFrame. The RTC native binding is only pulled
+ * in when a real playback happens; tests inject `audioFrameFactory` so the
+ * simulated turn never needs @livekit/rtc-node installed.
+ * @param {((chunk: Int16Array) => unknown | Promise<unknown>) | undefined} audioFrameFactory
+ * @param {number} sampleRate
+ */
+function resolveAudioFrameFactory(audioFrameFactory, sampleRate) {
+  if (audioFrameFactory) return audioFrameFactory;
+  return async (chunk) => {
     const { AudioFrame } = await import("@livekit/rtc-node");
     return new AudioFrame(chunk, sampleRate, 1, chunk.length);
-  });
-  if (typeof source.clearQueue === "function") {
-    source.clearQueue();
+  };
+}
+
+/**
+ * @param {Buffer} pcmBuffer
+ * @param {import('@livekit/rtc-node').AudioSource} source
+ * @param {number} [sampleRate]
+ * @param {{ waitForPlayout?: boolean; tailWaitMs?: number; audioFrameFactory?: (chunk: Int16Array) => unknown }} [opts]
+ */
+export async function publishPcmToSource(pcmBuffer, source, sampleRate = DEFAULT_SAMPLE_RATE, opts = {}) {
+  const playbackPublishStartAt = Date.now();
+  const sampleCount = Math.floor(pcmBuffer.byteLength / 2);
+  const pcmDurationMsValue = pcmDurationMs(pcmBuffer, sampleRate);
+  if (!sampleCount) {
+    return {
+      playbackPublishStartAt,
+      playbackPublishEndAt: playbackPublishStartAt,
+      playbackPublishDurationMs: 0,
+      pcmDurationMs: 0,
+      playoutWaitMs: 0,
+      earlyMic: false,
+    };
   }
 
-  const playbackPublishStartAt = Date.now();
-  const int16 = new Int16Array(
-    pcmBuffer.buffer,
-    pcmBuffer.byteOffset,
-    pcmBuffer.byteLength / 2,
-  );
+  const createAudioFrame = resolveAudioFrameFactory(opts.audioFrameFactory, sampleRate);
+
+  // Copy into a dedicated Int16Array — avoids Node Buffer view quirks LiveKit warns about.
+  const int16 = new Int16Array(sampleCount);
+  int16.set(new Int16Array(pcmBuffer.buffer, pcmBuffer.byteOffset, sampleCount));
+
   const samplesPerFrame = Math.max(1, Math.floor(sampleRate / 100));
-  let chain = Promise.resolve();
   for (let offset = 0; offset < int16.length; offset += samplesPerFrame) {
     const end = Math.min(offset + samplesPerFrame, int16.length);
     const chunk = int16.subarray(offset, end);
     const frame = await createAudioFrame(chunk);
-    chain = chain
-      .then(() => source.captureFrame(frame))
-      .then(() => delay(10))
-      .catch((err) => {
-        throw err;
-      });
+    await source.captureFrame(frame);
   }
-  await chain;
+
+  const waitForPlayout = opts.waitForPlayout !== false;
+  const tailWaitMs = Math.max(0, opts.tailWaitMs ?? 0);
+  let playoutWaitMs = 0;
+  if (waitForPlayout && typeof source.waitForPlayout === "function") {
+    const playoutStart = Date.now();
+    await source.waitForPlayout();
+    playoutWaitMs = Date.now() - playoutStart;
+  } else if (tailWaitMs > 0) {
+    await delay(tailWaitMs);
+    playoutWaitMs = tailWaitMs;
+  }
+
   const playbackPublishEndAt = Date.now();
   return {
     playbackPublishStartAt,
     playbackPublishEndAt,
     playbackPublishDurationMs: playbackPublishEndAt - playbackPublishStartAt,
-    pcmDurationMs: Math.round((int16.length / sampleRate) * 1000),
+    pcmDurationMs: pcmDurationMsValue,
+    playoutWaitMs,
+    earlyMic: !waitForPlayout,
   };
 }
 
-export async function publishMp3ToSource(
-  mp3Buffer,
-  source,
-  sampleRate = DEFAULT_SAMPLE_RATE,
-  audioFrameFactory,
-) {
+export function playbackOptsFromEnv(_pcmDurationMsValue) {
+  const raw = process.env.PHILIP_VOICE_LAB_EARLY_MIC?.trim().toLowerCase();
+  if (raw === "0" || raw === "false" || raw === "no") {
+    return { waitForPlayout: true, tailWaitMs: 0 };
+  }
+  // Queue all frames, brief settle, then resume mic — Philip may still be speaking (barge-in).
+  const tailWaitMs = envInt("PHILIP_VOICE_LAB_EARLY_MIC_SETTLE_MS", 600);
+  return { waitForPlayout: false, tailWaitMs };
+}
+
+export async function publishMp3ToSource(mp3Buffer, source, sampleRate = DEFAULT_SAMPLE_RATE, publishOpts) {
   const decodeStartAt = Date.now();
   const pcm = await mp3ToPcm16(mp3Buffer, sampleRate);
   const decodeEndAt = Date.now();
-  const publish = await publishPcmToSource(pcm, source, sampleRate, audioFrameFactory);
+  const opts = publishOpts ?? playbackOptsFromEnv(pcmDurationMs(pcm, sampleRate));
+  const publish = await publishPcmToSource(pcm, source, sampleRate, opts);
   return {
     ...publish,
     mp3Bytes: mp3Buffer.length,
     pcmBytes: pcm.length,
     decodeMs: decodeEndAt - decodeStartAt,
   };
+}
+
+/**
+ * Same audio delivery as publishMp3ToSource, but returns as soon as decode +
+ * duration are known. The real-time frame-publish loop continues in the
+ * background. Callers that need full-playback confirmation should await the
+ * returned `framePublished` promise; callers that just need to release the
+ * mic quickly should not.
+ * @param {Buffer} mp3Buffer
+ * @param {import('@livekit/rtc-node').AudioSource} source
+ * @param {number} [sampleRate]
+ * @param {(chunk: Int16Array) => unknown} [audioFrameFactory]
+ */
+export async function publishMp3ToSourceDetached(mp3Buffer, source, sampleRate = DEFAULT_SAMPLE_RATE, audioFrameFactory) {
+  const decodeStartAt = Date.now();
+  const pcm = await mp3ToPcm16(mp3Buffer, sampleRate);
+  const decodeMs = Date.now() - decodeStartAt;
+  const pcmDurationMsValue = pcmDurationMs(pcm, sampleRate);
+
+  const framePublished = publishPcmToSource(pcm, source, sampleRate, {
+    waitForPlayout: false,
+    tailWaitMs: 0,
+    audioFrameFactory,
+  }).catch((err) => {
+    console.error("[philip-voice-lab] background frame publish failed:", err);
+    return null;
+  });
+
+  return { decodeMs, pcmDurationMs: pcmDurationMsValue, framePublished };
 }
 
 export { DEFAULT_SAMPLE_RATE, rmsInt16 };

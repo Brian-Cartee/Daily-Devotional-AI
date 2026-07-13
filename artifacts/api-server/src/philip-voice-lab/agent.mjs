@@ -9,14 +9,17 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 
-import { runPhilipVoiceRoom } from "./roomLoop.mjs";
 import { checkFfmpegReady } from "./readiness.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, "../..");
 
-loadEnv({ path: path.join(apiRoot, ".env.philip-lab") });
-loadEnv({ path: path.join(apiRoot, ".env") });
+loadEnv({ path: path.join(apiRoot, ".env.philip-lab"), override: true });
+loadEnv({ path: path.join(apiRoot, ".env"), override: true });
+
+// Lazy so the LiveKit RTC stack (and its native bindings) is only loaded when
+// the agent is actually enabled and dispatched — keeps startup and readiness cheap.
+const { runPhilipVoiceRoom } = await import("./roomLoop.mjs");
 
 const PORT = Number(process.env.PHILIP_VOICE_LAB_AGENT_PORT || 8091);
 const LAB_SECRET = process.env.PHILIP_VOICE_LAB_SECRET?.trim() || "";

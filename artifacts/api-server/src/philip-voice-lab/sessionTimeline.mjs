@@ -10,10 +10,9 @@ const LOG_DIR =
   process.env.PHILIP_VOICE_LAB_LOG_DIR ||
   path.resolve(__dirname, "../../server/philip-voice-lab");
 
-const API_BASE = (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(
-  /\/$/,
-  "",
-);
+function apiBase() {
+  return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
+}
 const LAB_SECRET = process.env.PHILIP_VOICE_LAB_SECRET?.trim() || "";
 
 export class SessionTimeline {
@@ -122,7 +121,7 @@ export class SessionTimeline {
 
     if (!LAB_SECRET) return payload;
     try {
-      await fetch(`${API_BASE}/api/internal/philip-voice/timeline`, {
+      await fetch(`${apiBase()}/api/internal/philip-voice/timeline`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

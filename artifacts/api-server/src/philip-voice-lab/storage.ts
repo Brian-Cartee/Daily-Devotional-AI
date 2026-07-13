@@ -63,7 +63,7 @@ export async function saveTimeline(payload: Record<string, unknown>): Promise<vo
 
 export async function mergeClientTimeline(
   conversationId: string,
-  clientTimeline: unknown[],
+  clientTimeline: Record<string, unknown>,
 ): Promise<void> {
   await ensureDir();
   const file = conversationPath(conversationId);

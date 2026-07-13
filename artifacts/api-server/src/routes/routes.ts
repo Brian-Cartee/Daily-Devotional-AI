@@ -4181,6 +4181,7 @@ Sacred restraint: fewer words are better.`;
           isAcutePain,
           buildModeNote,
           buildRelationshipNote,
+          philipVoiceLab: (req.body as any).philipVoiceLab === true,
         },
         {
           openai,

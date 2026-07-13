@@ -1,20 +1,30 @@
 /**
- * LiveKit room loop — subscribe user mic, STT → phase1 → tts → publish agent audio.
+ * LiveKit room loop — subscribe user mic, STT → guidance → tts → publish agent audio.
+ * Turn 1: /api/guidance/phase1. Turn 2+: /api/guidance/response (web-identical payloads).
  * Gate B: full session timeline instrumentation.
+ *
+ * LiveKit RTC imports are lazy (inside the functions that need them) so that the
+ * simulated-turn gate (which drives runPhilipLabTurn with an injected
+ * audioFrameFactory) can run without @livekit/rtc-node / livekit-server-sdk
+ * installed, and so agent startup/readiness stays cheap.
  */
 import {
   DEFAULT_SAMPLE_RATE,
   UtteranceCollector,
+  delay,
+  envInt,
+  pcmDurationMs,
   pcmToWav,
-  publishMp3ToSource,
-  rmsInt16,
+  publishMp3ToSourceDetached,
+  vadConfigFromEnv,
 } from "./audioUtil.mjs";
+import { callGuidanceResponse } from "./guidanceClient.mjs";
 import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
+import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
 
-const API_BASE = (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(
-  /\/$/,
-  "",
-);
+function apiBase() {
+  return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
+}
 
 function log(...args) {
   console.log("[philip-voice-agent]", ...args);
@@ -55,7 +65,7 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
   const form = new FormData();
   form.append("audio", new Blob([wav], { type: "audio/wav" }), "utterance.wav");
   form.append("sessionId", sessionId);
-  const res = await fetch(`${API_BASE}/api/guidance/transcribe`, {
+  const res = await fetch(`${apiBase()}/api/guidance/transcribe`, {
     method: "POST",
     body: form,
   });
@@ -68,7 +78,7 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
 }
 
 async function callPhase1(transcript, sessionId) {
-  const res = await fetch(`${API_BASE}/api/guidance/phase1`, {
+  const res = await fetch(`${apiBase()}/api/guidance/phase1`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -84,8 +94,20 @@ async function callPhase1(transcript, sessionId) {
   return res.text();
 }
 
+/** @returns {{ completedTurns: number; openingSituation: string; phase1Response: string; phase1UserReply: string; messages: Array<{ role: string; content: string }>; conversationId: string }} */
+export function createConversationState(conversationId) {
+  return {
+    completedTurns: 0,
+    openingSituation: "",
+    phase1Response: "",
+    phase1UserReply: "",
+    messages: [],
+    conversationId,
+  };
+}
+
 async function callTts(text, sessionId) {
-  const res = await fetch(`${API_BASE}/api/tts`, {
+  const res = await fetch(`${apiBase()}/api/tts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -103,20 +125,30 @@ async function callTts(text, sessionId) {
 }
 
 /**
- * @param {{ roomName: string; sessionId: string; utterance: Buffer; vadReason?: string; audioSource: import('@livekit/rtc-node').AudioSource; timeline: SessionTimeline; room: import('@livekit/rtc-node').Room }} job
+ * @param {{ roomName: string; sessionId: string; utterance: Buffer; vadReason?: string; audioSource: import('@livekit/rtc-node').AudioSource; timeline: SessionTimeline; room: import('@livekit/rtc-node').Room; conversationState: ReturnType<typeof createConversationState>; playbackQueue: { pending: Promise<unknown> }; audioFrameFactory?: (chunk: Int16Array) => unknown }} job
  */
 export async function runPhilipLabTurn(job) {
+  const state = job.conversationState;
+  const voiceTurnNumber = state.completedTurns + 1;
+  const turnStartAt = Date.now();
+  const utteranceMs = pcmDurationMs(job.utterance, DEFAULT_SAMPLE_RATE);
   const turn = job.timeline.beginTurn();
-  job.timeline.mark("user_stops_speaking", { vadReason: job.vadReason });
+  job.timeline.mark("user_stops_speaking", { vadReason: job.vadReason, utteranceMs });
   job.timeline.metric("userStopsSpeakingAt");
+
+  let sttMs = 0;
+  let guidanceMs = 0;
+  let ttsMs = 0;
+  let playbackMs = 0;
 
   try {
     job.timeline.mark("stt_start");
     const sttStartAt = Date.now();
     const transcript = await callTranscribe(job.utterance, job.sessionId, DEFAULT_SAMPLE_RATE);
+    sttMs = Date.now() - sttStartAt;
     job.timeline.mark("stt_complete", {
       transcriptChars: transcript.length,
-      sttMs: Date.now() - sttStartAt,
+      sttMs,
     });
     job.timeline.metric("sttCompleteAt");
     turn.transcript = transcript;
@@ -127,45 +159,174 @@ export async function runPhilipLabTurn(job) {
       return null;
     }
 
-    job.timeline.mark("phase1_start");
-    const phase1StartAt = Date.now();
-    const phase1Text = await callPhase1(transcript, job.sessionId);
-    job.timeline.mark("phase1_complete", {
-      phase1Chars: phase1Text.length,
-      phase1Ms: Date.now() - phase1StartAt,
-    });
-    job.timeline.metric("phase1CompleteAt");
-    turn.phase1Preview = phase1Text.slice(0, 200);
+    let replyText;
+    let runtimeHeaders = null;
+    let endpoint = "/api/guidance/phase1";
+    let conversationMode = "Phase1 Opening";
+    let messagesLength = 0;
+    let twoPhaseBridge = false;
+    let followUpMode = false;
+
+    job.timeline.mark("guidance_start", { voiceTurnNumber, completedTurns: state.completedTurns });
+    const guidanceStartAt = Date.now();
+
+    if (state.completedTurns === 0) {
+      replyText = await callPhase1(transcript, job.sessionId);
+      state.openingSituation = transcript;
+      state.phase1Response = replyText;
+      messagesLength = 0;
+      job.timeline.mark("phase1_complete", {
+        phase1Chars: replyText.length,
+        phase1Ms: Date.now() - guidanceStartAt,
+      });
+    } else if (state.completedTurns === 1) {
+      endpoint = "/api/guidance/response";
+      conversationMode = "Two-Phase Bridge";
+      twoPhaseBridge = true;
+      messagesLength = 1;
+      state.phase1UserReply = transcript;
+      const result = await callGuidanceResponse({
+        situation: state.openingSituation,
+        messages: [{ role: "user", content: state.openingSituation }],
+        sessionId: job.sessionId,
+        conversationId: state.conversationId,
+        phase1Response: state.phase1Response,
+        phase1UserReply: state.phase1UserReply,
+      });
+      replyText = result.text;
+      runtimeHeaders = result.headers;
+      if (runtimeHeaders.conversationId) {
+        state.conversationId = runtimeHeaders.conversationId;
+      }
+      state.messages = [
+        { role: "user", content: state.openingSituation },
+        { role: "assistant", content: replyText },
+      ];
+      job.timeline.mark("guidance_response_complete", {
+        lane: runtimeHeaders.lane,
+        guidanceMs: Date.now() - guidanceStartAt,
+        replyChars: replyText.length,
+      });
+    } else {
+      endpoint = "/api/guidance/response";
+      conversationMode = "Follow-up";
+      followUpMode = true;
+      const messagesWithUser = [...state.messages, { role: "user", content: transcript }];
+      messagesLength = messagesWithUser.length;
+      const result = await callGuidanceResponse({
+        situation: state.openingSituation,
+        messages: messagesWithUser,
+        sessionId: job.sessionId,
+        conversationId: state.conversationId,
+        phase1Response: state.phase1Response,
+        phase1UserReply: state.phase1UserReply,
+        turnEventContent: transcript,
+      });
+      replyText = result.text;
+      runtimeHeaders = result.headers;
+      if (runtimeHeaders.conversationId) {
+        state.conversationId = runtimeHeaders.conversationId;
+      }
+      state.messages = [...messagesWithUser, { role: "assistant", content: replyText }];
+      job.timeline.mark("guidance_response_complete", {
+        lane: runtimeHeaders.lane,
+        guidanceMs: Date.now() - guidanceStartAt,
+        replyChars: replyText.length,
+      });
+    }
+
+    guidanceMs = Date.now() - guidanceStartAt;
+    state.completedTurns += 1;
+
+    turn.phase1Text = replyText;
+    turn.phase1Preview = replyText.slice(0, 200);
 
     job.timeline.mark("tts_start");
     const ttsStartAt = Date.now();
-    const audio = await callTts(phase1Text, job.sessionId);
-    job.timeline.mark("tts_end", { mp3Bytes: audio.length, ttsMs: Date.now() - ttsStartAt });
+    const audio = await callTts(replyText, job.sessionId);
+    ttsMs = Date.now() - ttsStartAt;
+    job.timeline.mark("tts_end", { mp3Bytes: audio.length, ttsMs });
     job.timeline.metric("ttsCompleteAt");
 
     job.timeline.mark("playback_publish_start");
     job.timeline.metric("playbackPublishStartAt");
-    const publish = await publishMp3ToSource(
-      audio,
-      job.audioSource,
-      DEFAULT_SAMPLE_RATE,
-      job.audioFrameFactory,
-    );
-    job.timeline.mark("playback_publish_end", publish);
+    const playbackStartAt = Date.now();
+
+    await job.playbackQueue.pending.catch(() => {});
+    const { pcmDurationMs: pcmMs, framePublished } =
+      await publishMp3ToSourceDetached(audio, job.audioSource, DEFAULT_SAMPLE_RATE, job.audioFrameFactory);
+    playbackMs = Date.now() - playbackStartAt;
+
+    job.timeline.mark("playback_publish_end", { pcmDurationMs: pcmMs });
     job.timeline.metric("playbackPublishEndAt");
     job.timeline.mark("playback_end", {
-      pcmDurationMs: publish.pcmDurationMs,
-      estimatedClientPlaybackEndAt: Date.now() + (publish.pcmDurationMs || 0),
+      pcmDurationMs: pcmMs,
+      earlyMic: true,
+      estimatedClientPlaybackEndAt: Date.now() + pcmMs,
     });
 
-    job.timeline.endTurn({ ok: true });
+    const micSettleMs = envInt("PHILIP_VOICE_LAB_EARLY_MIC_SETTLE_MS", 600);
+    await delay(micSettleMs);
+
+    job.playbackQueue.pending = framePublished;
+    // Intentionally not awaited: audio delivery continues after this turn returns
+    // and the caller resumes the mic. Errors are already logged inside
+    // publishMp3ToSourceDetached; this just prevents an unhandled-rejection warning.
+    framePublished.catch(() => {});
+
+    const totalTurnMs = Date.now() - turnStartAt;
+
+    logVoiceTurnVerification({
+      voiceTurnNumber,
+      endpoint,
+      conversationMode,
+      messagesLength,
+      sessionId: job.sessionId,
+      conversationId: state.conversationId,
+      twoPhaseBridge,
+      followUpMode,
+      latencyMs: guidanceMs,
+      runtimeHeaders,
+      timing: {
+        utteranceMs,
+        vadReason: job.vadReason ?? "vad_silence",
+        sttMs,
+        guidanceMs,
+        ttsMs,
+        playbackMs,
+        totalTurnMs,
+        replyChars: replyText.length,
+        earlyMic: true,
+        pcmDurationMs: pcmMs,
+      },
+    });
+
+    job.timeline.endTurn({
+      ok: true,
+      voiceTurnNumber,
+      endpoint,
+      lane: runtimeHeaders?.lane ?? "phase1",
+      sttMs,
+      guidanceMs,
+      ttsMs,
+      playbackMs,
+      totalTurnMs,
+      earlyMic: true,
+      pcmDurationMs: pcmMs,
+    });
+
     const payload = job.timeline.toJSON();
     await publishTimelineToRoom(job.room, {
       conversationId: job.roomName,
       phase: "turn_complete",
+      phase1Text: replyText,
       timeline: payload,
     });
-    return { phase1Text, audioBytes: audio.length, metrics: turn.metrics };
+    return {
+      phase1Text: replyText,
+      audioBytes: audio.length,
+      metrics: turn.metrics,
+    };
   } catch (err) {
     job.timeline.mark("turn_error", { error: String(err) });
     job.timeline.endTurn({ ok: false, error: String(err) });
@@ -186,7 +347,6 @@ export async function runPhilipVoiceRoom(opts) {
     TrackKind,
     TrackPublishOptions,
     TrackSource,
-    dispose,
   } = await import("@livekit/rtc-node");
   const { roomName, sessionId } = opts;
   const conversationId = roomName;
@@ -201,7 +361,7 @@ export async function runPhilipVoiceRoom(opts) {
   const { token, identity } = await mintAgentToken(roomName);
 
   const room = new Room();
-  const audioSource = new AudioSource(DEFAULT_SAMPLE_RATE, 1);
+  const audioSource = new AudioSource(DEFAULT_SAMPLE_RATE, 1, 2000);
   const agentTrack = LocalAudioTrack.createAudioTrack("philip-voice", audioSource);
   const publishOptions = new TrackPublishOptions();
   publishOptions.source = TrackSource.SOURCE_MICROPHONE;
@@ -209,10 +369,11 @@ export async function runPhilipVoiceRoom(opts) {
   let listenTask = null;
   let listenAbort = null;
   let processing = false;
-  let processingPhase = "idle";
-  let interruptionLoggedThisTurn = false;
-  const collector = new UtteranceCollector({ sampleRate: DEFAULT_SAMPLE_RATE });
-  const energyThreshold = collector.energyThreshold;
+  const vadConfig = vadConfigFromEnv();
+  const collector = new UtteranceCollector(vadConfig);
+  const conversationState = createConversationState(conversationId);
+  const playbackQueue = { pending: Promise.resolve() };
+  log("vad config", vadConfig);
 
   const stopListening = () => {
     listenAbort?.abort();
@@ -236,19 +397,12 @@ export async function runPhilipVoiceRoom(opts) {
           if (signal.aborted) break;
           const samples = frame.data;
 
-          if (processing) {
-            const energy = rmsInt16(samples);
-            if (energy >= energyThreshold && !interruptionLoggedThisTurn) {
-              interruptionLoggedThisTurn = true;
-              timeline.mark("interruption_attempt", { phase: processingPhase });
-            }
-            continue;
-          }
+          if (processing) continue;
 
           const vad = collector.push(samples);
           if (!vad) continue;
 
-          if (vad.vadReason && vad.vadReason !== "vad_silence") {
+          if (vad.vadReason && vad.vadReason !== "vad_silence" && vad.vadReason !== "vad_speech_too_short") {
             timeline.mark("vad_event", { reason: vad.vadReason });
           }
 
@@ -260,8 +414,6 @@ export async function runPhilipVoiceRoom(opts) {
           }
 
           processing = true;
-          processingPhase = "turn";
-          interruptionLoggedThisTurn = false;
           collector.pause();
           try {
             await runPhilipLabTurn({
@@ -272,13 +424,13 @@ export async function runPhilipVoiceRoom(opts) {
               audioSource,
               timeline,
               room,
+              conversationState,
+              playbackQueue,
             });
           } catch (err) {
             log("turn error:", err);
           } finally {
             processing = false;
-            processingPhase = "idle";
-            interruptionLoggedThisTurn = false;
             collector.resume();
             timeline.mark("mic_resumed");
           }
@@ -362,5 +514,7 @@ export async function runPhilipVoiceRoom(opts) {
 }
 
 process.on("SIGINT", () => {
-  void dispose();
+  void import("@livekit/rtc-node")
+    .then(({ dispose }) => dispose())
+    .catch(() => {});
 });

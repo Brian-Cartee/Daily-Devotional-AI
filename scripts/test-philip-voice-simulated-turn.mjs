@@ -2,7 +2,14 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 
-import { runPhilipLabTurn } from "../artifacts/api-server/src/philip-voice-lab/roomLoop.mjs";
+// Skip the 600ms early-mic settle delay — the test awaits the real background
+// frame-publish promise below, so it stays deterministic without the wall-clock wait.
+process.env.PHILIP_VOICE_LAB_EARLY_MIC_SETTLE_MS = "0";
+
+import {
+  runPhilipLabTurn,
+  createConversationState,
+} from "../artifacts/api-server/src/philip-voice-lab/roomLoop.mjs";
 import { SessionTimeline } from "../artifacts/api-server/src/philip-voice-lab/sessionTimeline.mjs";
 import { checkFfmpegReady } from "../artifacts/api-server/src/philip-voice-lab/readiness.mjs";
 
@@ -83,6 +90,11 @@ const timeline = new SessionTimeline({
   source: "gate-1-test",
 });
 
+// Multi-turn runtime requires conversation state + a playback queue on the job.
+// Turn 0 exercises the /api/guidance/phase1 opening path.
+const conversationState = createConversationState("simulated-conversation");
+const playbackQueue = { pending: Promise.resolve() };
+
 try {
   const pcmUtterance = Buffer.alloc(48000 * 2 * 1);
   const result = await runPhilipLabTurn({
@@ -93,12 +105,19 @@ try {
     audioSource,
     timeline,
     room,
+    conversationState,
+    playbackQueue,
     audioFrameFactory: async (chunk) => ({ chunk }),
   });
+
+  // Audio delivery is detached (background); await it so the frame-capture
+  // assertion below reflects the full publish rather than a race.
+  await playbackQueue.pending;
 
   assert.ok(result?.phase1Text.includes("feels heaviest"));
   assert.ok(result.audioBytes > 100);
   assert.ok(capturedFrames > 0, "decoded PCM should publish at least one frame");
+  assert.equal(conversationState.completedTurns, 1, "turn 0 should advance conversation state");
   assert.deepEqual(calls.map((call) => call.url.split("/api/")[1]), [
     "guidance/transcribe",
     "guidance/phase1",
@@ -115,6 +134,7 @@ try {
     endpoints: calls.map((call) => call.url.split("/api/")[1]),
     mp3Bytes: mp3.length,
     capturedFrames,
+    completedTurns: conversationState.completedTurns,
     turnMetrics: timeline.turns[0].metrics,
   }, null, 2));
 } finally {

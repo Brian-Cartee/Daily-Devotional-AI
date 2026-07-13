@@ -56,3 +56,6 @@ AuthKey_*.p8
 .local/
 .pnpm-store/artifacts/shepherds-path/public/daily-art/*.jpg
 artifacts/shepherds-path/public/daily-art/*.json
+
+# Philip Voice Lab Gate B session logs (local testing only)
+artifacts/api-server/server/philip-voice-lab/

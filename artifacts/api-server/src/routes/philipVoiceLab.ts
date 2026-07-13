@@ -175,8 +175,8 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const conversationId = String((req.body as { conversationId?: string })?.conversationId ?? "").trim();
-    const clientTimeline = (req.body as { clientTimeline?: unknown[] })?.clientTimeline;
-    if (!conversationId || !Array.isArray(clientTimeline)) {
+    const clientTimeline = (req.body as { clientTimeline?: Record<string, unknown> })?.clientTimeline;
+    if (!conversationId || !clientTimeline || typeof clientTimeline !== "object") {
       return res.status(400).json({ message: "conversationId and clientTimeline required" });
     }
     try {
@@ -240,7 +240,6 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
         provedPhilip: body.canonical?.provedPhilip === true,
       },
       immersionBreak,
-      clientTimeline: body.clientTimeline,
     };
     try {
       await saveEvaluation(evalPayload);
