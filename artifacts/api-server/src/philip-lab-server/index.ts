@@ -5,8 +5,6 @@
  * Guidance/TTS/transcribe for the voice agent should use PHILIP_VOICE_LAB_GUIDANCE_API_BASE
  * (production API on loopback :3001) so duplicate cron/push/email jobs never start.
  */
-import "../env";
-
 import { createServer } from "http";
 import express from "express";
 import cors from "cors";

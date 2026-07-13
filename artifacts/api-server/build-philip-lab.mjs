@@ -18,6 +18,7 @@ async function buildPhilipLab() {
     format: "esm",
     outfile: outFile,
     logLevel: "info",
+    packages: "external",
     external: [
       "*.node",
       "livekit-server-sdk",
