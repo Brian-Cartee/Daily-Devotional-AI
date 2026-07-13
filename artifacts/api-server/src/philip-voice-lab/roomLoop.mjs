@@ -18,7 +18,7 @@ import {
   publishMp3ToSourceDetached,
   vadConfigFromEnv,
 } from "./audioUtil.mjs";
-import { callGuidanceResponse } from "./guidanceClient.mjs";
+import { callCandidateGuidanceTurn, mediaApiBase } from "./guidanceClient.mjs";
 import {
   isLabAgentIdentity,
   mintLabAgentIdentity,
@@ -26,18 +26,7 @@ import {
 } from "./labIdentity.mjs";
 import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
 import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
-
-function apiBase() {
-  return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
-}
-
-function guidanceApiBase() {
-  return (
-    process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
-    process.env.PHILIP_VOICE_LAB_API_BASE ||
-    "http://127.0.0.1:8080"
-  ).replace(/\/$/, "");
-}
+import { recordTurnObservation } from "./turnObservability.mjs";
 
 function log(...args) {
   console.log("[philip-voice-agent]", ...args);
@@ -78,7 +67,7 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
   const form = new FormData();
   form.append("audio", new Blob([wav], { type: "audio/wav" }), "utterance.wav");
   form.append("sessionId", sessionId);
-  const res = await fetch(`${guidanceApiBase()}/api/guidance/transcribe`, {
+  const res = await fetch(`${mediaApiBase()}/api/guidance/transcribe`, {
     method: "POST",
     body: form,
   });
@@ -90,37 +79,23 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
   return String(data.text || "").trim();
 }
 
-async function callPhase1(transcript, sessionId) {
-  const res = await fetch(`${guidanceApiBase()}/api/guidance/phase1`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      situation: transcript,
-      sessionId,
-      companionMode: "philip",
-    }),
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`phase1 ${res.status}: ${errText.slice(0, 200)}`);
-  }
-  return res.text();
-}
-
-/** @returns {{ completedTurns: number; openingSituation: string; phase1Response: string; phase1UserReply: string; messages: Array<{ role: string; content: string }>; conversationId: string }} */
-export function createConversationState(conversationId) {
+/**
+ * @param {string} conversationId
+ * @param {{ firstName?: string }} [opts]
+ * @returns {{ completedTurns: number; conversationId: string; firstName: string; brainState: object|null; messages: Array<{ role: string; content: string }> }}
+ */
+export function createConversationState(conversationId, opts = {}) {
   return {
     completedTurns: 0,
-    openingSituation: "",
-    phase1Response: "",
-    phase1UserReply: "",
-    messages: [],
     conversationId,
+    firstName: opts.firstName || "",
+    brainState: null,
+    messages: [],
   };
 }
 
 async function callTts(text, sessionId) {
-  const res = await fetch(`${guidanceApiBase()}/api/tts`, {
+  const res = await fetch(`${mediaApiBase()}/api/tts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -173,85 +148,69 @@ export async function runPhilipLabTurn(job) {
       return null;
     }
 
-    let replyText;
-    let runtimeHeaders = null;
-    let endpoint = "/api/guidance/phase1";
-    let conversationMode = "Phase1 Opening";
-    let messagesLength = 0;
-    let twoPhaseBridge = false;
-    let followUpMode = false;
+    const endpoint = "/api/internal/philip-voice/guidance/turn";
+    const conversationMode =
+      state.completedTurns === 0 ? "Front Door Opening" : "Front Door Follow-up";
 
     job.timeline.mark("guidance_start", { voiceTurnNumber, completedTurns: state.completedTurns });
     const guidanceStartAt = Date.now();
 
-    if (state.completedTurns === 0) {
-      replyText = await callPhase1(transcript, sessionId);
-      state.openingSituation = transcript;
-      state.phase1Response = replyText;
-      messagesLength = 0;
-      job.timeline.mark("phase1_complete", {
-        phase1Chars: replyText.length,
-        phase1Ms: Date.now() - guidanceStartAt,
-      });
-    } else if (state.completedTurns === 1) {
-      endpoint = "/api/guidance/response";
-      conversationMode = "Two-Phase Bridge";
-      twoPhaseBridge = true;
-      messagesLength = 1;
-      state.phase1UserReply = transcript;
-      const result = await callGuidanceResponse({
-        situation: state.openingSituation,
-        messages: [{ role: "user", content: state.openingSituation }],
-        sessionId,
-        conversationId: state.conversationId,
-        phase1Response: state.phase1Response,
-        phase1UserReply: state.phase1UserReply,
-      });
-      replyText = result.text;
-      runtimeHeaders = result.headers;
-      if (runtimeHeaders.conversationId) {
-        state.conversationId = runtimeHeaders.conversationId;
-      }
-      state.messages = [
-        { role: "user", content: state.openingSituation },
-        { role: "assistant", content: replyText },
-      ];
-      job.timeline.mark("guidance_response_complete", {
-        lane: runtimeHeaders.lane,
-        guidanceMs: Date.now() - guidanceStartAt,
-        replyChars: replyText.length,
-      });
-    } else {
-      endpoint = "/api/guidance/response";
-      conversationMode = "Follow-up";
-      followUpMode = true;
-      const messagesWithUser = [...state.messages, { role: "user", content: transcript }];
-      messagesLength = messagesWithUser.length;
-      const result = await callGuidanceResponse({
-        situation: state.openingSituation,
-        messages: messagesWithUser,
-        sessionId,
-        conversationId: state.conversationId,
-        phase1Response: state.phase1Response,
-        phase1UserReply: state.phase1UserReply,
-        turnEventContent: transcript,
-      });
-      replyText = result.text;
-      runtimeHeaders = result.headers;
-      if (runtimeHeaders.conversationId) {
-        state.conversationId = runtimeHeaders.conversationId;
-      }
-      state.messages = [...messagesWithUser, { role: "assistant", content: replyText }];
-      job.timeline.mark("guidance_response_complete", {
-        lane: runtimeHeaders.lane,
-        guidanceMs: Date.now() - guidanceStartAt,
-        replyChars: replyText.length,
-      });
-    }
+    const stateBefore = state.brainState;
+    const brain = await callCandidateGuidanceTurn({
+      transcript,
+      firstName: state.firstName,
+      state: stateBefore,
+      conversationId: state.conversationId,
+      sessionId,
+    });
+    const replyText = brain.text;
+    state.brainState = brain.state;
+    state.messages = brain.state?.history ?? [
+      ...state.messages,
+      { role: "user", content: transcript },
+      { role: "assistant", content: replyText },
+    ];
+    const messagesLength = state.messages.length;
+
+    // Synthesized headers so downstream verification/observability stays uniform.
+    const runtimeHeaders = {
+      lane: brain.lane ?? null,
+      runtimeVersion: "candidate-front-door-1",
+      conversationId: state.conversationId,
+      plannerSource: null,
+      identityKernelMode: null,
+      contextMode: null,
+      memoryPolicy: null,
+      mindStage: null,
+      mindVersion: null,
+      stateSource: "front_door",
+      gates: [],
+      questionsAskedCount: null,
+      memoryRetrievalChars: null,
+    };
+
+    const stateTransition = `${stateBefore?.lastIntent ?? "start"} -> ${brain.intent}${
+      brain.reopened ? " (reopened)" : ""
+    }${brain.state?.sentOff ? " [sent_off]" : ""}`;
+
+    job.timeline.mark("guidance_response_complete", {
+      lane: brain.lane,
+      intent: brain.intent,
+      engine: brain.engine,
+      reopened: brain.reopened,
+      guidanceMs: Date.now() - guidanceStartAt,
+      replyChars: replyText.length,
+    });
 
     guidanceMs = Date.now() - guidanceStartAt;
     state.completedTurns += 1;
 
+    turn.transcript = transcript;
+    turn.intent = brain.intent;
+    turn.lane = brain.lane;
+    turn.engine = brain.engine;
+    turn.reopened = brain.reopened;
+    turn.stateTransition = stateTransition;
     turn.phase1Text = replyText;
     turn.phase1Preview = replyText.slice(0, 200);
 
@@ -297,8 +256,12 @@ export async function runPhilipLabTurn(job) {
       messagesLength,
       sessionId,
       conversationId: state.conversationId,
-      twoPhaseBridge,
-      followUpMode,
+      intent: brain.intent,
+      engine: brain.engine,
+      stateTransition,
+      reopened: brain.reopened,
+      twoPhaseBridge: false,
+      followUpMode: state.completedTurns > 1,
       latencyMs: guidanceMs,
       runtimeHeaders,
       timing: {
@@ -315,11 +278,32 @@ export async function runPhilipLabTurn(job) {
       },
     });
 
+    await recordTurnObservation({
+      conversationId: state.conversationId,
+      sessionId,
+      voiceTurnNumber,
+      transcript,
+      responseText: replyText,
+      intent: brain.intent,
+      conduct: brain.conduct ?? null,
+      lane: brain.lane,
+      engine: brain.engine,
+      runtimeVersion: runtimeHeaders.runtimeVersion,
+      stateTransition,
+      reopened: brain.reopened,
+      personalMeaning: brain.personalMeaning,
+      faithOffered: brain.faithOffered,
+      vadReason: job.vadReason ?? "vad_silence",
+      latency: { sttMs, guidanceMs, ttsMs, playbackMs, totalTurnMs, utteranceMs },
+    });
+
     job.timeline.endTurn({
       ok: true,
       voiceTurnNumber,
       endpoint,
-      lane: runtimeHeaders?.lane ?? "phase1",
+      lane: brain.lane ?? "front_door",
+      intent: brain.intent,
+      engine: brain.engine,
       sttMs,
       guidanceMs,
       ttsMs,
@@ -349,7 +333,7 @@ export async function runPhilipLabTurn(job) {
 }
 
 /**
- * @param {{ roomName: string; sessionId: string; abortSignal?: AbortSignal }} opts
+ * @param {{ roomName: string; sessionId: string; firstName?: string; abortSignal?: AbortSignal }} opts
  */
 export async function runPhilipVoiceRoom(opts) {
   const {
@@ -386,7 +370,7 @@ export async function runPhilipVoiceRoom(opts) {
   let processing = false;
   const vadConfig = vadConfigFromEnv();
   const collector = new UtteranceCollector(vadConfig);
-  const conversationState = createConversationState(conversationId);
+  const conversationState = createConversationState(conversationId, { firstName: opts.firstName });
   const playbackQueue = { pending: Promise.resolve() };
   log("vad config", vadConfig);
 

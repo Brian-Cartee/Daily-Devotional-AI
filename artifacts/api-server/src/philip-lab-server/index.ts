@@ -1,14 +1,17 @@
 /**
- * Isolated Philip Voice Lab API — session minting, timeline, and evaluations only.
+ * Isolated Philip Voice Lab API — session minting, timeline, evaluations, and the
+ * candidate conversation brain (Conversation Front Door).
  *
  * Does NOT register production routes, schedulers, migrations, or background workers.
- * Guidance/TTS/transcribe for the voice agent should use PHILIP_VOICE_LAB_GUIDANCE_API_BASE
- * (production API on loopback :3001) so duplicate cron/push/email jobs never start.
+ * Candidate response generation runs here (PHILIP_VOICE_LAB_GUIDANCE_API_BASE → :3101),
+ * so it never touches the production runtime. Media only — transcription + TTS — uses
+ * PHILIP_VOICE_LAB_MEDIA_API_BASE (production API on loopback :3001).
  */
 import { createServer } from "http";
 import express from "express";
 import cors from "cors";
 import { registerPhilipVoiceLabRoutes } from "../routes/philipVoiceLab";
+import { registerPhilipVoiceLabGuidanceRoutes } from "../routes/philipVoiceLabGuidance";
 
 if (process.env.PHILIP_VOICE_LAB_ENABLED !== "true") {
   console.error("[philip-lab-api] PHILIP_VOICE_LAB_ENABLED is not true — refusing to start (kill switch).");
@@ -21,6 +24,7 @@ app.use(cors({ origin: true }));
 app.use(express.json({ limit: "2mb" }));
 
 registerPhilipVoiceLabRoutes(app);
+registerPhilipVoiceLabGuidanceRoutes(app);
 
 app.get("/api/health", (_req, res) => {
   res.json({
