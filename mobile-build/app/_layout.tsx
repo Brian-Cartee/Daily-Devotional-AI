@@ -16,6 +16,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isPhilipVoiceLabEnabled } from "@/lib/philipVoiceLabFlags";
+import { ensureLiveKitGlobals } from "@/lib/setupLiveKit";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 import {
   loadNotificationPrefs,
@@ -23,6 +25,10 @@ import {
 } from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
+
+if (isPhilipVoiceLabEnabled()) {
+  ensureLiveKitGlobals();
+}
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
@@ -61,7 +67,20 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="webview-test" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="subscription" options={{ headerShown: false, presentation: "modal" }} />
+      {isPhilipVoiceLabEnabled() ? (
+        <>
+          <Stack.Screen
+            name="philip-voice-lab"
+            options={{ headerShown: false, presentation: "fullScreenModal" }}
+          />
+          <Stack.Screen
+            name="philip-voice-eval"
+            options={{ headerShown: false, presentation: "fullScreenModal" }}
+          />
+        </>
+      ) : null}
     </Stack>
   );
 }

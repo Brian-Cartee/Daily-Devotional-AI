@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { reloadAppAsync } from "expo";
 import React, { useState } from "react";
 import {
@@ -19,9 +20,15 @@ export type ErrorFallbackProps = {
   resetError: () => void;
 };
 
+function isPhilipLabBuild(): boolean {
+  const extra = Constants.expoConfig?.extra as { philipVoiceLabEnabled?: boolean } | undefined;
+  return extra?.philipVoiceLabEnabled === true;
+}
+
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const showLabError = isPhilipLabBuild();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -76,6 +83,18 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         <Text style={[styles.message, { color: colors.mutedForeground }]}>
           Please reload the app to continue.
         </Text>
+
+        {showLabError && error.message ? (
+          <Text
+            style={[
+              styles.labError,
+              { color: colors.foreground, fontFamily: monoFont },
+            ]}
+            selectable
+          >
+            {error.message}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={handleRestart}
@@ -197,6 +216,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
+  },
+  labError: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    width: "100%",
+    paddingHorizontal: 8,
   },
   topButton: {
     position: "absolute",
