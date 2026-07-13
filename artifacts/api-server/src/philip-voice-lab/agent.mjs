@@ -10,6 +10,7 @@ import path from "node:path";
 import { config as loadEnv } from "dotenv";
 
 import { runPhilipVoiceRoom } from "./roomLoop.mjs";
+import { checkFfmpegReady } from "./readiness.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const apiRoot = path.resolve(__dirname, "../..");
@@ -84,13 +85,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
+    const ffmpeg = await checkFfmpegReady();
+    res.writeHead(ffmpeg.ok ? 200 : 503, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        ok: true,
+        ok: ffmpeg.ok,
         service: "philip-voice-agent",
         activeRooms: activeRooms.size,
-        ffmpeg: process.env.FFMPEG_PATH || "ffmpeg",
+        ffmpeg,
       }),
     );
     return;
@@ -126,7 +128,7 @@ if (!enabled()) {
   process.exit(0);
 }
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "127.0.0.1", async () => {
   log(`listening on http://127.0.0.1:${PORT}`);
   log(`API_BASE=${process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080"}`);
   if (!LAB_SECRET) {
@@ -136,7 +138,9 @@ server.listen(PORT, "127.0.0.1", () => {
   if (!lkUrl) {
     log("WARN: LIVEKIT_URL not set — RTC will fail on dispatch");
   }
-  log("Requires ffmpeg on PATH for MP3 → PCM playback (set FFMPEG_PATH if needed)");
+  const ffmpeg = await checkFfmpegReady();
+  if (ffmpeg.ok) log(`ffmpeg ready: ${ffmpeg.version}`);
+  else log(`WARN: ffmpeg unavailable: ${ffmpeg.error || "readiness check failed"}`);
 });
 
 process.on("SIGTERM", () => {

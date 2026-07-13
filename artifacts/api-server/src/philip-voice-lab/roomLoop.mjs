@@ -3,19 +3,6 @@
  * Gate B: full session timeline instrumentation.
  */
 import {
-  AudioSource,
-  AudioStream,
-  LocalAudioTrack,
-  Room,
-  RoomEvent,
-  TrackKind,
-  TrackPublishOptions,
-  TrackSource,
-  dispose,
-} from "@livekit/rtc-node";
-import { AccessToken } from "livekit-server-sdk";
-
-import {
   DEFAULT_SAMPLE_RATE,
   UtteranceCollector,
   pcmToWav,
@@ -44,6 +31,7 @@ function liveKitEnv() {
 }
 
 async function mintAgentToken(roomName) {
+  const { AccessToken } = await import("livekit-server-sdk");
   const { apiKey, apiSecret } = liveKitEnv();
   const identity = `agent-${roomName.slice(0, 40)}`;
   const at = new AccessToken(apiKey, apiSecret, {
@@ -157,7 +145,12 @@ export async function runPhilipLabTurn(job) {
 
     job.timeline.mark("playback_publish_start");
     job.timeline.metric("playbackPublishStartAt");
-    const publish = await publishMp3ToSource(audio, job.audioSource, DEFAULT_SAMPLE_RATE);
+    const publish = await publishMp3ToSource(
+      audio,
+      job.audioSource,
+      DEFAULT_SAMPLE_RATE,
+      job.audioFrameFactory,
+    );
     job.timeline.mark("playback_publish_end", publish);
     job.timeline.metric("playbackPublishEndAt");
     job.timeline.mark("playback_end", {
@@ -184,6 +177,17 @@ export async function runPhilipLabTurn(job) {
  * @param {{ roomName: string; sessionId: string; abortSignal?: AbortSignal }} opts
  */
 export async function runPhilipVoiceRoom(opts) {
+  const {
+    AudioSource,
+    AudioStream,
+    LocalAudioTrack,
+    Room,
+    RoomEvent,
+    TrackKind,
+    TrackPublishOptions,
+    TrackSource,
+    dispose,
+  } = await import("@livekit/rtc-node");
   const { roomName, sessionId } = opts;
   const conversationId = roomName;
   const timeline = new SessionTimeline({

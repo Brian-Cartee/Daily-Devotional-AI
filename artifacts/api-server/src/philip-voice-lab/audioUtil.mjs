@@ -2,7 +2,6 @@
  * Audio helpers for Philip Voice Lab agent — PCM/WAV, MP3 decode, VAD, publish pacing.
  */
 import { spawn } from "node:child_process";
-import { AudioFrame } from "@livekit/rtc-node";
 
 const DEFAULT_SAMPLE_RATE = Number(process.env.PHILIP_VOICE_LAB_SAMPLE_RATE || 48000);
 
@@ -159,7 +158,16 @@ export class UtteranceCollector {
   }
 }
 
-export async function publishPcmToSource(pcmBuffer, source, sampleRate = DEFAULT_SAMPLE_RATE) {
+export async function publishPcmToSource(
+  pcmBuffer,
+  source,
+  sampleRate = DEFAULT_SAMPLE_RATE,
+  audioFrameFactory,
+) {
+  const createAudioFrame = audioFrameFactory || (async (chunk) => {
+    const { AudioFrame } = await import("@livekit/rtc-node");
+    return new AudioFrame(chunk, sampleRate, 1, chunk.length);
+  });
   if (typeof source.clearQueue === "function") {
     source.clearQueue();
   }
@@ -175,7 +183,7 @@ export async function publishPcmToSource(pcmBuffer, source, sampleRate = DEFAULT
   for (let offset = 0; offset < int16.length; offset += samplesPerFrame) {
     const end = Math.min(offset + samplesPerFrame, int16.length);
     const chunk = int16.subarray(offset, end);
-    const frame = new AudioFrame(chunk, sampleRate, 1, chunk.length);
+    const frame = await createAudioFrame(chunk);
     chain = chain
       .then(() => source.captureFrame(frame))
       .then(() => delay(10))
@@ -193,11 +201,16 @@ export async function publishPcmToSource(pcmBuffer, source, sampleRate = DEFAULT
   };
 }
 
-export async function publishMp3ToSource(mp3Buffer, source, sampleRate = DEFAULT_SAMPLE_RATE) {
+export async function publishMp3ToSource(
+  mp3Buffer,
+  source,
+  sampleRate = DEFAULT_SAMPLE_RATE,
+  audioFrameFactory,
+) {
   const decodeStartAt = Date.now();
   const pcm = await mp3ToPcm16(mp3Buffer, sampleRate);
   const decodeEndAt = Date.now();
-  const publish = await publishPcmToSource(pcm, source, sampleRate);
+  const publish = await publishPcmToSource(pcm, source, sampleRate, audioFrameFactory);
   return {
     ...publish,
     mp3Bytes: mp3Buffer.length,
