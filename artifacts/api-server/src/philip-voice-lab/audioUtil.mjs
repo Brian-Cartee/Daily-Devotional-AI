@@ -16,7 +16,9 @@ export function envInt(name, fallback) {
 export function vadConfigFromEnv() {
   return {
     sampleRate: DEFAULT_SAMPLE_RATE,
-    silenceMs: envInt("PHILIP_VOICE_LAB_VAD_SILENCE_MS", 900),
+    // 1400ms end-of-speech window: gives natural reflective pauses room to breathe
+    // before the turn closes. Override with PHILIP_VOICE_LAB_VAD_SILENCE_MS.
+    silenceMs: envInt("PHILIP_VOICE_LAB_VAD_SILENCE_MS", 1400),
     minSpeechMs: envInt("PHILIP_VOICE_LAB_VAD_MIN_SPEECH_MS", 380),
     maxUtteranceMs: envInt("PHILIP_VOICE_LAB_VAD_MAX_MS", 45000),
     energyThreshold: envInt("PHILIP_VOICE_LAB_VAD_ENERGY", 450),

@@ -5,10 +5,13 @@
 
 export function isRuntimeVerifyEnabled() {
   const raw = process.env.PHILIP_VOICE_LAB_RUNTIME_VERIFY?.trim().toLowerCase();
-  return raw === "1" || raw === "true" || raw === "yes";
+  if (raw === "0" || raw === "false" || raw === "no") return false;
+  // Complete lab runtime verification is on by default; explicitly opt out to silence.
+  return true;
 }
 
-function inferResponseModel(endpoint, lane) {
+function inferResponseModel(endpoint, lane, engine) {
+  if (engine) return engine;
   if (endpoint === "/api/guidance/phase1") return "GPT-4o (phase1)";
   if (!lane || lane === "presence_hold") return "mechanical";
   if (lane === "two_phase" || lane === "first_response") return "GPT-4o";
@@ -57,8 +60,10 @@ export function logVoiceTurnVerification(ctx) {
     gateHit(gates, ["question_count_retry", "mechanical_construction", "repetition"])
     || (h?.questionsAskedCount != null && h.questionsAskedCount > 0);
 
-  const lane = h?.lane ?? (ctx.endpoint.includes("phase1") ? "phase1" : "unknown");
-  const fullRuntime = ctx.endpoint === "/api/guidance/response";
+  const lane = ctx.lane ?? h?.lane ?? (ctx.endpoint.includes("phase1") ? "phase1" : "unknown");
+  const fullRuntime =
+    ctx.endpoint === "/api/guidance/response" ||
+    ctx.endpoint === "/api/internal/philip-voice/guidance/turn";
   const t = ctx.timing;
 
   const lines = [
@@ -82,6 +87,18 @@ export function logVoiceTurnVerification(ctx) {
     "",
     "Pipeline Lane:",
     lane,
+    "",
+    "Intent:",
+    ctx.intent ?? "n/a",
+    "",
+    "Engine:",
+    ctx.engine ?? "n/a",
+    "",
+    "Conversation State:",
+    ctx.stateTransition ?? "n/a",
+    "",
+    "Reopened after goodbye:",
+    ctx.reopened ? "YES" : "no",
     "",
     "Planner Source:",
     h?.plannerSource ?? "n/a",
@@ -115,7 +132,7 @@ export function logVoiceTurnVerification(ctx) {
       "",
     ] : []),
     "Response Model:",
-    inferResponseModel(ctx.endpoint, lane),
+    inferResponseModel(ctx.endpoint, lane, ctx.engine),
     "",
     "Streaming:",
     ctx.endpoint === "/api/guidance/response" ? "Buffered (HTTP stream → full body)" : "No (single response)",

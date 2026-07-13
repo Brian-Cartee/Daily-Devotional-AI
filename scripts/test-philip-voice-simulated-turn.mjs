@@ -45,6 +45,14 @@ assert.equal(ffmpeg.ok, true, ffmpeg.error || "ffmpeg readiness failed");
 const mp3 = await generateDeterministicMp3();
 assert.ok(mp3.length > 100, "fixture MP3 should contain audio bytes");
 
+// Point media (transcribe/TTS) at :3001 and the candidate brain at :3101 so the
+// test also verifies the isolated media/guidance split is wired correctly.
+process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE = "http://127.0.0.1:3001";
+process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE = "http://127.0.0.1:3101";
+
+const CANDIDATE_REPLY =
+  "That sounds like a lot to be carrying at once. I'm here — tell me what's weighing heaviest.";
+
 const originalFetch = globalThis.fetch;
 const calls = [];
 globalThis.fetch = async (input, init = {}) => {
@@ -52,16 +60,38 @@ globalThis.fetch = async (input, init = {}) => {
   calls.push({ url, method: init.method || "GET" });
   if (url.endsWith("/api/guidance/transcribe")) {
     assert.ok(init.body instanceof FormData, "transcribe must receive multipart form data");
+    assert.ok(url.startsWith("http://127.0.0.1:3001"), "transcribe must use the media base (:3001)");
     return Response.json({ text: "I feel overwhelmed and I do not know where to begin." });
   }
-  if (url.endsWith("/api/guidance/phase1")) {
+  if (url.endsWith("/api/internal/philip-voice/guidance/turn")) {
+    assert.ok(
+      url.startsWith("http://127.0.0.1:3101"),
+      "candidate guidance must use the isolated lab base (:3101), never production",
+    );
     const body = JSON.parse(String(init.body));
-    assert.equal(body.companionMode, "philip");
-    return new Response("That sounds like more than one heart should have to sort through at once. What feels heaviest right now?", {
-      headers: { "Content-Type": "text/plain" },
+    assert.equal(typeof body.transcript, "string");
+    return Response.json({
+      text: CANDIDATE_REPLY,
+      intent: "emotional",
+      lane: "emotional",
+      engine: "candidate-brain-test",
+      reopened: false,
+      personalMeaning: false,
+      faithOffered: false,
+      state: {
+        turnCount: 1,
+        lastIntent: "emotional",
+        sentOff: false,
+        history: [
+          { role: "user", content: body.transcript },
+          { role: "assistant", content: CANDIDATE_REPLY },
+        ],
+      },
+      meta: { sentenceCount: 2, usedName: false, sentOff: false, turnCount: 1 },
     });
   }
   if (url.endsWith("/api/tts")) {
+    assert.ok(url.startsWith("http://127.0.0.1:3001"), "TTS must use the media base (:3001)");
     return new Response(mp3, { headers: { "Content-Type": "audio/mpeg" } });
   }
   throw new Error(`Unexpected fetch in simulated turn: ${url}`);
@@ -114,13 +144,13 @@ try {
   // assertion below reflects the full publish rather than a race.
   await playbackQueue.pending;
 
-  assert.ok(result?.phase1Text.includes("feels heaviest"));
+  assert.ok(result?.phase1Text.includes("weighing heaviest"));
   assert.ok(result.audioBytes > 100);
   assert.ok(capturedFrames > 0, "decoded PCM should publish at least one frame");
   assert.equal(conversationState.completedTurns, 1, "turn 0 should advance conversation state");
   assert.deepEqual(calls.map((call) => call.url.split("/api/")[1]), [
     "guidance/transcribe",
-    "guidance/phase1",
+    "internal/philip-voice/guidance/turn",
     "tts",
   ]);
   assert.equal(timeline.turns.length, 1);
