@@ -70,10 +70,11 @@ export function createClientTimeline(
         });
       }
     },
-  toJSON() {
-    return { conversationId, sessionId, startedAt, events, agentSnapshots };
-  },
-};
+    toJSON() {
+      return { conversationId, sessionId, startedAt, events, agentSnapshots };
+    },
+  };
+}
 
 export type ClientTimelineJSON = ReturnType<ClientTimelineRecorder["toJSON"]>;
 
@@ -88,5 +89,4 @@ export function slimClientTimelineForUpload(
     events: timeline.events.slice(-80),
     agentSnapshots: timeline.agentSnapshots.slice(-20),
   };
-}
 }
