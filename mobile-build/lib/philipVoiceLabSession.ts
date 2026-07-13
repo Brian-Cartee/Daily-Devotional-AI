@@ -23,7 +23,10 @@ export async function preparePhilipVoiceLabSession(): Promise<{
     );
   }
 
-  const sessionId = await getOrCreateNativeSessionId();
+  const rawSessionId = await getOrCreateNativeSessionId();
+  const sessionId = rawSessionId.startsWith("philip-lab-")
+    ? rawSessionId
+    : `philip-lab-${rawSessionId}`;
   const credentials = await createPhilipVoiceLabSession(sessionId);
   return { sessionId, credentials };
 }

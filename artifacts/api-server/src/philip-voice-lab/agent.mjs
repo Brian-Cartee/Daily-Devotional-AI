@@ -134,6 +134,13 @@ if (!enabled()) {
 server.listen(PORT, "127.0.0.1", async () => {
   log(`listening on http://127.0.0.1:${PORT}`);
   log(`API_BASE=${process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080"}`);
+  log(
+    `GUIDANCE_API_BASE=${
+      process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+      process.env.PHILIP_VOICE_LAB_API_BASE ||
+      "http://127.0.0.1:8080"
+    }`,
+  );
   if (!LAB_SECRET) {
     log("WARN: PHILIP_VOICE_LAB_SECRET not set — dispatch endpoint will reject requests");
   }

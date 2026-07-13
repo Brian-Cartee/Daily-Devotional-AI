@@ -19,11 +19,24 @@ import {
   vadConfigFromEnv,
 } from "./audioUtil.mjs";
 import { callGuidanceResponse } from "./guidanceClient.mjs";
+import {
+  isLabAgentIdentity,
+  mintLabAgentIdentity,
+  normalizeLabSessionId,
+} from "./labIdentity.mjs";
 import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
 import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
 
 function apiBase() {
   return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
+}
+
+function guidanceApiBase() {
+  return (
+    process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_API_BASE ||
+    "http://127.0.0.1:8080"
+  ).replace(/\/$/, "");
 }
 
 function log(...args) {
@@ -43,7 +56,7 @@ function liveKitEnv() {
 async function mintAgentToken(roomName) {
   const { AccessToken } = await import("livekit-server-sdk");
   const { apiKey, apiSecret } = liveKitEnv();
-  const identity = `agent-${roomName.slice(0, 40)}`;
+  const identity = mintLabAgentIdentity(roomName);
   const at = new AccessToken(apiKey, apiSecret, {
     identity,
     name: "Philip",
@@ -65,7 +78,7 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
   const form = new FormData();
   form.append("audio", new Blob([wav], { type: "audio/wav" }), "utterance.wav");
   form.append("sessionId", sessionId);
-  const res = await fetch(`${apiBase()}/api/guidance/transcribe`, {
+  const res = await fetch(`${guidanceApiBase()}/api/guidance/transcribe`, {
     method: "POST",
     body: form,
   });
@@ -78,7 +91,7 @@ async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_
 }
 
 async function callPhase1(transcript, sessionId) {
-  const res = await fetch(`${apiBase()}/api/guidance/phase1`, {
+  const res = await fetch(`${guidanceApiBase()}/api/guidance/phase1`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -107,7 +120,7 @@ export function createConversationState(conversationId) {
 }
 
 async function callTts(text, sessionId) {
-  const res = await fetch(`${apiBase()}/api/tts`, {
+  const res = await fetch(`${guidanceApiBase()}/api/tts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -129,6 +142,7 @@ async function callTts(text, sessionId) {
  */
 export async function runPhilipLabTurn(job) {
   const state = job.conversationState;
+  const sessionId = normalizeLabSessionId(job.sessionId);
   const voiceTurnNumber = state.completedTurns + 1;
   const turnStartAt = Date.now();
   const utteranceMs = pcmDurationMs(job.utterance, DEFAULT_SAMPLE_RATE);
@@ -144,7 +158,7 @@ export async function runPhilipLabTurn(job) {
   try {
     job.timeline.mark("stt_start");
     const sttStartAt = Date.now();
-    const transcript = await callTranscribe(job.utterance, job.sessionId, DEFAULT_SAMPLE_RATE);
+    const transcript = await callTranscribe(job.utterance, sessionId, DEFAULT_SAMPLE_RATE);
     sttMs = Date.now() - sttStartAt;
     job.timeline.mark("stt_complete", {
       transcriptChars: transcript.length,
@@ -171,7 +185,7 @@ export async function runPhilipLabTurn(job) {
     const guidanceStartAt = Date.now();
 
     if (state.completedTurns === 0) {
-      replyText = await callPhase1(transcript, job.sessionId);
+      replyText = await callPhase1(transcript, sessionId);
       state.openingSituation = transcript;
       state.phase1Response = replyText;
       messagesLength = 0;
@@ -188,7 +202,7 @@ export async function runPhilipLabTurn(job) {
       const result = await callGuidanceResponse({
         situation: state.openingSituation,
         messages: [{ role: "user", content: state.openingSituation }],
-        sessionId: job.sessionId,
+        sessionId,
         conversationId: state.conversationId,
         phase1Response: state.phase1Response,
         phase1UserReply: state.phase1UserReply,
@@ -216,7 +230,7 @@ export async function runPhilipLabTurn(job) {
       const result = await callGuidanceResponse({
         situation: state.openingSituation,
         messages: messagesWithUser,
-        sessionId: job.sessionId,
+        sessionId,
         conversationId: state.conversationId,
         phase1Response: state.phase1Response,
         phase1UserReply: state.phase1UserReply,
@@ -243,7 +257,7 @@ export async function runPhilipLabTurn(job) {
 
     job.timeline.mark("tts_start");
     const ttsStartAt = Date.now();
-    const audio = await callTts(replyText, job.sessionId);
+    const audio = await callTts(replyText, sessionId);
     ttsMs = Date.now() - ttsStartAt;
     job.timeline.mark("tts_end", { mp3Bytes: audio.length, ttsMs });
     job.timeline.metric("ttsCompleteAt");
@@ -281,7 +295,7 @@ export async function runPhilipLabTurn(job) {
       endpoint,
       conversationMode,
       messagesLength,
-      sessionId: job.sessionId,
+      sessionId,
       conversationId: state.conversationId,
       twoPhaseBridge,
       followUpMode,
@@ -348,7 +362,8 @@ export async function runPhilipVoiceRoom(opts) {
     TrackPublishOptions,
     TrackSource,
   } = await import("@livekit/rtc-node");
-  const { roomName, sessionId } = opts;
+  const { roomName } = opts;
+  const sessionId = normalizeLabSessionId(opts.sessionId);
   const conversationId = roomName;
   const timeline = new SessionTimeline({
     conversationId,
@@ -446,13 +461,13 @@ export async function runPhilipVoiceRoom(opts) {
 
   const onTrackSubscribed = (track, _pub, participant) => {
     if (track.kind !== TrackKind.KIND_AUDIO) return;
-    if (participant.identity.startsWith("agent-")) return;
+    if (isLabAgentIdentity(participant.identity)) return;
     startMicLoop(track, participant);
   };
 
   const attachExistingUserTracks = () => {
     for (const participant of room.remoteParticipants.values()) {
-      if (participant.identity.startsWith("agent-")) continue;
+      if (isLabAgentIdentity(participant.identity)) continue;
       for (const pub of participant.trackPublications.values()) {
         if (pub.track?.kind === TrackKind.KIND_AUDIO) {
           startMicLoop(pub.track, participant);
@@ -464,7 +479,7 @@ export async function runPhilipVoiceRoom(opts) {
 
   room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
   room.on(RoomEvent.ParticipantDisconnected, (participant) => {
-    if (!participant.identity.startsWith("agent-")) {
+    if (!isLabAgentIdentity(participant.identity)) {
       timeline.mark("participant_disconnected", { identity: participant.identity });
       stopListening();
       collector.reset();

@@ -6,6 +6,14 @@ function apiBase() {
   return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
 }
 
+function guidanceApiBase() {
+  return (
+    process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_API_BASE ||
+    "http://127.0.0.1:8080"
+  ).replace(/\/$/, "");
+}
+
 const HEADER = {
   lane: "X-Philip-Lane",
   planner: "X-Philip-Planner-Source",
@@ -96,7 +104,7 @@ export async function callGuidanceResponse(opts) {
     };
   }
 
-  const res = await fetch(`${apiBase()}/api/guidance/response`, {
+  const res = await fetch(`${guidanceApiBase()}/api/guidance/response`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

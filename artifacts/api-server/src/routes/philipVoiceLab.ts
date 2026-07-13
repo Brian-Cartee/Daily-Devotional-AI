@@ -3,7 +3,6 @@
  * Returns 404 when PHILIP_VOICE_LAB_ENABLED is not true (server kill switch).
  */
 import type { Express, Request } from "express";
-import crypto from "crypto";
 import { AccessToken } from "livekit-server-sdk";
 
 import {
@@ -14,6 +13,11 @@ import {
   saveTimeline,
   type GateBEvaluation,
 } from "../philip-voice-lab/storage";
+import {
+  normalizeLabSessionId,
+  mintLabRoomName,
+  mintLabParticipantIdentity,
+} from "../philip-voice-lab/labIdentity.mjs";
 
 export function isPhilipVoiceLabEnabled(): boolean {
   return process.env.PHILIP_VOICE_LAB_ENABLED === "true";
@@ -108,7 +112,9 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const sessionId = String((req.body as { sessionId?: string })?.sessionId ?? "").trim();
+    const sessionId = normalizeLabSessionId(
+      String((req.body as { sessionId?: string })?.sessionId ?? "").trim(),
+    );
     if (!sessionId || sessionId.length > 128) {
       return res.status(400).json({ message: "sessionId required" });
     }
@@ -120,8 +126,8 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
       });
     }
 
-    const roomName = `philip-lab-${sessionId.slice(0, 12)}-${crypto.randomBytes(4).toString("hex")}`;
-    const participantIdentity = `user-${sessionId.slice(0, 24)}`;
+    const roomName = mintLabRoomName(sessionId);
+    const participantIdentity = mintLabParticipantIdentity(sessionId);
 
     try {
       const token = await mintToken({

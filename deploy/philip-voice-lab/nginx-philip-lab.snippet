@@ -1,0 +1,24 @@
+# Philip Voice Lab — nginx location snippet
+# Add INSIDE the existing server { } block for www.shepherdspathai.com.
+# Place BEFORE the general /api/ location so the more-specific prefix wins.
+#
+# Exposes ONLY gated lab routes. Agent dispatch (:8091) stays loopback-only.
+# Reload: sudo nginx -t && sudo systemctl reload nginx
+
+location ^~ /api/internal/philip-voice/ {
+    proxy_pass http://127.0.0.1:3101;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 120s;
+    proxy_read_timeout 120s;
+}
+
+# Existing production API location (unchanged) — for reference only:
+# location /api/ {
+#     proxy_pass http://127.0.0.1:3001;
+#     ...
+# }
