@@ -6,12 +6,60 @@ function apiBase() {
   return (process.env.PHILIP_VOICE_LAB_API_BASE || "http://127.0.0.1:8080").replace(/\/$/, "");
 }
 
+/** Candidate guidance brain base — the isolated lab service (:3101), NOT production. */
 function guidanceApiBase() {
   return (
     process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
     process.env.PHILIP_VOICE_LAB_API_BASE ||
     "http://127.0.0.1:8080"
   ).replace(/\/$/, "");
+}
+
+/**
+ * Media base for transcription + TTS only. Defaults to the production API on
+ * loopback (:3001). Falls back to the guidance base for backward compatibility.
+ */
+export function mediaApiBase() {
+  return (
+    process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_API_BASE ||
+    "http://127.0.0.1:8080"
+  ).replace(/\/$/, "");
+}
+
+function labSecret() {
+  return process.env.PHILIP_VOICE_LAB_SECRET?.trim() || "";
+}
+
+/**
+ * Call the isolated candidate guidance brain (Conversation Front Door) on :3101.
+ * @param {{ transcript: string; firstName?: string; state?: object|null; conversationId: string; sessionId: string }} opts
+ * @returns {Promise<{ text: string; intent: string; lane: string; engine: string|null; reopened: boolean; personalMeaning: boolean; faithOffered: boolean; state: object; meta: object; httpStatus: number }>}
+ */
+export async function callCandidateGuidanceTurn(opts) {
+  const secret = labSecret();
+  const res = await fetch(`${guidanceApiBase()}/api/internal/philip-voice/guidance/turn`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(secret ? { "X-Philip-Lab-Secret": secret } : {}),
+    },
+    body: JSON.stringify({
+      transcript: opts.transcript,
+      firstName: opts.firstName || undefined,
+      state: opts.state ?? undefined,
+      conversationId: opts.conversationId,
+      sessionId: opts.sessionId,
+    }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`candidate guidance turn ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = JSON.parse(text);
+  return { ...data, httpStatus: res.status };
 }
 
 const HEADER = {

@@ -18,6 +18,7 @@ import {
   mintLabRoomName,
   mintLabParticipantIdentity,
 } from "../philip-voice-lab/labIdentity.mjs";
+import { candidateGuidanceReadiness } from "../philip-voice-lab/guidanceBrain.mjs";
 
 export function isPhilipVoiceLabEnabled(): boolean {
   return process.env.PHILIP_VOICE_LAB_ENABLED === "true";
@@ -67,7 +68,18 @@ async function mintToken(opts: {
   return at.toJwt();
 }
 
-async function dispatchAgent(roomName: string, sessionId: string): Promise<void> {
+/** Accept only a simple given name; never persist or forward anything else. */
+function sanitizeFirstName(raw: unknown): string {
+  const first = String(raw ?? "").trim().split(/\s+/)[0] || "";
+  if (!/^[A-Za-z][A-Za-z'’-]{0,23}$/.test(first)) return "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+async function dispatchAgent(
+  roomName: string,
+  sessionId: string,
+  firstName: string,
+): Promise<void> {
   const dispatchUrl =
     process.env.PHILIP_VOICE_LAB_AGENT_DISPATCH_URL?.trim() ||
     "http://127.0.0.1:8091/dispatch";
@@ -79,7 +91,7 @@ async function dispatchAgent(roomName: string, sessionId: string): Promise<void>
         "Content-Type": "application/json",
         ...(secret ? { "X-Philip-Lab-Secret": secret } : {}),
       },
-      body: JSON.stringify({ roomName, sessionId }),
+      body: JSON.stringify({ roomName, sessionId, firstName: firstName || undefined }),
     });
   } catch (err) {
     console.error("[philip-voice-lab] agent dispatch failed:", err);
@@ -95,9 +107,11 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const lk = liveKitConfig();
+    const guidance = candidateGuidanceReadiness();
     return res.json({
       ok: true,
       livekitConfigured: Boolean(lk),
+      candidateGuidance: guidance,
       agentDispatchUrl:
         process.env.PHILIP_VOICE_LAB_AGENT_DISPATCH_URL?.trim() ||
         "http://127.0.0.1:8091/dispatch",
@@ -126,6 +140,8 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
       });
     }
 
+    const firstName = sanitizeFirstName((req.body as { firstName?: string })?.firstName);
+
     const roomName = mintLabRoomName(sessionId);
     const participantIdentity = mintLabParticipantIdentity(sessionId);
 
@@ -136,10 +152,10 @@ export function registerPhilipVoiceLabRoutes(app: Express): void {
         apiKey: lk.apiKey,
         apiSecret: lk.apiSecret,
         canPublish: true,
-        name: "Philip lab user",
+        name: firstName || "Philip lab user",
       });
 
-      void dispatchAgent(roomName, sessionId);
+      void dispatchAgent(roomName, sessionId, firstName);
 
       return res.json({
         url: lk.url,

@@ -1,4 +1,4 @@
-import { getOrCreateNativeSessionId } from "@/lib/native-profile";
+import { loadNativeUserProfile } from "@/lib/native-profile";
 import {
   checkPhilipVoiceLabHealth,
   createPhilipVoiceLabSession,
@@ -23,10 +23,12 @@ export async function preparePhilipVoiceLabSession(): Promise<{
     );
   }
 
-  const rawSessionId = await getOrCreateNativeSessionId();
+  const profile = await loadNativeUserProfile();
+  const rawSessionId = profile.sessionId;
   const sessionId = rawSessionId.startsWith("philip-lab-")
     ? rawSessionId
     : `philip-lab-${rawSessionId}`;
-  const credentials = await createPhilipVoiceLabSession(sessionId);
+  const firstName = profile.name?.trim().split(/\s+/)[0] || "";
+  const credentials = await createPhilipVoiceLabSession(sessionId, firstName);
   return { sessionId, credentials };
 }

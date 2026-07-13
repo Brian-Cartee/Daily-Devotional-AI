@@ -35,9 +35,16 @@ function log(...args) {
 /** @type {Map<string, { abort: AbortController }>} */
 const activeRooms = new Map();
 
+function sanitizeFirstName(raw) {
+  const first = String(raw ?? "").trim().split(/\s+/)[0] || "";
+  if (!/^[A-Za-z][A-Za-z'’-]{0,23}$/.test(first)) return "";
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
 async function handleDispatch(body) {
   const roomName = String(body.roomName || "").trim();
   const sessionId = String(body.sessionId || "").trim();
+  const firstName = sanitizeFirstName(body.firstName);
   if (!roomName || !sessionId) {
     throw new Error("roomName and sessionId required");
   }
@@ -49,7 +56,7 @@ async function handleDispatch(body) {
   const abort = new AbortController();
   activeRooms.set(roomName, { abort });
 
-  void runPhilipVoiceRoom({ roomName, sessionId, abortSignal: abort.signal })
+  void runPhilipVoiceRoom({ roomName, sessionId, firstName, abortSignal: abort.signal })
     .catch((err) => log("room error:", err))
     .finally(() => {
       activeRooms.delete(roomName);
@@ -139,7 +146,15 @@ server.listen(PORT, "127.0.0.1", async () => {
       process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
       process.env.PHILIP_VOICE_LAB_API_BASE ||
       "http://127.0.0.1:8080"
-    }`,
+    } (candidate brain)`,
+  );
+  log(
+    `MEDIA_API_BASE=${
+      process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE ||
+      process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+      process.env.PHILIP_VOICE_LAB_API_BASE ||
+      "http://127.0.0.1:8080"
+    } (transcribe + TTS)`,
   );
   if (!LAB_SECRET) {
     log("WARN: PHILIP_VOICE_LAB_SECRET not set — dispatch endpoint will reject requests");

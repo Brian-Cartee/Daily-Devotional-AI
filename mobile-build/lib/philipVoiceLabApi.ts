@@ -15,6 +15,7 @@ export type PhilipVoiceLabSession = {
 
 export async function createPhilipVoiceLabSession(
   sessionId: string,
+  firstName?: string,
 ): Promise<PhilipVoiceLabSession> {
   const labKey = philipVoiceLabKey();
   if (!labKey) {
@@ -27,7 +28,10 @@ export async function createPhilipVoiceLabSession(
       "Content-Type": "application/json",
       "X-Philip-Lab-Secret": labKey,
     },
-    body: JSON.stringify({ sessionId }),
+    body: JSON.stringify({
+      sessionId,
+      ...(firstName?.trim() ? { firstName: firstName.trim() } : {}),
+    }),
   });
 
   if (!res.ok) {
