@@ -33,10 +33,7 @@ cp    "$SRC/tsconfig.json"  "$BUILD_DIR/"
 
 echo "=== Installing dependencies ==="
 cd "$BUILD_DIR"
-if [[ -d "$SRC/node_modules" && -f "$SRC/package-lock.json" ]]; then
-  echo "=== Linking existing node_modules from mobile-build (saves ~750MB disk) ==="
-  ln -s "$SRC/node_modules" node_modules
-elif [[ -f package-lock.json ]]; then
+if [[ -f package-lock.json ]]; then
   npm ci
 else
   npm install
