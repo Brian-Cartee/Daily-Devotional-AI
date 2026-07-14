@@ -54,12 +54,21 @@ function check(label, fn) {
 // Deterministic deep generator — stands in for the runtime LLM. No network.
 async function deepStub(ctx) {
   switch (ctx.intent) {
-    case INTENT.PRACTICAL:
+    case INTENT.PRACTICAL: {
+      const t = String(ctx.rawTranscript || ctx.transcript || "");
+      if (/mother|job search|app|exercise|world cup|priorit/i.test(t)) {
+        return {
+          text:
+            "Keep your mother non-negotiable today, give the job search one protected block, then spend your allotted window on the app — and let the World Cup be honest rest, not guilt. Health stays in the margins you already keep.",
+          engine: "stub-brain",
+        };
+      }
       return {
         text:
           "Honestly, start with the one thing that truly can't wait and let the rest hold for now. You don't have to catch up all at once.",
         engine: "stub-brain",
       };
+    }
     case INTENT.EMOTIONAL:
       return {
         text: "That weight is real, and it makes sense it's landing on you. Say more whenever you're ready.",
@@ -887,6 +896,34 @@ check("sole thank-you stays gratitude deterministic candidate", () => {
     assert.ok(/work|app|decid|priorit|mother/i.test(t2.text) || /go on from there/i.test(t2.text), t2.text);
     void composeRepeatRepair;
   });
+}
+
+{
+  const PRIORITY =
+    "How do you think I should prioritize everything — caring for my mother, the job search, implementing the app, exercise, and the World Cup?";
+  let sawInstruction = "";
+  const r = await runFrontDoorTurn({
+    transcript: PRIORITY,
+    firstName: "Brian",
+    deepGenerate: async (ctx) => {
+      sawInstruction = String(ctx.intent);
+      return deepStub(ctx);
+    },
+  });
+  check("priority fixture routes practical deep with concrete move", () => {
+    assert.equal(r.intent, INTENT.PRACTICAL);
+    assert.equal(r.meta.routedDeep, true);
+    assert.equal(r.engine, "stub-brain");
+    assert.ok(/mother|job|app|World Cup|exercise/i.test(r.text), r.text);
+    assert.ok(!/urgent and important/i.test(r.text), r.text);
+    assert.ok(!FAITH_WORDS.test(r.text), r.text);
+  });
+  check("compact genome includes practical priority guidance", () => {
+    assert.match(COMPACT_PHILIP_GENOME, /PRACTICAL PRIORITIES/);
+    assert.match(COMPACT_PHILIP_GENOME, /one concrete prioritization move/i);
+    assert.match(COMPACT_PHILIP_GENOME, /Do not force Scripture or prayer/i);
+  });
+  void sawInstruction;
 }
 
 // ---------------------------------------------------------------------------

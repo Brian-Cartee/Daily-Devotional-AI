@@ -45,10 +45,11 @@ assert.equal(ffmpeg.ok, true, ffmpeg.error || "ffmpeg readiness failed");
 const mp3 = await generateDeterministicMp3();
 assert.ok(mp3.length > 100, "fixture MP3 should contain audio bytes");
 
-// Point media (transcribe/TTS) at :3001 and the candidate brain at :3101 so the
-// test also verifies the isolated media/guidance split is wired correctly.
+// STT → isolated lab :3101; TTS → production media :3001; guidance → lab :3101.
 process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE = "http://127.0.0.1:3001";
 process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE = "http://127.0.0.1:3101";
+process.env.PHILIP_VOICE_LAB_STT_API_BASE = "http://127.0.0.1:3101";
+process.env.PHILIP_VOICE_LAB_SECRET = "simulated-lab-secret";
 
 const CANDIDATE_REPLY =
   "That sounds like a lot to be carrying at once. I'm here — tell me what's weighing heaviest.";
@@ -57,11 +58,20 @@ const originalFetch = globalThis.fetch;
 const calls = [];
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input);
-  calls.push({ url, method: init.method || "GET" });
+  calls.push({ url, method: init.method || "GET", headers: init.headers || {} });
+  if (url.endsWith("/api/internal/philip-voice/transcribe")) {
+    assert.ok(init.body instanceof FormData, "lab STT must receive multipart form data");
+    assert.ok(url.startsWith("http://127.0.0.1:3101"), "STT must use isolated lab base (:3101)");
+    const headers = init.headers || {};
+    const secret = headers["X-Philip-Lab-Secret"] || headers["x-philip-lab-secret"];
+    assert.equal(secret, "simulated-lab-secret", "lab STT must send Philip lab secret");
+    return Response.json({
+      text: "I feel overwhelmed and I do not know where to begin.",
+      tagged: "philip-voice-lab-stt",
+    });
+  }
   if (url.endsWith("/api/guidance/transcribe")) {
-    assert.ok(init.body instanceof FormData, "transcribe must receive multipart form data");
-    assert.ok(url.startsWith("http://127.0.0.1:3001"), "transcribe must use the media base (:3001)");
-    return Response.json({ text: "I feel overwhelmed and I do not know where to begin." });
+    throw new Error("lab turns must not call production /api/guidance/transcribe");
   }
   if (url.endsWith("/api/internal/philip-voice/guidance/turn")) {
     assert.ok(
@@ -149,7 +159,7 @@ try {
   assert.ok(capturedFrames > 0, "decoded PCM should publish at least one frame");
   assert.equal(conversationState.completedTurns, 1, "turn 0 should advance conversation state");
   assert.deepEqual(calls.map((call) => call.url.split("/api/")[1]), [
-    "guidance/transcribe",
+    "internal/philip-voice/transcribe",
     "internal/philip-voice/guidance/turn",
     "tts",
   ]);
