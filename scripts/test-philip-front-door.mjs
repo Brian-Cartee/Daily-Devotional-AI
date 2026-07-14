@@ -19,6 +19,12 @@ import {
   createFrontDoorState,
   detectPersonalMeaning,
   isSubstantive,
+  hydrateFrontDoorState,
+  classifyOpeningRepair,
+  classifyPendingPrayerReply,
+  detectPrayerOfferInReply,
+  awaitingConstrainedShortAnswer,
+  isProductOrWorkFaithContext,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
 
 let passed = 0;
@@ -452,6 +458,193 @@ check("classify conduct — divine authority", () => {
     assert.equal(r.intent, INTENT.CASUAL);
     assert.ok(!REFUSAL.test(r.text) && !CORRECTION.test(r.text), r.text);
     assert.equal(r.state.sentOff, false);
+  });
+}
+
+// ---------------------------------------------------------------------------
+console.log("Post-phone-test corrections — prayer, faith context, opening repair");
+
+const PRODUCT_FAITH = [
+  "I'm working on a faith app.",
+  "The faith app implementation has been difficult.",
+  "Our faith-based product needs testing.",
+  "I spoke with a faith community about the software.",
+  "The church app has a technical problem.",
+  "I'm building Christian software.",
+];
+for (const text of PRODUCT_FAITH) {
+  check(`product faith stays non-spiritual — ${text.slice(0, 40)}`, () => {
+    assert.equal(isProductOrWorkFaithContext(text), true);
+    assert.notEqual(classifyIntent(text, createFrontDoorState()), INTENT.SPIRITUAL);
+  });
+}
+
+const PERSONAL_FAITH = [
+  "My faith has been struggling.",
+  "I'm losing my faith.",
+  "How can I trust God right now?",
+  "I feel far from God.",
+  "What does Jesus want me to do?",
+  "Could we talk about my relationship with God?",
+  "I'm angry with God.",
+];
+for (const text of PERSONAL_FAITH) {
+  check(`personal faith stays spiritual/conduct — ${text.slice(0, 40)}`, () => {
+    const intent = classifyIntent(text, createFrontDoorState());
+    const conduct = classifyConduct(text);
+    assert.ok(
+      intent === INTENT.SPIRITUAL || conduct === CONDUCT.FAITH_ANGER,
+      `got intent=${intent} conduct=${conduct}`,
+    );
+  });
+}
+
+check("explicit prayer request remains prayer", () => {
+  assert.equal(classifyIntent("I need prayer.", createFrontDoorState()), INTENT.PRAYER);
+  assert.equal(classifyIntent("Would you pray for me?", createFrontDoorState()), INTENT.PRAYER);
+  assert.equal(classifyIntent("Can we pray?", createFrontDoorState()), INTENT.PRAYER);
+  assert.equal(classifyIntent("Please pray about my mother.", createFrontDoorState()), INTENT.PRAYER);
+  assert.equal(classifyIntent("I don't know how to pray.", createFrontDoorState()), INTENT.PRAYER);
+});
+
+check("descriptive prayer mentions are not prayer requests", () => {
+  assert.notEqual(classifyIntent("I pray every morning.", createFrontDoorState()), INTENT.PRAYER);
+  assert.notEqual(classifyIntent("I said a prayer before work.", createFrontDoorState()), INTENT.PRAYER);
+  assert.notEqual(classifyIntent("My mother prays for me.", createFrontDoorState()), INTENT.PRAYER);
+  assert.notEqual(classifyIntent("Prayer is part of my routine.", createFrontDoorState()), INTENT.PRAYER);
+});
+
+{
+  const fill = await runFrontDoorTurn({
+    transcript: "Fill up.",
+    firstName: "Brian",
+    deepGenerate: deepStub,
+  });
+  check("Fill up opening recovers without intake template", () => {
+    assert.equal(classifyOpeningRepair("Fill up.", createFrontDoorState()), "philip_name");
+    assert.equal(fill.lane, "opening_repair");
+    assert.ok(!/real part of your days/i.test(fill.text), fill.text);
+    assert.ok(!/what's that been like/i.test(fill.text), fill.text);
+    assert.ok(/here|caught|how are you/i.test(fill.text), fill.text);
+  });
+}
+
+{
+  const rough = await runFrontDoorTurn({
+    transcript: "Rough day.",
+    firstName: "Brian",
+    deepGenerate: deepStub,
+  });
+  check("Rough day remains emotional recognition", () => {
+    assert.equal(classifyOpeningRepair("Rough day.", createFrontDoorState()), false);
+    assert.equal(rough.intent, INTENT.EMOTIONAL);
+    assert.notEqual(rough.lane, "opening_repair");
+    assert.ok(rough.text.length > 0);
+  });
+}
+
+check("Hello Philip / Hey greetings stay greeting", () => {
+  assert.equal(classifyIntent("Hey.", createFrontDoorState()), INTENT.GREETING);
+  assert.equal(classifyIntent("Hello, Philip.", createFrontDoorState()), INTENT.GREETING);
+  assert.equal(classifyOpeningRepair("Hello, Philip.", createFrontDoorState()), false);
+});
+
+{
+  let state = createFrontDoorState("Brian");
+  const offer = await runFrontDoorTurn({
+    transcript: "Would you pray for me about the project stress?",
+    state,
+    deepGenerate: deepStub,
+  });
+  state = offer.state;
+  check("prayer offer sets pendingPrayerOffer", () => {
+    assert.equal(offer.intent, INTENT.PRAYER);
+    assert.equal(detectPrayerOfferInReply(offer.text), true);
+    assert.equal(state.pendingPrayerOffer, true);
+    assert.ok(state.prayerContext);
+    assert.equal(awaitingConstrainedShortAnswer(state), true);
+  });
+
+  const serialized = hydrateFrontDoorState(JSON.parse(JSON.stringify(state)));
+  check("pending prayer survives JSON serialization", () => {
+    assert.equal(serialized.pendingPrayerOffer, true);
+    assert.equal(serialized.prayerContext, state.prayerContext);
+  });
+
+  const yes = await runFrontDoorTurn({
+    transcript: "yes",
+    state: serialized,
+    deepGenerate: deepStub,
+  });
+  check("prayer offer → short yes → transition + Amen prayer", () => {
+    assert.equal(classifyPendingPrayerReply("yes"), "accept");
+    assert.equal(yes.lane, "prayer_accepted");
+    assert.equal(yes.state.pendingPrayerOffer, false);
+    assert.equal(yes.state.prayerCompleted, true);
+    assert.ok(/i'?d be honored|let'?s pray/i.test(yes.text), yes.text);
+    assert.ok(/\bAmen\b/.test(yes.text), yes.text);
+    assert.ok(!/would you like|want to pray now/i.test(yes.text), "must not re-ask permission");
+    assert.ok(!/what (should|do) (we|i) pray/i.test(yes.text), "must not ask what to pray about");
+  });
+}
+
+{
+  let state = createFrontDoorState("Brian");
+  const offer = await runFrontDoorTurn({
+    transcript: "Can we pray?",
+    state,
+    deepGenerate: deepStub,
+  });
+  state = offer.state;
+  const no = await runFrontDoorTurn({
+    transcript: "not right now",
+    state,
+    deepGenerate: deepStub,
+  });
+  check("prayer offer → short no → respectful continuation", () => {
+    assert.equal(classifyPendingPrayerReply("not right now"), "decline");
+    assert.equal(no.lane, "prayer_declined");
+    assert.equal(no.state.pendingPrayerOffer, false);
+    assert.ok(/keep talking|glad to stay/i.test(no.text), no.text);
+    assert.ok(!FAITH_WORDS.test(no.text) || !/scripture|bible|verse/i.test(no.text), no.text);
+  });
+}
+
+{
+  let state = createFrontDoorState("Brian");
+  const offer = await runFrontDoorTurn({
+    transcript: "Please pray for me.",
+    state,
+    deepGenerate: deepStub,
+  });
+  state = offer.state;
+  const amb = await runFrontDoorTurn({
+    transcript: "hmm",
+    state,
+    deepGenerate: deepStub,
+  });
+  check("prayer offer → ambiguous → one clarification", () => {
+    assert.equal(classifyPendingPrayerReply("hmm"), "ambiguous");
+    assert.equal(amb.lane, "prayer_clarify");
+    assert.equal(amb.state.pendingPrayerOffer, true);
+    assert.ok(/would you like me to pray/i.test(amb.text), amb.text);
+  });
+}
+
+{
+  const offer = await runFrontDoorTurn({
+    transcript: "Would you pray for me?",
+    deepGenerate: deepStub,
+  });
+  const crisis = await runFrontDoorTurn({
+    transcript: "I don't want to live anymore.",
+    state: offer.state,
+    deepGenerate: deepStub,
+  });
+  check("crisis overrides pending prayer", () => {
+    assert.equal(crisis.intent, INTENT.CRISIS);
+    assert.ok(/988/.test(crisis.text));
+    assert.equal(crisis.state.pendingPrayerOffer, false);
   });
 }
 

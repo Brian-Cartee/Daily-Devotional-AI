@@ -120,13 +120,28 @@ const CLOSING_PATTERNS = [
   /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off)\b/,
 ];
 
-const PRAYER_PATTERNS = [
-  /\bpray(er|ing)?\b/,
-  /\bwould you pray\b/,
-  /\bsay a prayer\b/,
-  /\bpray (for|about|with) me\b/,
-  /\bpray (for|about)\b/,
+/**
+ * Explicit prayer *requests* / openings — not mere descriptive mentions.
+ * "I pray every morning" must NOT become INTENT.PRAYER.
+ */
+const PRAYER_REQUEST_PATTERNS = [
+  /\b(would|could|can) you (please )?pray\b/,
+  /\b(will|would) you (please )?pray\b/,
+  /\bpray (for|with|about) (me|us|my)\b/,
+  /\bplease pray\b/,
+  /\bi need (you to )?pray\b/,
+  /\bi need prayer\b/,
+  /\b(can|could|shall|should) we pray\b/,
+  /\blet'?s pray\b/,
+  /\bwant( you)? to pray\b/,
+  /\bdon'?t know how to pray\b/,
+  /\bsay a prayer (for|with|about)\b/,
+  /\bpray for me\b/,
+  /\bwould you like to pray\b/,
 ];
+
+/** Legacy alias kept for tests/importers that still reference PRAYER_PATTERNS. */
+const PRAYER_PATTERNS = PRAYER_REQUEST_PATTERNS;
 
 const SCRIPTURE_PATTERNS = [
   /\b(scripture|bible|verse|passage)\b/,
@@ -134,22 +149,43 @@ const SCRIPTURE_PATTERNS = [
   /\bwhat does the bible say\b/,
 ];
 
+/**
+ * Personal / relational spiritual openings. Bare "faith" / "church" alone are
+ * NOT included — product/work phrases must not force a spiritual lane.
+ */
+const SPIRITUAL_PERSONAL_PATTERNS = [
+  /\bmy faith\b/,
+  /\blosing (my )?faith\b/,
+  /\bfaith (has been|is) (struggling|weak|shaken|hard)\b/,
+  /\b(struggling|struggle) with (my )?faith\b/,
+  /\brelationship with god\b/,
+  /\bfar from god\b/,
+  /\bhow can i trust god\b/,
+  /\btrust god (right now|again|anymore)?\b/,
+  /\bwhat does jesus want\b/,
+  /\btalk about (my )?(faith|relationship with god)\b/,
+  /\bcould we talk about (my )?(faith|god|jesus)\b/,
+  /\bi'?m (so )?(angry|mad|furious) (at|with) god\b/,
+];
+
 const SPIRITUAL_PATTERNS = [
   /\bgod\b/,
   /\bjesus\b/,
   /\bchrist\b/,
-  /\bfaith\b/,
-  /\bchurch\b/,
   /\b(sin|sinful)\b/,
   /\bforgive(ness)?\b/,
   /\bheaven\b/,
   /\bholy spirit\b/,
   /\bsalvation\b/,
   /\bsaved\b/,
-  /\bblessed\b/,
   /\bpurpose god\b/,
   /\bspiritual/,
+  ...SPIRITUAL_PERSONAL_PATTERNS,
 ];
+
+/** Product / work / build language around faith/church/Christian — not a faith ask. */
+const PRODUCT_FAITH_CONTEXT =
+  /\b(faith|christian|church)\b[\s\S]{0,48}\b(app|software|product|platform|implement(?:ation)?|code|coding|bug|technical|saas|startup|build(?:ing)?|develop(?:ing|ment)?|test(?:ing)?|feature|release|deploy)\b|\b(app|software|product|platform|implement(?:ation)?|code|coding|bug|technical|saas|startup|build(?:ing)?|develop(?:ing|ment)?|test(?:ing)?|feature|release|deploy)\b[\s\S]{0,48}\b(faith|christian|church)\b|\bfaith[-\s]?based (app|product|software|business)\b|\b(church|christian) app\b|\bfaith community\b[\s\S]{0,40}\b(software|app|product|code)\b/;
 
 const GRATITUDE_PATTERNS = [
   /\bthank(s| you)?\b/,
@@ -178,6 +214,7 @@ const EMOTIONAL_PATTERNS = [
   /\bstruggl/, /\bhard time\b/, /\bcry(ing)?\b/,
   /\bhurt(ing)?\b/, /\bbroken\b/, /\bnumb\b/,
   /\bstressed\b/, /\bworried\b/, /\bcan'?t sleep\b/,
+  /\brough (day|night|week|morning)\b/,
 ];
 
 const PRACTICAL_PATTERNS = [
@@ -357,6 +394,89 @@ export function detectPersonalMeaning(text) {
   return matchesAny(norm(text), MEANING_MARKERS);
 }
 
+/** True when faith/church vocabulary is describing product/work, not a spiritual ask. */
+export function isProductOrWorkFaithContext(rawText) {
+  return PRODUCT_FAITH_CONTEXT.test(norm(rawText));
+}
+
+/** True when the person opened a personal faith struggle or God-relationship topic. */
+export function isPersonalSpiritualOpening(rawText) {
+  return matchesAny(norm(rawText), SPIRITUAL_PERSONAL_PATTERNS);
+}
+
+/**
+ * Whether Philip's reply is an explicit offer for Philip to pray (sets pending).
+ * Descriptive talk about prayer does not count.
+ */
+export function detectPrayerOfferInReply(rawText) {
+  const t = norm(rawText);
+  if (!t) return false;
+  return (
+    /\bwould you (like to )?pray\b/.test(t) ||
+    /\bwant (me )?to pray\b/.test(t) ||
+    /\b(shall|can|could) we pray\b/.test(t) ||
+    /\bpray (together|with you) now\b/.test(t) ||
+    /\bdo you want (me )?to pray\b/.test(t) ||
+    /\blike me to pray\b/.test(t) ||
+    /\bwould you like me to pray\b/.test(t) ||
+    /\bwant to pray now,? or\b/.test(t) ||
+    /\bdo you want to pray now\b/.test(t)
+  );
+}
+
+const PRAYER_AFFIRM_RE =
+  /^\s*(yes|yeah|yep|yup|ya|please|sure|okay|ok|absolutely|definitely|please do|i would|i'?d (like that|love that)|that would be (nice|great|wonderful|good)|go ahead|yes please|mmhmm|mhmm)\b[\s.!,]*$/i;
+
+const PRAYER_DECLINE_RE =
+  /^\s*(no|nope|nah|not right now|maybe later|i'?d rather not|don'?t|do not|not now|not today)\b/i;
+
+/**
+ * Classify a user reply while a prayer offer is pending.
+ * @returns {"accept"|"decline"|"ambiguous"|"other"}
+ */
+export function classifyPendingPrayerReply(rawText) {
+  const t = String(rawText || "").trim();
+  if (!t) return "ambiguous";
+  const n = norm(t);
+  if (PRAYER_AFFIRM_RE.test(t) || (/^(yes|yeah|yep|yup)\b/.test(n) && !/\b(no|not)\b/.test(n) && wordCount(n) <= 6)) {
+    return "accept";
+  }
+  if (PRAYER_DECLINE_RE.test(t)) return "decline";
+  if (wordCount(n) <= 4) return "ambiguous";
+  return "other";
+}
+
+/** Room loop / VAD: true when a very short yes/no answer should be allowed through. */
+export function awaitingConstrainedShortAnswer(state) {
+  return Boolean(state?.pendingPrayerOffer);
+}
+
+/**
+ * First-turn recovery: garbled / tiny STT must not become emotional intake.
+ * @returns {false|"unclear"|"philip_name"}
+ */
+export function classifyOpeningRepair(rawText, state) {
+  if ((state?.turnCount ?? 0) > 0 || (state?.history?.length ?? 0) > 0) return false;
+  const t = norm(rawText);
+  if (!t) return "unclear";
+  if (matchesAny(t, CRISIS_PATTERNS)) return false;
+  if (matchesAny(t, CLOSING_PATTERNS)) return false;
+  if (matchesAny(t, GREETING_PATTERNS)) return false;
+  if (matchesAny(t, EMOTIONAL_PATTERNS)) return false;
+  if (matchesAny(t, PRACTICAL_PATTERNS)) return false;
+  if (matchesAny(t, PRAYER_REQUEST_PATTERNS)) return false;
+  if (matchesAny(t, SCRIPTURE_PATTERNS)) return false;
+  if (/\brough (day|night|week|morning)\b/.test(t)) return false;
+  if (/^(philip|phillip|fillip|fill[\s-]?up)\.?$/i.test(String(rawText || "").trim())) {
+    return "philip_name";
+  }
+  const words = wordCount(t);
+  if (words >= 4) return false;
+  if (matchesAny(t, CASUAL_PATTERNS) && words >= 2) return false;
+  if (words <= 2) return "unclear";
+  return false;
+}
+
 /**
  * Classify the user's conversational intent.
  * Precedence is deliberate: safety first, then explicit acts (goodbye, prayer,
@@ -379,7 +499,8 @@ export function classifyIntent(rawText, state) {
     return INTENT.CLOSING;
   }
 
-  if (matchesAny(text, PRAYER_PATTERNS)) return INTENT.PRAYER;
+  // Explicit prayer request/opening only — descriptive prayer habits stay elsewhere.
+  if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return INTENT.PRAYER;
   if (matchesAny(text, SCRIPTURE_PATTERNS)) return INTENT.SCRIPTURE;
 
   // Greeting wins for a genuine opening ("hey philip, how are you?") — but not if
@@ -390,7 +511,11 @@ export function classifyIntent(rawText, state) {
     return INTENT.GREETING;
   }
 
-  if (matchesAny(text, SPIRITUAL_PATTERNS)) return INTENT.SPIRITUAL;
+  const productFaith = isProductOrWorkFaithContext(text);
+  const personalSpiritual = isPersonalSpiritualOpening(text);
+  if (personalSpiritual) return INTENT.SPIRITUAL;
+  if (!productFaith && matchesAny(text, SPIRITUAL_PATTERNS)) return INTENT.SPIRITUAL;
+
   if (matchesAny(text, GRATITUDE_PATTERNS) && !matchesAny(text, EMOTIONAL_PATTERNS)) {
     return INTENT.GRATITUDE;
   }
@@ -461,12 +586,33 @@ export function createFrontDoorState(firstName = "") {
     sentOff: false,
     reopened: false,
     faithOffered: false,
+    pendingPrayerOffer: false,
+    prayerContext: "",
+    prayerOfferedAtTurn: null,
+    prayerCompleted: false,
     lastIntent: null,
     lastConduct: null,
     abuseCount: 0,
     lastNameTurn: -99,
     personalMeaningSeen: false,
     history: [], // [{ role: "user"|"assistant", content }]
+  };
+}
+
+/** Normalize state loaded from JSON so new prayer fields always exist. */
+export function hydrateFrontDoorState(raw, firstName = "") {
+  const base = createFrontDoorState(firstName || raw?.firstName || "");
+  if (!raw || typeof raw !== "object") return base;
+  return {
+    ...base,
+    ...raw,
+    firstName: cleanFirstName(raw.firstName || firstName || base.firstName),
+    pendingPrayerOffer: Boolean(raw.pendingPrayerOffer),
+    prayerContext: String(raw.prayerContext || "").slice(0, 240),
+    prayerOfferedAtTurn:
+      raw.prayerOfferedAtTurn == null ? null : Number(raw.prayerOfferedAtTurn),
+    prayerCompleted: Boolean(raw.prayerCompleted),
+    history: Array.isArray(raw.history) ? raw.history : [],
   };
 }
 
@@ -630,6 +776,60 @@ function reopenPrefix(state) {
     : "";
 }
 
+function derivePrayerContext(state, transcript) {
+  const recentUser = [...(state.history || [])]
+    .reverse()
+    .find((h) => h.role === "user" && String(h.content || "").trim().length > 8);
+  const seed = String(recentUser?.content || transcript || "").trim().replace(/\s+/g, " ");
+  if (!seed) return "what you've been carrying";
+  return seed.length > 120 ? `${seed.slice(0, 117)}...` : seed;
+}
+
+export function composeAcceptedPrayer({ state }) {
+  const subject = String(state.prayerContext || "what you've been carrying").trim();
+  const text =
+    `I'd be honored. Let's pray. Father, thank You for being near — please meet this person in ${subject}. ` +
+    `Give clarity, strength, and Your peace. Amen. I'm right here with you.`;
+  return { text, engine: "front_door", intent: INTENT.PRAYER, lane: "prayer_accepted" };
+}
+
+export function composePrayerDecline({ state }) {
+  const name = maybeName(state);
+  const text = name
+    ? `Of course, ${name}. We can just keep talking — I'm glad to stay with you.`
+    : `Of course. We can just keep talking — I'm glad to stay with you.`;
+  return { text, engine: "front_door", intent: INTENT.CASUAL, lane: "prayer_declined" };
+}
+
+export function composePrayerClarify() {
+  return {
+    text: `Just so I'm with you — would you like me to pray with you now?`,
+    engine: "front_door",
+    intent: INTENT.PRAYER,
+    lane: "prayer_clarify",
+  };
+}
+
+export function composeOpeningRepair(kind, state) {
+  if (kind === "philip_name") {
+    const name = maybeName(state, { force: true });
+    return {
+      text: name
+        ? `Hey ${name} — I'm right here with you. How are you doing?`
+        : `Hey — I'm right here with you. How are you doing?`,
+      engine: "front_door",
+      intent: INTENT.GREETING,
+      lane: "opening_repair",
+    };
+  }
+  return {
+    text: `Hey—I'm here. I may not have caught that. What did you say?`,
+    engine: "front_door",
+    intent: INTENT.CASUAL,
+    lane: "opening_repair",
+  };
+}
+
 /**
  * Compose a response for the non-deep intents entirely in-process (deterministic).
  * Returns null for intents that should be handled by the deep brain.
@@ -759,7 +959,20 @@ export function faithInvitation(state) {
  * Advance conversation state after a turn.
  * @param {ReturnType<typeof createFrontDoorState>} state
  */
-function advanceState(state, { intent, conduct, transcript, replyText, personalMeaning, reopened, faithOffered, usedName }) {
+function advanceState(state, {
+  intent,
+  conduct,
+  transcript,
+  replyText,
+  personalMeaning,
+  reopened,
+  faithOffered,
+  usedName,
+  pendingPrayerOffer,
+  prayerContext,
+  prayerOfferedAtTurn,
+  prayerCompleted,
+}) {
   const next = { ...state, history: [...state.history] };
   next.turnCount = state.turnCount + 1;
   next.lastIntent = intent;
@@ -772,6 +985,12 @@ function advanceState(state, { intent, conduct, transcript, replyText, personalM
   if (personalMeaning) next.personalMeaningSeen = true;
   if (faithOffered) next.faithOffered = true;
   if (usedName) next.lastNameTurn = next.turnCount;
+
+  if (typeof pendingPrayerOffer === "boolean") next.pendingPrayerOffer = pendingPrayerOffer;
+  if (prayerContext != null) next.prayerContext = String(prayerContext).slice(0, 240);
+  if (prayerOfferedAtTurn !== undefined) next.prayerOfferedAtTurn = prayerOfferedAtTurn;
+  if (typeof prayerCompleted === "boolean") next.prayerCompleted = prayerCompleted;
+
   // Closing / re-entry semantics: goodbye latches sentOff; substantive re-entry clears it.
   if (intent === INTENT.CLOSING) {
     next.sentOff = true;
@@ -781,6 +1000,10 @@ function advanceState(state, { intent, conduct, transcript, replyText, personalM
     next.reopened = true;
   } else {
     next.reopened = false;
+  }
+  // Crisis clears pending prayer — safety first.
+  if (intent === INTENT.CRISIS) {
+    next.pendingPrayerOffer = false;
   }
   return next;
 }
@@ -797,10 +1020,187 @@ function advanceState(state, { intent, conduct, transcript, replyText, personalM
  * @returns {Promise<{ text: string; intent: string; lane: string; engine: string|null; reopened: boolean; personalMeaning: boolean; faithOffered: boolean; state: object; meta: object }>}
  */
 export async function runFrontDoorTurn(input) {
-  const state = input.state
-    ? { ...input.state, firstName: input.state.firstName || cleanFirstName(input.firstName) }
-    : createFrontDoorState(input.firstName);
+  const state = hydrateFrontDoorState(
+    input.state
+      ? { ...input.state, firstName: input.state.firstName || cleanFirstName(input.firstName) }
+      : null,
+    input.firstName,
+  );
   const transcript = String(input.transcript || "").trim();
+
+  // Crisis always wins over pending prayer.
+  const crisisFirst = matchesAny(norm(transcript), CRISIS_PATTERNS);
+
+  // --- Pending prayer contract: Philip owns the next action after an explicit offer ---
+  if (state.pendingPrayerOffer && !crisisFirst) {
+    const decision = classifyPendingPrayerReply(transcript);
+    if (decision === "accept") {
+      const composed = composeAcceptedPrayer({ state });
+      const nextState = advanceState(state, {
+        intent: INTENT.PRAYER,
+        conduct: null,
+        transcript,
+        replyText: composed.text,
+        personalMeaning: false,
+        reopened: false,
+        faithOffered: false,
+        usedName: false,
+        pendingPrayerOffer: false,
+        prayerCompleted: true,
+        prayerOfferedAtTurn: state.prayerOfferedAtTurn,
+        prayerContext: state.prayerContext,
+      });
+      return {
+        text: composed.text,
+        intent: INTENT.PRAYER,
+        conduct: null,
+        lane: composed.lane,
+        engine: composed.engine,
+        reopened: false,
+        personalMeaning: false,
+        faithOffered: false,
+        state: nextState,
+        meta: {
+          sentenceCount: sentenceCount(composed.text),
+          usedName: false,
+          sentOff: false,
+          turnCount: nextState.turnCount,
+          offeredFaith: false,
+          conduct: null,
+          abuseCount: nextState.abuseCount,
+          pendingPrayerOffer: false,
+          prayerDecision: "accept",
+          openingRepair: false,
+        },
+      };
+    }
+    if (decision === "decline") {
+      const composed = composePrayerDecline({ state });
+      const nextState = advanceState(state, {
+        intent: INTENT.CASUAL,
+        conduct: null,
+        transcript,
+        replyText: composed.text,
+        personalMeaning: false,
+        reopened: false,
+        faithOffered: false,
+        usedName: Boolean(state.firstName) && new RegExp(`\\b${state.firstName}\\b`).test(composed.text),
+        pendingPrayerOffer: false,
+        prayerCompleted: false,
+        prayerOfferedAtTurn: null,
+        prayerContext: "",
+      });
+      return {
+        text: composed.text,
+        intent: INTENT.CASUAL,
+        conduct: null,
+        lane: composed.lane,
+        engine: composed.engine,
+        reopened: false,
+        personalMeaning: false,
+        faithOffered: false,
+        state: nextState,
+        meta: {
+          sentenceCount: sentenceCount(composed.text),
+          usedName: nextState.lastNameTurn === nextState.turnCount,
+          sentOff: false,
+          turnCount: nextState.turnCount,
+          offeredFaith: false,
+          conduct: null,
+          abuseCount: nextState.abuseCount,
+          pendingPrayerOffer: false,
+          prayerDecision: "decline",
+          openingRepair: false,
+        },
+      };
+    }
+    if (decision === "ambiguous") {
+      const composed = composePrayerClarify();
+      const nextState = advanceState(state, {
+        intent: INTENT.PRAYER,
+        conduct: null,
+        transcript,
+        replyText: composed.text,
+        personalMeaning: false,
+        reopened: false,
+        faithOffered: false,
+        usedName: false,
+        pendingPrayerOffer: true,
+        prayerCompleted: false,
+        prayerOfferedAtTurn: state.prayerOfferedAtTurn ?? state.turnCount,
+        prayerContext: state.prayerContext,
+      });
+      return {
+        text: composed.text,
+        intent: INTENT.PRAYER,
+        conduct: null,
+        lane: composed.lane,
+        engine: composed.engine,
+        reopened: false,
+        personalMeaning: false,
+        faithOffered: false,
+        state: nextState,
+        meta: {
+          sentenceCount: sentenceCount(composed.text),
+          usedName: false,
+          sentOff: false,
+          turnCount: nextState.turnCount,
+          offeredFaith: false,
+          conduct: null,
+          abuseCount: nextState.abuseCount,
+          pendingPrayerOffer: true,
+          prayerDecision: "ambiguous",
+          openingRepair: false,
+        },
+      };
+    }
+    // "other"/substantive: clear pending and fall through to normal classification.
+    state.pendingPrayerOffer = false;
+    state.prayerOfferedAtTurn = null;
+  }
+
+  // First-turn unclear STT recovery — before casual intake templates.
+  const openingRepair = classifyOpeningRepair(transcript, state);
+  if (openingRepair) {
+    const composed = composeOpeningRepair(openingRepair, state);
+    const nextState = advanceState(state, {
+      intent: composed.intent,
+      conduct: null,
+      transcript,
+      replyText: composed.text,
+      personalMeaning: false,
+      reopened: false,
+      faithOffered: false,
+      usedName: Boolean(state.firstName) && new RegExp(`\\b${state.firstName}\\b`).test(composed.text),
+      pendingPrayerOffer: false,
+      prayerCompleted: state.prayerCompleted,
+      prayerOfferedAtTurn: state.prayerOfferedAtTurn,
+      prayerContext: state.prayerContext,
+    });
+    return {
+      text: composed.text,
+      intent: composed.intent,
+      conduct: null,
+      lane: composed.lane,
+      engine: composed.engine,
+      reopened: false,
+      personalMeaning: false,
+      faithOffered: false,
+      state: nextState,
+      meta: {
+        sentenceCount: sentenceCount(composed.text),
+        usedName: nextState.lastNameTurn === nextState.turnCount,
+        sentOff: false,
+        turnCount: nextState.turnCount,
+        offeredFaith: false,
+        conduct: null,
+        abuseCount: nextState.abuseCount,
+        pendingPrayerOffer: false,
+        prayerDecision: null,
+        openingRepair,
+      },
+    };
+  }
 
   const intent = classifyIntent(transcript, state);
   // Crisis (self-harm) always wins and stays on the crisis protocol; conduct is
@@ -876,6 +1276,18 @@ export async function runFrontDoorTurn(input) {
 
   const usedName = Boolean(state.firstName) && new RegExp(`\\b${state.firstName}\\b`).test(text);
 
+  // Pending prayer only when Philip explicitly asks whether *he* should pray.
+  let pendingPrayerOffer = false;
+  let prayerContext = state.prayerContext || "";
+  let prayerOfferedAtTurn = state.prayerOfferedAtTurn;
+  let prayerCompleted = state.prayerCompleted;
+  if (detectPrayerOfferInReply(text) && intent !== INTENT.CRISIS) {
+    pendingPrayerOffer = true;
+    prayerContext = derivePrayerContext(state, transcript);
+    prayerOfferedAtTurn = state.turnCount + 1;
+    prayerCompleted = false;
+  }
+
   const nextState = advanceState(state, {
     intent,
     conduct,
@@ -885,6 +1297,10 @@ export async function runFrontDoorTurn(input) {
     reopened,
     faithOffered: offerFaith,
     usedName,
+    pendingPrayerOffer,
+    prayerContext,
+    prayerOfferedAtTurn,
+    prayerCompleted,
   });
 
   const lane = conduct
@@ -913,6 +1329,9 @@ export async function runFrontDoorTurn(input) {
       offeredFaith: offerFaith,
       conduct: conduct ?? null,
       abuseCount: nextState.abuseCount,
+      pendingPrayerOffer: nextState.pendingPrayerOffer,
+      prayerDecision: null,
+      openingRepair: false,
     },
   };
 }

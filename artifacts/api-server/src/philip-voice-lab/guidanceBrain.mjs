@@ -110,7 +110,11 @@ function guidanceInstruction({ intent, reopened, offerFaith, conduct }) {
   } else if (intent === INTENT.SPIRITUAL) {
     lines.push("They opened a question of faith. Engage it honestly and clearly, grounded in Christ.");
   } else if (intent === INTENT.PRAYER) {
-    lines.push("They mentioned prayer. Offer to pray with them; if they clearly want it now, pray briefly and sincerely.");
+    lines.push(
+      "They explicitly asked for prayer or opened a prayer request. Offer to pray with them; " +
+        "if they clearly want it now, pray briefly and sincerely. Do not treat a mere descriptive " +
+        "mention of someone else's prayer habit as a request.",
+    );
   } else if (intent === INTENT.SCRIPTURE) {
     lines.push("They asked about Scripture. Bring a fitting passage naturally and briefly, then stay with them.");
   }
