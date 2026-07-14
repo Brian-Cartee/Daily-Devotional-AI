@@ -38,6 +38,8 @@ import {
   detectGenericPraiseRisk,
   softenGenericPraiseOpening,
   shouldPreferStatementReply,
+  stripTrailingQuestion,
+  replyEndsWithQuestion,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
 import {
   PHILIP_VOICE_GENOME_VERSION,
@@ -1263,12 +1265,93 @@ check("closing helper: gratitude alone is not closing", () => {
     assert.ok(!/^\s*go ahead/i.test(results[8].text), results[8].text);
   });
 
-  check("f02325a5 T11 fragment repair does not invent continuity", () => {
-    assert.equal(isLikelyFragmentTranscript(SESSION[10], { turnCount: 10 }), true);
-    assert.equal(results[10].lane, "fragment_repair");
-    assert.equal(results[10].meta.fragmentRepair, true);
-    assert.ok(/caught|missed|say that|what were you saying/i.test(results[10].text), results[10].text);
-    assert.ok(!/unique|mission|voice app/i.test(results[10].text), results[10].text);
+  check("f02325a5 T11 spoken conjunction/clipped ramble is NOT false fragment repair", () => {
+    // Leading "of" alone must never decide; this turn contains a usable later clause.
+    assert.equal(isLikelyFragmentTranscript(SESSION[10], { turnCount: 10 }), false);
+    assert.notEqual(results[10].lane, "fragment_repair");
+    assert.equal(results[10].meta.fragmentRepair, false);
+  });
+
+  check("fragment false-positive negatives stay ordinary speech", () => {
+    const mid = { turnCount: 4 };
+    const keep = [
+      "But I don't agree with that.",
+      "So that's what I'm thinking.",
+      "And then I went to the gym.",
+      "But my mother comes first.",
+      "So what should I do?",
+      "And prayer helps me focus.",
+      "Of course.",
+      "Of the two options, I prefer the first.",
+      "But yes, I would like you to pray.",
+      "So that was actually a good thing.",
+      "And I think the voice is the most important part.",
+    ];
+    for (const t of keep) {
+      assert.equal(isLikelyFragmentTranscript(t, mid), false, t);
+    }
+    // High-confidence dangling stub still detected (no usable clause).
+    assert.equal(isLikelyFragmentTranscript("of the points to have", mid), true);
+  });
+
+  check("output transforms stay well-formed", () => {
+    assert.equal(stripTrailingQuestion("What's on your mind?"), "I'm with you — say more about that whenever you're ready.");
+    assert.equal(
+      stripTrailingQuestion("Progress is real. What's next?"),
+      "Progress is real.",
+    );
+    assert.equal(
+      stripTrailingQuestion("One move for today. Protect the job search. What else matters?"),
+      "One move for today. Protect the job search.",
+    );
+    const praise = softenGenericPraiseOpening(
+      "That's wonderful. Committing this to Christ is the center.",
+      "lead people to Christ",
+    );
+    assert.equal(praise.changed, true);
+    assert.ok(!/wonderful/i.test(praise.text), praise.text);
+    assert.ok(/Committing this to Christ is the center\./i.test(praise.text), praise.text);
+    assert.ok(!/  /.test(praise.text), praise.text);
+    assert.ok(/^[A-Z]/.test(praise.text), praise.text);
+    const greatQ = softenGenericPraiseOpening(
+      "That's a great question. Start with the one thing that can't wait.",
+      "what should I do",
+    );
+    assert.equal(greatQ.changed, true);
+    assert.ok(!/great question/i.test(greatQ.text), greatQ.text);
+    assert.ok(/Start with the one thing that can't wait\./i.test(greatQ.text), greatQ.text);
+    assert.equal(
+      scrubReopenOpener("Absolutely, go ahead. Focus on the voice piece tomorrow."),
+      "Focus on the voice piece tomorrow.",
+    );
+    assert.equal(scrubReopenOpener("Absolutely, go ahead."), "");
+    // Closings keep no-question form.
+    assert.equal(
+      stripTrailingQuestion("I'd like that. I'll be here whenever you're ready."),
+      "I'd like that. I'll be here whenever you're ready.",
+    );
+    // Crisis/prayer clarifications must never be cadence-stripped.
+    assert.equal(
+      shouldPreferStatementReply({ consecutiveAssistantQuestions: 2 }, { intent: INTENT.PRAYER }),
+      false,
+    );
+    assert.equal(
+      shouldPreferStatementReply({ consecutiveAssistantQuestions: 2 }, { intent: INTENT.CRISIS }),
+      false,
+    );
+    // Gate ensures cadence strip never runs for PRAYER/CRISIS (clarifying ? stays).
+    const prayerAsk = "Just so I'm with you — would you like me to pray with you now?";
+    const crisisAsk = "Are you thinking about hurting yourself?";
+    assert.equal(replyEndsWithQuestion(prayerAsk), true);
+    assert.equal(replyEndsWithQuestion(crisisAsk), true);
+    assert.equal(
+      shouldPreferStatementReply({ consecutiveAssistantQuestions: 5 }, { intent: INTENT.PRAYER }),
+      false,
+    );
+    assert.equal(
+      shouldPreferStatementReply({ consecutiveAssistantQuestions: 5 }, { intent: INTENT.CRISIS }),
+      false,
+    );
   });
 
   check("genome discourages praise and cadence interview behavior", () => {

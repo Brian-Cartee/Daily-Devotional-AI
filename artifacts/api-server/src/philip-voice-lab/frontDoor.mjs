@@ -1227,34 +1227,43 @@ export function scrubReopenOpener(rawText) {
   text = text.replace(/^\s*absolutely[,.]?\s*go ahead[.!]?\s*/i, "");
   text = text.replace(/^\s*go ahead[.!]?\s*/i, "");
   text = text.replace(/^\s*absolutely[,.]?\s+/i, "");
-  return text.trim();
+  text = text.replace(/\s+/g, " ").trim();
+  // If scrub removed everything, leave empty for caller to add a natural reopen prefix.
+  if (!text) return "";
+  if (/^[a-z]/.test(text)) text = text.charAt(0).toUpperCase() + text.slice(1);
+  return text;
 }
 
 const GENERIC_PRAISE_OPENER =
-  /^(that'?s (wonderful|beautiful|great|fantastic|impressive)|it'?s (wonderful|beautiful)|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting)\b/i;
+  /^(that'?s (a )?(wonderful|beautiful|great|fantastic|impressive)( question)?|it'?s (wonderful|beautiful)|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting)\b/i;
 
 export function detectGenericPraiseRisk(rawText) {
   const t = String(rawText || "").trim();
   if (!t) return false;
   if (GENERIC_PRAISE_OPENER.test(t)) return true;
-  return /\b(that'?s (wonderful|beautiful|fantastic|a great approach|impressive)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach)\b/i.test(
+  return /\b(that'?s (a )?(wonderful|beautiful|fantastic|great (question|approach)|impressive)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach)\b/i.test(
     t,
   );
 }
 
 /**
  * Zero-cost soft rewrite of a praise-led opening — no paid retry.
- * Keeps remainder of the reply when possible.
+ * Keeps remainder of the reply when possible; never leaves a bare fragment.
  */
 export function softenGenericPraiseOpening(rawText, transcript) {
   const text = String(rawText || "").trim();
   if (!detectGenericPraiseRisk(text)) return { text, changed: false };
   const cue = extractConcreteCue(transcript) || "that";
-  const rest = text
-    .replace(/^[^.!?]+[.!?]\s*/, "")
-    .trim();
   const lead = `I'm with you on ${cue}.`;
-  const next = rest && !detectGenericPraiseRisk(rest) ? `${lead} ${rest}` : lead;
+  // Split on first terminal punctuation; keep only well-formed remainder.
+  const m = text.match(/^[\s\S]+?[.!](?:\s+|$)([\s\S]*)$/);
+  let rest = m ? String(m[1] || "").trim() : "";
+  // If the praise line had no terminal punct, do not keep a clipped remainder.
+  if (!m) rest = "";
+  if (rest && detectGenericPraiseRisk(rest)) rest = "";
+  if (rest && /^[a-z]/.test(rest)) rest = rest.charAt(0).toUpperCase() + rest.slice(1);
+  if (rest && !/[.!?]$/.test(rest)) rest = `${rest}.`;
+  const next = rest ? `${lead} ${rest}` : lead;
   return { text: next.replace(/\s+/g, " ").trim(), changed: true };
 }
 
@@ -1263,8 +1272,41 @@ export function replyEndsWithQuestion(rawText) {
 }
 
 /**
- * Conservative mid-conversation fragment heuristic.
- * Prefer inviting a repeat over inventing continuity.
+ * True when the transcript contains at least one usable clause
+ * (subject + finite verb, named agent + verb, or a clear question).
+ * Leading and/but/so/of alone NEVER marks a fragment.
+ */
+function hasUsableSpokenClause(rawText) {
+  const original = String(rawText || "").trim();
+  const t = norm(original);
+  if (!t) return false;
+  if (/\?/.test(original)) return true;
+  // Pronoun/demonstrative subject + finite verb (not bare infinitive "to have").
+  if (
+    /\b(i|we|you|he|she|they|it|this|that)\b(?!\s+to\b)[^.?]{0,48}\b(am|is|are|was|were|'m|'s|'re|do|does|did|have|has|had|will|would|can|could|should|might|think|know|want|need|feel|went|go|goes|came|come|prefer|agree|like|love|hate|help|helps|helped|pray|prayed|focus|focused|matter|matters|come|comes)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  // Possessive NP subject + finite verb ("my mother comes first", "prayer helps me").
+  if (
+    /\b((my|our|your|his|her|their)\s+\w+|(prayer|faith|work|app|voice|mother|father|god))\b[^.?]{0,24}\b(is|are|was|were|do|does|did|comes?|came|helps?|helped|matters?|worked|works|feels?|felt)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  // "Of the two options, I prefer…" / "Of course…" are complete.
+  if (/^of course\b/i.test(t)) return true;
+  if (/^of the (two|three|four|\d+)\b/i.test(t) && /\b(i|we|you)\b/i.test(t)) return true;
+  return false;
+}
+
+/**
+ * High-confidence mid-conversation fragment only.
+ * Natural spoken conjunctions (and/but/so) are never enough by themselves.
+ * Prefer false negatives over false clarifications.
  */
 export function isLikelyFragmentTranscript(rawText, state) {
   if ((state?.turnCount ?? 0) < 1) return false;
@@ -1272,19 +1314,34 @@ export function isLikelyFragmentTranscript(rawText, state) {
   if (!original) return false;
   const t = norm(original);
   const words = wordCount(t);
-  if (words < 3 || words > 14) return false;
+  if (words < 3 || words > 12) return false;
+
+  // Never interrupt safety, farewells, greetings, asks, or reciprocal small talk.
   if (matchesAny(t, CRISIS_PATTERNS)) return false;
   if (isClosingTurn(t)) return false;
   if (matchesAny(t, GREETING_PATTERNS)) return false;
   if (matchesAny(t, PRAYER_REQUEST_PATTERNS)) return false;
   if (matchesAny(t, PRACTICAL_PATTERNS)) return false;
+  if (matchesAny(t, SCRIPTURE_REQUEST_PATTERNS)) return false;
   if (isHybridGreetingReciprocal(t) || isReciprocalSmallTalk(t)) return false;
-  // Clear sentence with capital start and terminal punct is usually fine.
-  if (/^[A-Z]/.test(original) && /[.!?]$/.test(original) && words >= 6) return false;
-  // Mid-thought openers / dangling clause feel.
-  if (/^(of|and|but|so|because|which|that|just|like|the)\b/i.test(original)) return true;
-  if (!/\b(i|we|you|my|our|it|this|that)\b/i.test(original) && words <= 8) return true;
-  return false;
+  if (/^of course\b/i.test(t)) return false;
+
+  // Any usable spoken clause / question → treat as real speech.
+  if (hasUsableSpokenClause(original)) return false;
+
+  // Capitalized sentence with terminal punct and enough words is usable.
+  if (/^[A-Z]/.test(original) && /[.!?]$/.test(original) && words >= 5) return false;
+
+  // High-confidence dangling only: lowercase start, no recoverable clause.
+  // Typical clipped STT: "of the points to have" (prepositional stub, no matrix clause).
+  if (!/^[a-z]/.test(original)) return false;
+  const startsDanglingPrepOrStub =
+    /^(of|the|a|an|to|for|with|without|from|into|onto)\b/i.test(original);
+  if (!startsDanglingPrepOrStub) return false;
+  // Require the stub not to recover into a later usable clause after a comma.
+  const afterComma = original.split(",").slice(1).join(",").trim();
+  if (afterComma && hasUsableSpokenClause(afterComma)) return false;
+  return true;
 }
 
 export function composeFragmentRepair(state) {
@@ -1302,20 +1359,31 @@ export function composeFragmentRepair(state) {
  */
 export function shouldPreferStatementReply(state, { intent, conduct } = {}) {
   if (intent === INTENT.CRISIS) return false;
+  if (intent === INTENT.PRAYER) return false;
   if (conduct) return false;
   if (state?.pendingPrayerOffer) return false;
   return (state?.consecutiveAssistantQuestions ?? 0) >= 2;
 }
 
+/**
+ * Drop a trailing question for cadence — never leave a broken clause.
+ * Whole-reply questions become a short invitational statement, not "?"→".".
+ */
 export function stripTrailingQuestion(rawText) {
   let text = String(rawText || "").trim();
   if (!/\?\s*$/.test(text)) return text;
-  // Drop only the final interrogative sentence when multiple exist.
-  const parts = text.split(/(?<=[.!])\s+/);
+  // Prefer splitting on prior statement terminators (.!)
+  const parts = text.split(/(?<=[.!])\s+/).map((p) => p.trim()).filter(Boolean);
   if (parts.length > 1 && /\?\s*$/.test(parts[parts.length - 1])) {
-    return parts.slice(0, -1).join(" ").trim();
+    return parts.slice(0, -1).join(" ").replace(/\s+/g, " ").trim();
   }
-  return text.replace(/\?\s*$/, ".").trim();
+  // Entire reply was interrogative — do not emit an awkward declarative question shell.
+  const body = text.replace(/\?\s*$/, "").trim();
+  if (!body) return "I'm with you on that.";
+  if (/^(what|how|why|where|when|who|which|do|does|did|is|are|can|could|would|will|should)\b/i.test(body)) {
+    return "I'm with you — say more about that whenever you're ready.";
+  }
+  return `${body}.`.replace(/\s+/g, " ").trim();
 }
 
 function derivePrayerContext(state, transcript) {
@@ -1983,7 +2051,13 @@ export async function runFrontDoorTurn(input) {
   }
 
   // Question cadence: after two consecutive question-ending replies, contribute a statement.
-  if (preferStatement && replyEndsWithQuestion(text) && intent !== INTENT.CRISIS) {
+  // Never strip crisis/prayer clarification turns.
+  if (
+    preferStatement &&
+    replyEndsWithQuestion(text) &&
+    intent !== INTENT.CRISIS &&
+    intent !== INTENT.PRAYER
+  ) {
     text = stripTrailingQuestion(text);
     cadenceForcedStatement = true;
   }
