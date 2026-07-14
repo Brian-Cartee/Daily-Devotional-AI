@@ -44,6 +44,182 @@ export const DEEP_INTENTS = Object.freeze([
   INTENT.PRACTICAL,
 ]);
 
+/** Soft openers that must not swallow trailing substance. */
+const LEADING_SOFTENER =
+  /^\s*(thanks|thank you|thankyou|ok|okay|yeah|yep|yup|sure|got it|that helps|helpful|cool|great|awesome)([,.!]|\s)+/i;
+
+/** Cues that trailing text after a softener is real content, not mere ack. */
+const TRAILING_SUBSTANCE_CUES =
+  /\b(also|but|and|because|since|about|trying|decide|decid|worry|worried|mother|mom|dad|work|job|app|priorit|ask|should|want|need|helping|caring|exercise|world cup|direction|unsure|commit)\b|[?]/i;
+
+/** Ordinary-life substance — not word-count alone. */
+const MEANINGFUL_ORDINARY_CUES =
+  /\b(mother|mom|dad|father|wife|husband|kids?|family|job|jobs|work|career|office|boss|app|building|implement|priorit|decid|uncertain|unsure|direction|exercise|train(?:ing)?|workout|world cup|soccer|football|sport|hobby|relationship|caregiv|caring for|looking for (a )?job|interview|commit(?:ted|ment)?|competing|balance|balancing|plate|priorities|morning|routine|habit)\b/i;
+
+const CONVERSATIONAL_REPAIR =
+  /\b(i was saying|as i was saying|what i (?:was )?meant|going back to what i said|like i (?:was )?said)\b/i;
+
+/**
+ * If the turn starts with gratitude/ack softener but continues with real content,
+ * return the trailing substance for reclassification. Otherwise null.
+ */
+export function extractTrailingSubstance(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return null;
+  if (!LEADING_SOFTENER.test(original)) return null;
+  const rest = original.replace(LEADING_SOFTENER, "").trim();
+  if (!rest) return null;
+  if (/[?]/.test(rest)) return rest;
+  if (wordCount(rest) >= 5) return rest;
+  if (wordCount(rest) >= 3 && TRAILING_SUBSTANCE_CUES.test(rest)) return rest;
+  return null;
+}
+
+export function isConversationalRepair(rawText, state) {
+  const t = norm(rawText);
+  if (!CONVERSATIONAL_REPAIR.test(t)) return false;
+  if (wordCount(t) > 16) return false;
+  return (state?.history || []).some((h) => h.role === "user" && wordCount(h.content) >= 8);
+}
+
+/**
+ * Meaningful ordinary conversation should use the deep generator — not canned casual templates.
+ */
+export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
+  if ([INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent)) return false;
+  if (intent === INTENT.GRATITUDE) return false;
+  if (DEEP_INTENTS.includes(intent)) return true;
+  if (intent === INTENT.INFORMATIONAL) return true;
+  if (isConversationalRepair(rawText, state)) return true;
+  const t = norm(rawText);
+  if (!t) return false;
+  if (MEANINGFUL_ORDINARY_CUES.test(t)) return true;
+  if (/\?/.test(t) && wordCount(t) >= 4) return true;
+  // Multi-detail disclosure (clauses), not bare length.
+  const clauseHits = (t.match(/[,;]|\band\b|\bbut\b/g) || []).length;
+  if (clauseHits >= 2 && wordCount(t) >= 12) return true;
+  if (wordCount(t) >= 22) return true;
+  // Follow-up after a prior deep / meaningful assistant turn.
+  if (state?.lastIntent && DEEP_INTENTS.includes(state.lastIntent) && wordCount(t) >= 5) {
+    return true;
+  }
+  if (state?.personalMeaningSeen && intent === INTENT.CASUAL && wordCount(t) >= 6) return true;
+  return false;
+}
+
+/** Classify + multi-intent strip + deep-routing decision for one turn. */
+export function resolveFrontDoorClassification(rawText, state) {
+  const original = String(rawText || "").trim();
+  const trailing = extractTrailingSubstance(original);
+  const classifyText = trailing || original;
+  const multiIntent = Boolean(trailing);
+  const gratitudePreserved = multiIntent && /^\s*(thanks|thank you|thankyou)\b/i.test(original);
+  const intent = classifyIntent(classifyText, state);
+  const conversationalRepair = isConversationalRepair(original, state);
+  const ordinarySubstance =
+    (!DEEP_INTENTS.includes(intent) &&
+      (isMeaningfulOrdinaryTurn(classifyText, state, intent) ||
+        (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)))) ||
+    conversationalRepair;
+  const routeDeep =
+    ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
+    (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
+  return {
+    original,
+    classifyText,
+    intent,
+    multiIntent,
+    gratitudePreserved,
+    meaningfulOrdinary: Boolean(ordinarySubstance && routeDeep),
+    conversationalRepair,
+    routeDeep: Boolean(routeDeep),
+  };
+}
+
+export function lastAssistantText(state) {
+  const items = (state?.history || []).filter((h) => h.role === "assistant");
+  return items.length ? String(items[items.length - 1].content || "") : "";
+}
+
+export function recentAssistantTexts(state, n = 4) {
+  return (state?.history || [])
+    .filter((h) => h.role === "assistant")
+    .slice(-n)
+    .map((h) => String(h.content || "").trim())
+    .filter(Boolean);
+}
+
+function normalizeReplyForCompare(text) {
+  return norm(String(text || ""))
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Exact or near-exact repeat of a prior Philip reply (esp. canned casual acks). */
+export function isNearRepeat(candidate, previous) {
+  const a = normalizeReplyForCompare(candidate);
+  const b = normalizeReplyForCompare(previous);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length >= 24 && b.includes(a.slice(0, Math.min(48, a.length)))) return true;
+  if (b.length >= 24 && a.includes(b.slice(0, Math.min(48, b.length)))) return true;
+  const aOpen = a.split(" ").slice(0, 7).join(" ");
+  const bOpen = b.split(" ").slice(0, 7).join(" ");
+  if (aOpen.length >= 28 && aOpen === bOpen) return true;
+  // Known canned stub that must never loop.
+  if (/work being a lot is no small thing/.test(a) && /work being a lot is no small thing/.test(b)) {
+    return true;
+  }
+  return false;
+}
+
+function extractConcreteCue(rawText) {
+  const t = String(rawText || "");
+  const cues = [
+    [/\bmother\b|\bmom\b/i, "your mother"],
+    [/\bworld cup\b/i, "catching the World Cup"],
+    [/\bjob(s)?\b|\bsearching\b/i, "the job search"],
+    [/\bapp\b|\bimplement/i, "the app"],
+    [/\bexercise\b|\bworkout\b|\bin shape\b/i, "staying in shape"],
+    [/\bpriorit/i, "your priorities"],
+    [/\bdirection\b|\bunsure\b/i, "direction"],
+    [/\bcommit/i, "your commitment"],
+  ];
+  for (const [re, label] of cues) {
+    if (re.test(t)) return label;
+  }
+  return "";
+}
+
+/**
+ * Zero-cost context-aware repair when the generator (or a canned path) repeats itself.
+ * No paid retry.
+ */
+export function composeRepeatRepair({ transcript, state }) {
+  const priorUser = [...(state?.history || [])]
+    .reverse()
+    .find((h) => h.role === "user" && wordCount(h.content) >= 8);
+  const detail =
+    extractConcreteCue(transcript) ||
+    extractConcreteCue(priorUser?.content) ||
+    "what you just said";
+  const text = `I'm with you on ${detail} — go on from there; I don't want to cover the same ground twice.`;
+  return { text, engine: "front_door_repeat_repair" };
+}
+
+/** Compact recognition when conversational repair ("I was saying") has no deep result. */
+export function composeConversationalRepair({ state }) {
+  const priorUser = [...(state?.history || [])]
+    .reverse()
+    .find((h) => h.role === "user" && wordCount(h.content) >= 8);
+  const detail = extractConcreteCue(priorUser?.content) || "what you were telling me";
+  return {
+    text: `Go ahead — finish the thought about ${detail}. I'm listening.`,
+    engine: "front_door_context_repair",
+  };
+}
+
 /**
  * Grace-with-boundaries conduct categories.
  *
@@ -516,8 +692,18 @@ export function classifyIntent(rawText, state) {
   if (personalSpiritual) return INTENT.SPIRITUAL;
   if (!productFaith && matchesAny(text, SPIRITUAL_PATTERNS)) return INTENT.SPIRITUAL;
 
+  // Bare gratitude only — trailing substance is handled via extractTrailingSubstance
+  // before this classifier is called for the remainder.
   if (matchesAny(text, GRATITUDE_PATTERNS) && !matchesAny(text, EMOTIONAL_PATTERNS)) {
-    return INTENT.GRATITUDE;
+    const sole =
+      /^\s*(thanks|thank you|thankyou)([,.!]|\s)*(a lot|so much|again)?[.!]?\s*$/i.test(text) ||
+      (wordCount(text) <= 4 && !/[?]/.test(text) && !matchesAny(text, CASUAL_PATTERNS) && !matchesAny(text, PRACTICAL_PATTERNS));
+    if (sole) return INTENT.GRATITUDE;
+    // Mixed gratitude + content landed here only if substance wasn't stripped first.
+    // Prefer casual/practical later by falling through when other cues exist.
+    if (!matchesAny(text, CASUAL_PATTERNS) && !matchesAny(text, PRACTICAL_PATTERNS) && wordCount(text) <= 6) {
+      return INTENT.GRATITUDE;
+    }
   }
   if (matchesAny(text, EMOTIONAL_PATTERNS)) return INTENT.EMOTIONAL;
   if (matchesAny(text, PRACTICAL_PATTERNS)) return INTENT.PRACTICAL;
@@ -787,9 +973,10 @@ function derivePrayerContext(state, transcript) {
 
 export function composeAcceptedPrayer({ state }) {
   const subject = String(state.prayerContext || "what you've been carrying").trim();
+  const who = state.firstName || "him";
   const text =
-    `I'd be honored. Let's pray. Father, thank You for being near — please meet this person in ${subject}. ` +
-    `Give clarity, strength, and Your peace. Amen. I'm right here with you.`;
+    `I'd be honored. Let's pray. Father, thank You for being near — please meet ${who} in ${subject}. ` +
+    `Give ${who} clarity, strength, and Your peace. Amen. I'm right here with you.`;
   return { text, engine: "front_door", intent: INTENT.PRAYER, lane: "prayer_accepted" };
 }
 
@@ -1202,21 +1389,43 @@ export async function runFrontDoorTurn(input) {
     };
   }
 
-  const intent = classifyIntent(transcript, state);
+  const resolved = resolveFrontDoorClassification(transcript, state);
+  const intent = resolved.intent;
   // Crisis (self-harm) always wins and stays on the crisis protocol; conduct is
-  // evaluated for every other turn.
+  // evaluated for every other turn (use full transcript for safety/boundary cues).
   const conduct = intent === INTENT.CRISIS ? null : classifyConduct(transcript);
   const personalMeaning =
-    !conduct && intent === INTENT.CASUAL && detectPersonalMeaning(transcript);
+    !conduct &&
+    (intent === INTENT.CASUAL || resolved.meaningfulOrdinary) &&
+    detectPersonalMeaning(resolved.classifyText);
 
   // Re-entry: user had said goodbye, now returns with real content or a question.
   const reopened = state.sentOff && intent !== INTENT.CLOSING && isSubstantive(transcript);
 
-  const isDeep = !conduct && DEEP_INTENTS.includes(intent);
+  const isDeep = !conduct && resolved.routeDeep;
   const offerFaith = !conduct && shouldOfferFaith(state, intent);
+  const recentAssistants = recentAssistantTexts(state, 4);
+  const prevAssistant = lastAssistantText(state);
 
   let text;
   let engine;
+  let repeatRepair = false;
+
+  const deepCtx = {
+    intent,
+    transcript: resolved.classifyText,
+    rawTranscript: transcript,
+    history: state.history,
+    firstName: state.firstName,
+    reopened,
+    offerFaith,
+    state,
+    meaningfulOrdinary: resolved.meaningfulOrdinary,
+    conversationalRepair: resolved.conversationalRepair,
+    gratitudePreserved: resolved.gratitudePreserved,
+    multiIntent: resolved.multiIntent,
+    recentAssistantReplies: recentAssistants,
+  };
 
   if (conduct) {
     const abusive = ABUSIVE_CONDUCT.has(conduct);
@@ -1228,14 +1437,10 @@ export async function runFrontDoorTurn(input) {
     // categories are NEVER routed to the model — Philip cannot be argued past them.
     if (!persistent && ENGAGEMENT_CONDUCT.has(conduct) && typeof input.deepGenerate === "function") {
       const result = await input.deepGenerate({
+        ...deepCtx,
         intent: deepIntentForConduct(conduct),
         conduct,
-        transcript,
-        history: state.history,
-        firstName: state.firstName,
-        reopened,
         offerFaith: false,
-        state,
       });
       const deepText = String(result?.text || "").trim();
       if (deepText) {
@@ -1244,25 +1449,52 @@ export async function runFrontDoorTurn(input) {
       }
     }
   } else if (!isDeep) {
-    const composed = composeFrontDoorResponse({ intent, state, transcript, personalMeaning });
+    const composed = composeFrontDoorResponse({
+      intent,
+      state,
+      transcript: resolved.classifyText,
+      personalMeaning: false, // meaningful ordinary is deep; keep mini templates minimal
+    });
     text = composed.text;
     engine = composed.engine;
   } else if (typeof input.deepGenerate === "function") {
-    const result = await input.deepGenerate({
-      intent,
-      transcript,
-      history: state.history,
-      firstName: state.firstName,
-      reopened,
-      offerFaith,
-      state,
-    });
-    text = String(result?.text || "").trim() || reflectiveFallback({ intent, state, transcript }).text;
+    const result = await input.deepGenerate(deepCtx);
+    text = String(result?.text || "").trim();
     engine = result?.engine || "candidate-brain";
+    if (!text && resolved.conversationalRepair) {
+      const repair = composeConversationalRepair({ state });
+      text = repair.text;
+      engine = repair.engine;
+    } else if (!text) {
+      const fb = reflectiveFallback({ intent, state, transcript: resolved.classifyText });
+      text = fb.text;
+      engine = fb.engine;
+    }
+  } else if (resolved.conversationalRepair) {
+    const repair = composeConversationalRepair({ state });
+    text = repair.text;
+    engine = repair.engine;
   } else {
-    const fb = reflectiveFallback({ intent, state, transcript });
+    const fb = reflectiveFallback({ intent, state, transcript: resolved.classifyText });
     text = fb.text;
     engine = fb.engine;
+  }
+
+  // Preserve a brief thanks when multi-intent led with gratitude.
+  if (
+    resolved.gratitudePreserved &&
+    text &&
+    !/^\s*(you'?re welcome|of course|glad|happy to|my pleasure)/i.test(text)
+  ) {
+    text = `You're welcome. ${text}`.trim();
+  }
+
+  // Zero-cost repeat guard — exact/near-exact vs last Philip reply.
+  if (prevAssistant && isNearRepeat(text, prevAssistant)) {
+    const repair = composeRepeatRepair({ transcript, state });
+    text = repair.text;
+    engine = repair.engine;
+    repeatRepair = true;
   }
 
   // A reopen must lead with re-acknowledgement if the generator didn't already.
@@ -1307,9 +1539,13 @@ export async function runFrontDoorTurn(input) {
     ? `conduct:${conduct}`
     : reopened
       ? "reopen"
-      : intent === INTENT.CASUAL && personalMeaning
-        ? "casual_meaning"
-        : intent;
+      : resolved.conversationalRepair
+        ? "conversational_repair"
+        : resolved.meaningfulOrdinary
+          ? "ordinary_meaningful"
+          : intent === INTENT.CASUAL && personalMeaning
+            ? "casual_meaning"
+            : intent;
 
   return {
     text,
@@ -1332,6 +1568,13 @@ export async function runFrontDoorTurn(input) {
       pendingPrayerOffer: nextState.pendingPrayerOffer,
       prayerDecision: null,
       openingRepair: false,
+      meaningfulOrdinary: resolved.meaningfulOrdinary,
+      multiIntent: resolved.multiIntent,
+      gratitudePreserved: resolved.gratitudePreserved,
+      routedDeep: isDeep,
+      conversationalRepair: resolved.conversationalRepair,
+      repeatRepair,
+      classifyText: resolved.classifyText,
     },
   };
 }

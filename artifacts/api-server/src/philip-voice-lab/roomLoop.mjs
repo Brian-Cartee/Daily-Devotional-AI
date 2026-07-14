@@ -28,9 +28,10 @@ import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
 import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
 import { recordTurnObservation } from "./turnObservability.mjs";
 import { awaitingConstrainedShortAnswer } from "./frontDoor.mjs";
+import { PHILIP_VOICE_GENOME_VERSION } from "./compactGenome.mjs";
 
-/** Candidate genome honesty marker — thin Front Door + optional gpt-4o deep lane. */
-export const CANDIDATE_GENOME_VERSION = "thin-front-door-candidate";
+/** Candidate genome honesty marker — compact live-voice genome + Front Door routing. */
+export const CANDIDATE_GENOME_VERSION = PHILIP_VOICE_GENOME_VERSION;
 export const CANDIDATE_RUNTIME_LABEL = "Philip Voice Lab Candidate";
 
 function log(...args) {

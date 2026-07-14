@@ -64,7 +64,7 @@ export async function recordTurnObservation(obs) {
     lane: obs.lane,
     engine: obs.engine,
     runtimeVersion: obs.runtimeVersion,
-    genomeVersion: obs.genomeVersion ?? "thin-front-door-candidate",
+    genomeVersion: obs.genomeVersion ?? "philip-voice-genome-v1",
     stateTransition: obs.stateTransition,
     reopened: obs.reopened,
     personalMeaning: obs.personalMeaning,

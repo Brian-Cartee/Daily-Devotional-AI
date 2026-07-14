@@ -58,7 +58,7 @@ export function logVoiceTurnVerification(ctx) {
   const isCandidateFrontDoor =
     ctx.endpoint === "/api/internal/philip-voice/guidance/turn";
   const t = ctx.timing;
-  const genome = ctx.genomeVersion ?? h?.genomeVersion ?? "thin-front-door-candidate";
+  const genome = ctx.genomeVersion ?? h?.genomeVersion ?? "philip-voice-genome-v1";
   const runtimeLabel = h?.runtimeLabel ?? "Philip Voice Lab Candidate";
 
   const lines = [
