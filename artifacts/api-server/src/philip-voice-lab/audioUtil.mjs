@@ -20,6 +20,11 @@ export function vadConfigFromEnv() {
     // before the turn closes. Override with PHILIP_VOICE_LAB_VAD_SILENCE_MS.
     silenceMs: envInt("PHILIP_VOICE_LAB_VAD_SILENCE_MS", 1400),
     minSpeechMs: envInt("PHILIP_VOICE_LAB_VAD_MIN_SPEECH_MS", 380),
+    // When awaiting a constrained yes/no (e.g. pending prayer offer), allow brief
+    // voiced answers through. ~100ms is enough for "yes"/"no" at conversational
+    // pace while still rejecting click/room-noise blips under ~80–100ms.
+    // Floor remains enforced by energy + this minimum together.
+    shortAnswerMinSpeechMs: envInt("PHILIP_VOICE_LAB_VAD_SHORT_ANSWER_MIN_SPEECH_MS", 100),
     maxUtteranceMs: envInt("PHILIP_VOICE_LAB_VAD_MAX_MS", 45000),
     energyThreshold: envInt("PHILIP_VOICE_LAB_VAD_ENERGY", 450),
   };
@@ -113,13 +118,26 @@ export class UtteranceCollector {
     this.sampleRate = opts.sampleRate ?? DEFAULT_SAMPLE_RATE;
     this.silenceMs = opts.silenceMs ?? 1400;
     this.minSpeechMs = opts.minSpeechMs ?? 450;
+    this.shortAnswerMinSpeechMs = opts.shortAnswerMinSpeechMs ?? 100;
     this.maxUtteranceMs = opts.maxUtteranceMs ?? 28000;
     this.energyThreshold = opts.energyThreshold ?? 450;
+    this.awaitingShortAnswer = false;
+    /** Optional injectable clock for deterministic tests (ms since epoch). */
+    this.nowFn = typeof opts.nowFn === "function" ? opts.nowFn : () => Date.now();
     this.chunks = [];
     this.inSpeech = false;
     this.speechStartedAt = 0;
     this.lastSpeechAt = 0;
     this.paused = false;
+    this.lastShortAnswerGate = false;
+  }
+
+  /**
+   * When true, use shortAnswerMinSpeechMs so contextual yes/no can reach STT.
+   * @param {boolean} flag
+   */
+  setAwaitingShortAnswer(flag) {
+    this.awaitingShortAnswer = Boolean(flag);
   }
 
   pause() {
@@ -138,15 +156,19 @@ export class UtteranceCollector {
     this.lastSpeechAt = 0;
   }
 
+  effectiveMinSpeechMs() {
+    return this.awaitingShortAnswer ? this.shortAnswerMinSpeechMs : this.minSpeechMs;
+  }
+
   /**
    * @param {Int16Array} samples
-   * @returns {{ utterance: Buffer | null; vadReason?: string } | null}
+   * @returns {{ utterance: Buffer | null; vadReason?: string; shortAnswerGate?: boolean; speechMs?: number; speechEndAt?: number } | null}
    */
   push(samples) {
     if (this.paused || !samples?.length) return null;
 
     const energy = rmsInt16(samples);
-    const now = Date.now();
+    const now = this.nowFn();
     const frameBuf = Buffer.from(samples.buffer, samples.byteOffset, samples.byteLength);
     const speech = energy >= this.energyThreshold;
 
@@ -159,7 +181,14 @@ export class UtteranceCollector {
       this.lastSpeechAt = now;
       this.chunks.push(frameBuf);
       if (now - this.speechStartedAt >= this.maxUtteranceMs) {
-        return { utterance: this.flush(), vadReason: "vad_max_utterance" };
+        const speechMs = now - this.speechStartedAt;
+        return {
+          utterance: this.flush(),
+          vadReason: "vad_max_utterance",
+          shortAnswerGate: this.awaitingShortAnswer,
+          speechMs,
+          speechEndAt: now,
+        };
       }
       return null;
     }
@@ -170,11 +199,27 @@ export class UtteranceCollector {
     if (now - this.lastSpeechAt < this.silenceMs) return null;
 
     const speechMs = this.lastSpeechAt - this.speechStartedAt;
-    if (speechMs < this.minSpeechMs) {
+    const minMs = this.effectiveMinSpeechMs();
+    const shortAnswerGate = this.awaitingShortAnswer;
+    if (speechMs < minMs) {
       this.reset();
-      return { utterance: null, vadReason: "vad_speech_too_short" };
+      this.lastShortAnswerGate = shortAnswerGate;
+      return {
+        utterance: null,
+        vadReason: "vad_speech_too_short",
+        shortAnswerGate,
+        speechMs,
+        speechEndAt: this.lastSpeechAt || now,
+      };
     }
-    return { utterance: this.flush(), vadReason: "vad_silence" };
+    this.lastShortAnswerGate = shortAnswerGate;
+    return {
+      utterance: this.flush(),
+      vadReason: "vad_silence",
+      shortAnswerGate,
+      speechMs,
+      speechEndAt: this.lastSpeechAt || now,
+    };
   }
 
   flush() {
