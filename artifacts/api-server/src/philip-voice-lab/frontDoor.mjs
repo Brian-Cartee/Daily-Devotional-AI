@@ -398,6 +398,7 @@ const PRACTICAL_PATTERNS = [
   /\bwhat do i do\b/,
   /\bwhat would you do\b/,
   /\bwhat do you think i should\b/,
+  /\bhow do you think i should\b/,
   /\bhow do i\b/,
   /\bhow should i\b/,
   /\bcan you help me\b/,
@@ -406,6 +407,7 @@ const PRACTICAL_PATTERNS = [
   /\bgive me advice\b/,
   /\bshould i\b/,
   /\bwhat do you think\b/,
+  /\bprioritiz/,
 ];
 
 const INFORMATIONAL_PATTERNS = [

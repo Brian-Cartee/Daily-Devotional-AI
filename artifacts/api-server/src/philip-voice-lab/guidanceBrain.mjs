@@ -114,7 +114,9 @@ function guidanceInstruction({
   }
   if (intent === INTENT.PRACTICAL) {
     lines.push(
-      "They are asking for your honest read or advice. Give a direct, concrete, humane answer in one to three sentences.",
+      "They are asking for your honest read or advice. Give a direct, concrete, humane answer in one to three sentences. " +
+        "If they named specific commitments (family/caregiving, livelihood, meaningful work, health, rest), acknowledge those realities and offer one concrete prioritization move — not a generic urgent/important framework or checklist. " +
+        "Do not assume overwhelm. Do not force faith, Scripture, or prayer.",
     );
   } else if (intent === INTENT.EMOTIONAL) {
     lines.push(
