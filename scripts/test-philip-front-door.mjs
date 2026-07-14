@@ -25,7 +25,16 @@ import {
   detectPrayerOfferInReply,
   awaitingConstrainedShortAnswer,
   isProductOrWorkFaithContext,
+  extractTrailingSubstance,
+  resolveFrontDoorClassification,
+  isNearRepeat,
+  composeRepeatRepair,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
+import {
+  PHILIP_VOICE_GENOME_VERSION,
+  COMPACT_PHILIP_GENOME,
+  estimateGenomeTokens,
+} from "../artifacts/api-server/src/philip-voice-lab/compactGenome.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -71,9 +80,71 @@ async function deepStub(ctx) {
         text: "There's a passage that fits here — want me to bring a verse in, or keep talking first?",
         engine: "stub-brain",
       };
-    default:
-      return { text: "Tell me more about that.", engine: "stub-brain" };
+    default: {
+      // Meaningful ordinary / informational — concrete recognition, no canned work-ack.
+      const t = String(ctx.rawTranscript || ctx.transcript || "");
+      if (/world cup|competing priorities|mother who'?s elderly/i.test(t)) {
+        return {
+          text:
+            "Balancing your mother, the job search, the app, training, and still catching the World Cup — that's a full, committed life. What's asking for you first today?",
+          engine: "stub-brain",
+        };
+      }
+      if (/faith app|implementing a faith/i.test(t)) {
+        return {
+          text: "Building out a faith app is real work. What's the piece you're implementing today?",
+          engine: "stub-brain",
+        };
+      }
+      if (/pray every morning/i.test(t)) {
+        return {
+          text: "Praying each morning before you start — that says something about how you want to show up for the work.",
+          engine: "stub-brain",
+        };
+      }
+      if (/decide what to work|trying to decide/i.test(t)) {
+        return {
+          text: "Deciding what to work on today with everything else on the board is a real call. What's pulling first?",
+          engine: "stub-brain",
+        };
+      }
+      if (/i was saying/i.test(t)) {
+        return {
+          text: "Go ahead — finish the thought about your priorities; I'm with you.",
+          engine: "stub-brain",
+        };
+      }
+      if (/committed|unsure as to the direction/i.test(t)) {
+        return {
+          text: "I hear the commitment to your mother and to showing up daily — and that uncertainty about direction. Both can be true.",
+          engine: "stub-brain",
+        };
+      }
+      if (/tallest mountain|sun set/i.test(t)) {
+        return {
+          text: "Fair question — I can talk that through with you. What made you ask?",
+          engine: "stub-brain",
+        };
+      }
+      return {
+        text: "I'm with you on that. What's the next piece that matters most?",
+        engine: "stub-brain",
+      };
+    }
   }
+}
+
+/** Phone-session prayer path: pray through Amen immediately (still zero-cost stub). */
+async function deepStubPhone(ctx) {
+  if (ctx.intent === INTENT.PRAYER) {
+    const who = ctx.firstName || "him";
+    return {
+      text:
+        `Of course. Let's pray. Father, give ${who} clarity and patience as he builds and cares for those he loves. Amen.`,
+      engine: "stub-brain",
+    };
+  }
+  return deepStub(ctx);
 }
 
 const INTAKE_PHRASES = [
@@ -118,7 +189,7 @@ const SCENARIOS = [
   { label: "informational: tallest mountain", text: "What is the tallest mountain?", intent: INTENT.INFORMATIONAL },
   { label: "informational: what time", text: "What time does the sun set today?", intent: INTENT.INFORMATIONAL },
   // Gratitude & good news
-  { label: "gratitude: got the job", text: "I got the job I applied for!", intent: INTENT.GRATITUDE },
+  { label: "gratitude: got the job", text: "I got the job I applied for!", intent: INTENT.CASUAL },
   { label: "gratitude: thank you", text: "Thank you, that really helped.", intent: INTENT.GRATITUDE },
   // Loneliness / grief / anxiety
   { label: "loneliness", text: "I've been feeling really lonely lately.", intent: INTENT.EMOTIONAL },
@@ -190,9 +261,12 @@ for (const sc of SCENARIOS) {
   }
 
   if (sc.meaning) {
-    check(`personal meaning detected — ${sc.label}`, () => {
+    check(`personal meaning routes deep — ${sc.label}`, () => {
       assert.equal(detectPersonalMeaning(sc.text), true);
-      assert.equal(result.lane, "casual_meaning");
+      assert.equal(result.lane, "ordinary_meaningful");
+      assert.equal(result.meta.routedDeep, true);
+      assert.equal(result.engine, "stub-brain");
+      assert.ok(!/Work being a lot is no small thing/i.test(result.text), result.text);
     });
   }
 }
@@ -583,6 +657,8 @@ check("Hello Philip / Hey greetings stay greeting", () => {
     assert.equal(yes.state.prayerCompleted, true);
     assert.ok(/i'?d be honored|let'?s pray/i.test(yes.text), yes.text);
     assert.ok(/\bAmen\b/.test(yes.text), yes.text);
+    assert.ok(/\bGive Brian\b|\bGive him\b/i.test(yes.text), yes.text);
+    assert.ok(!/\bmy friend\b|\bthis person\b|\bthem\b/i.test(yes.text), yes.text);
     assert.ok(!/would you like|want to pray now/i.test(yes.text), "must not re-ask permission");
     assert.ok(!/what (should|do) (we|i) pray/i.test(yes.text), "must not ask what to pray about");
   });
@@ -645,6 +721,171 @@ check("Hello Philip / Hey greetings stay greeting", () => {
     assert.equal(crisis.intent, INTENT.CRISIS);
     assert.ok(/988/.test(crisis.text));
     assert.equal(crisis.state.pendingPrayerOffer, false);
+  });
+}
+
+// ---------------------------------------------------------------------------
+console.log("Meaningful ordinary + compact genome — phone session replay");
+
+check("compact genome versioned and sized", () => {
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v1");
+  assert.ok(COMPACT_PHILIP_GENOME.length > 400);
+  const tokens = estimateGenomeTokens();
+  assert.ok(tokens >= 200 && tokens <= 1200, `unexpected token estimate: ${tokens}`);
+  console.log(`    genome≈${tokens} tokens (${COMPACT_PHILIP_GENOME.length} chars)`);
+});
+
+check("multi-intent: thanks + substance is not gratitude-only", () => {
+  const text = "Thanks, I'm also trying to decide what to work on today.";
+  assert.ok(extractTrailingSubstance(text));
+  const r = resolveFrontDoorClassification(text, createFrontDoorState());
+  assert.equal(r.multiIntent, true);
+  assert.equal(r.gratitudePreserved, true);
+  assert.notEqual(r.intent, INTENT.GRATITUDE);
+  assert.equal(r.routeDeep, true);
+});
+
+check("multi-intent: okay but worried about mother", () => {
+  const r = resolveFrontDoorClassification(
+    "Okay, but I'm worried about my mother.",
+    createFrontDoorState(),
+  );
+  assert.equal(r.multiIntent, true);
+  assert.ok(r.routeDeep);
+  assert.notEqual(r.intent, INTENT.GREETING);
+});
+
+check("sole thank-you stays gratitude deterministic candidate", () => {
+  const r = resolveFrontDoorClassification("Thank you, that really helped.", createFrontDoorState());
+  assert.equal(r.intent, INTENT.GRATITUDE);
+  assert.equal(r.routeDeep, false);
+});
+
+{
+  // Fixture from philip-lab-mrjs2inh-va4-2af62495 (Brian phone session).
+  const PHONE_TURNS = [
+    "Hello, Philip.",
+    "I'm good, I'm working on implementing a faith app.",
+    "I pray every morning before I start working.",
+    "Would you pray for me about having clarity and patience?",
+    "Thanks, I'm also trying to decide what to work on today.",
+    "Well, I've got many competing priorities. It's not just the app, it's searching for different jobs and just being helpful to my mother who's elderly and just everything else that I've got on my plate besides just work. But it's also working out, being in shape, being present for my mother, and just watching the World Cup too today.",
+    "I was saying.",
+    "It's been good, I mean, I'm committed to it. I'm committed to being here for my mother and I'm committed to working daily, so I'm able to get everything in. I just, sometimes I'm unsure as to the direction I'm headed with certain things, but overall, things are pretty good.",
+  ];
+
+  let state = createFrontDoorState("Brian");
+  const results = [];
+  for (const t of PHONE_TURNS) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state,
+      deepGenerate: deepStubPhone,
+    });
+    results.push(r);
+    state = r.state;
+  }
+
+  check("T1 greeting stays deterministic", () => {
+    assert.equal(results[0].intent, INTENT.GREETING);
+    assert.equal(results[0].meta.routedDeep, false);
+    assert.equal(results[0].engine, "front_door");
+  });
+
+  check("T2 faith app ordinary/product → deep, relevant, not spiritual", () => {
+    assert.notEqual(results[1].intent, INTENT.SPIRITUAL);
+    assert.equal(results[1].meta.routedDeep, true);
+    assert.equal(results[1].lane, "ordinary_meaningful");
+    assert.ok(/app|building|implement/i.test(results[1].text), results[1].text);
+    assert.ok(!/Work being a lot/i.test(results[1].text), results[1].text);
+    assert.ok(!FAITH_WORDS.test(results[1].text), results[1].text);
+  });
+
+  check("T3 morning prayer descriptive ≠ prayer request; routes deep", () => {
+    assert.notEqual(results[2].intent, INTENT.PRAYER);
+    assert.equal(results[2].meta.routedDeep, true);
+    assert.ok(/morning|pray|show up/i.test(results[2].text), results[2].text);
+    assert.ok(!/Work being a lot/i.test(results[2].text), results[2].text);
+  });
+
+  check("T4 direct prayer → Amen, second-person / named", () => {
+    assert.equal(results[3].intent, INTENT.PRAYER);
+    assert.ok(/\bAmen\b/.test(results[3].text), results[3].text);
+    assert.ok(/\bBrian\b|\bhim\b/i.test(results[3].text), results[3].text);
+    assert.ok(!/\bmy friend\b|\bthem\b/i.test(results[3].text), results[3].text);
+  });
+
+  check("T5 thanks + decide → not gratitude-only; deep substance", () => {
+    assert.notEqual(results[4].intent, INTENT.GRATITUDE);
+    assert.equal(results[4].meta.multiIntent, true);
+    assert.equal(results[4].meta.routedDeep, true);
+    assert.ok(/decid|work on|pulling|board/i.test(results[4].text), results[4].text);
+    assert.ok(!/I love that\. Tell me a little about it/i.test(results[4].text), results[4].text);
+  });
+
+  check("T6 mother/jobs/app/World Cup → deep + concrete detail", () => {
+    assert.equal(results[5].meta.routedDeep, true);
+    assert.equal(results[5].lane, "ordinary_meaningful");
+    assert.ok(
+      /mother|job|app|World Cup|training|priorit/i.test(results[5].text),
+      results[5].text,
+    );
+    assert.ok(!/Work being a lot is no small thing/i.test(results[5].text), results[5].text);
+  });
+
+  check("T7 I was saying → conversational repair from context", () => {
+    assert.equal(results[6].meta.conversationalRepair, true);
+    assert.equal(results[6].lane, "conversational_repair");
+    assert.ok(/priorit|finish|thought|go ahead/i.test(results[6].text), results[6].text);
+    assert.ok(!/weighing|heavy|overwhelm/i.test(results[6].text), results[6].text);
+  });
+
+  check("T8 commitment + uncertainty recognized; no work-template repeat", () => {
+    assert.equal(results[7].meta.routedDeep, true);
+    assert.ok(/commit|mother|direction|unsure/i.test(results[7].text), results[7].text);
+    assert.ok(!/Work being a lot is no small thing/i.test(results[7].text), results[7].text);
+  });
+
+  check("phone replay: Philip never reuses Work being a lot…", () => {
+    for (const r of results) {
+      assert.ok(!/Work being a lot is no small thing/i.test(r.text), r.text);
+    }
+  });
+
+  check("phone replay: no consecutive near-exact Philip repeats", () => {
+    for (let i = 1; i < results.length; i++) {
+      assert.equal(isNearRepeat(results[i].text, results[i - 1].text), false);
+    }
+  });
+}
+
+{
+  // Repetition guard: if a generator reprises the last line, repair without paid retry.
+  let state = createFrontDoorState("Brian");
+  const t1 = await runFrontDoorTurn({
+    transcript: "I'm working on implementing a faith app.",
+    state,
+    deepGenerate: async () => ({
+      text: "Work being a lot is no small thing. What's that been like?",
+      engine: "stub-bad",
+    }),
+  });
+  state = t1.state;
+  const t2 = await runFrontDoorTurn({
+    transcript: "Thanks, I'm also trying to decide what to work on today.",
+    state,
+    deepGenerate: async () => ({
+      text: "Work being a lot is no small thing. What's that been like?",
+      engine: "stub-bad",
+    }),
+  });
+  check("repeat guard replaces near-exact canned reprise", () => {
+    assert.equal(t2.meta.repeatRepair, true);
+    assert.equal(t2.engine, "front_door_repeat_repair");
+    assert.ok(!isNearRepeat(t2.text, t1.text));
+    assert.ok(/work|app|decid|priorit|mother/i.test(t2.text) || /go on from there/i.test(t2.text), t2.text);
+    void composeRepeatRepair;
   });
 }
 
