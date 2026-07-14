@@ -18,7 +18,7 @@ import {
   publishMp3ToSourceDetached,
   vadConfigFromEnv,
 } from "./audioUtil.mjs";
-import { callCandidateGuidanceTurn, mediaApiBase } from "./guidanceClient.mjs";
+import { callCandidateGuidanceTurn, mediaApiBase, sttApiBase, labSecret } from "./guidanceClient.mjs";
 import {
   isLabAgentIdentity,
   mintLabAgentIdentity,
@@ -68,18 +68,23 @@ async function mintAgentToken(roomName) {
   return { token, identity };
 }
 
-async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_RATE) {
+async function callTranscribe(pcmBuffer, sessionId, sampleRate = DEFAULT_SAMPLE_RATE, conversationId = "") {
   const wav = pcmToWav(pcmBuffer, sampleRate);
   const form = new FormData();
   form.append("audio", new Blob([wav], { type: "audio/wav" }), "utterance.wav");
   form.append("sessionId", sessionId);
-  const res = await fetch(`${mediaApiBase()}/api/guidance/transcribe`, {
+  if (conversationId) form.append("conversationId", conversationId);
+  const secret = labSecret();
+  const res = await fetch(`${sttApiBase()}/api/internal/philip-voice/transcribe`, {
     method: "POST",
+    headers: {
+      ...(secret ? { "X-Philip-Lab-Secret": secret } : {}),
+    },
     body: form,
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
-    throw new Error(`transcribe ${res.status}: ${errText.slice(0, 200)}`);
+    throw new Error(`lab-transcribe ${res.status}: ${errText.slice(0, 200)}`);
   }
   const data = await res.json();
   return String(data.text || "").trim();
@@ -157,7 +162,12 @@ export async function runPhilipLabTurn(job) {
   try {
     job.timeline.mark("stt_start");
     sttStartAt = Date.now();
-    const transcript = await callTranscribe(job.utterance, sessionId, DEFAULT_SAMPLE_RATE);
+    const transcript = await callTranscribe(
+      job.utterance,
+      sessionId,
+      DEFAULT_SAMPLE_RATE,
+      state.conversationId,
+    );
     sttEndAt = Date.now();
     sttMs = sttEndAt - sttStartAt;
     job.timeline.mark("stt_complete", {

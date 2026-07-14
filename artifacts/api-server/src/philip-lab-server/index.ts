@@ -1,17 +1,18 @@
 /**
- * Isolated Philip Voice Lab API — session minting, timeline, evaluations, and the
- * candidate conversation brain (Conversation Front Door).
+ * Isolated Philip Voice Lab API — session minting, timeline, evaluations, the
+ * candidate conversation brain (Conversation Front Door), and authenticated lab STT.
  *
  * Does NOT register production routes, schedulers, migrations, or background workers.
- * Candidate response generation runs here (PHILIP_VOICE_LAB_GUIDANCE_API_BASE → :3101),
- * so it never touches the production runtime. Media only — transcription + TTS — uses
- * PHILIP_VOICE_LAB_MEDIA_API_BASE (production API on loopback :3001).
+ * Candidate response generation + STT run here (:3101) and never touch production
+ * customer transcription budgets. TTS remains on PHILIP_VOICE_LAB_MEDIA_API_BASE
+ * (production API on loopback :3001) — guidance-scope TTS skips listen policy.
  */
 import { createServer } from "http";
 import express from "express";
 import cors from "cors";
 import { registerPhilipVoiceLabRoutes } from "../routes/philipVoiceLab";
 import { registerPhilipVoiceLabGuidanceRoutes } from "../routes/philipVoiceLabGuidance";
+import { registerPhilipVoiceLabTranscribeRoutes } from "../routes/philipVoiceLabTranscribe";
 
 if (process.env.PHILIP_VOICE_LAB_ENABLED !== "true") {
   console.error("[philip-lab-api] PHILIP_VOICE_LAB_ENABLED is not true — refusing to start (kill switch).");
@@ -25,6 +26,7 @@ app.use(express.json({ limit: "2mb" }));
 
 registerPhilipVoiceLabRoutes(app);
 registerPhilipVoiceLabGuidanceRoutes(app);
+registerPhilipVoiceLabTranscribeRoutes(app);
 
 app.get("/api/health", (_req, res) => {
   res.json({

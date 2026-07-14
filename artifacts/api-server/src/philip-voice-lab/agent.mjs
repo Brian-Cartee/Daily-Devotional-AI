@@ -149,12 +149,20 @@ server.listen(PORT, "127.0.0.1", async () => {
     } (candidate brain)`,
   );
   log(
+    `STT_API_BASE=${
+      process.env.PHILIP_VOICE_LAB_STT_API_BASE ||
+      process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+      process.env.PHILIP_VOICE_LAB_API_BASE ||
+      "http://127.0.0.1:3101"
+    } (lab authenticated STT)`,
+  );
+  log(
     `MEDIA_API_BASE=${
       process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE ||
       process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
       process.env.PHILIP_VOICE_LAB_API_BASE ||
-      "http://127.0.0.1:8080"
-    } (transcribe + TTS)`,
+      "http://127.0.0.1:3001"
+    } (TTS only)`,
   );
   if (!LAB_SECRET) {
     log("WARN: PHILIP_VOICE_LAB_SECRET not set — dispatch endpoint will reject requests");

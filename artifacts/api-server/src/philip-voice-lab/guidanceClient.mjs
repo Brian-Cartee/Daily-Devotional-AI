@@ -16,19 +16,32 @@ function guidanceApiBase() {
 }
 
 /**
- * Media base for transcription + TTS only. Defaults to the production API on
- * loopback (:3001). Falls back to the guidance base for backward compatibility.
+ * Media base for TTS only. Defaults to the production API on loopback (:3001).
+ * Guidance-scope TTS skips customer listen policy; see callTts / roomLoop.
  */
 export function mediaApiBase() {
   return (
     process.env.PHILIP_VOICE_LAB_MEDIA_API_BASE ||
     process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
     process.env.PHILIP_VOICE_LAB_API_BASE ||
-    "http://127.0.0.1:8080"
+    "http://127.0.0.1:3001"
   ).replace(/\/$/, "");
 }
 
-function labSecret() {
+/**
+ * Isolated lab STT base. Defaults to the lab API (:3101), NOT production :3001,
+ * so private tests do not consume customer guidance-transcribe budgets.
+ */
+export function sttApiBase() {
+  return (
+    process.env.PHILIP_VOICE_LAB_STT_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_GUIDANCE_API_BASE ||
+    process.env.PHILIP_VOICE_LAB_API_BASE ||
+    "http://127.0.0.1:3101"
+  ).replace(/\/$/, "");
+}
+
+export function labSecret() {
   return process.env.PHILIP_VOICE_LAB_SECRET?.trim() || "";
 }
 
