@@ -101,6 +101,9 @@ function guidanceInstruction({
     lines.push(
       "This is meaningful ordinary conversation. Acknowledge at least one concrete detail they actually said before any advice or follow-up question. Do not turn ordinary life into emotional intake. Do not force faith. Light warmth or curiosity is welcome.",
     );
+    lines.push(
+      "AUTHENTICITY: Do not invent a human day, schedule, errands, work, exercise, meals, sleep, family, travel, or 'I've been busy too.' Respond with presence and interest — not a fabricated parallel life. Avoid reflexive praise like 'That's fantastic / wonderful / a great approach / impressive' or 'I love that'; prefer specific recognition.",
+    );
   }
   if (conversationalRepair) {
     lines.push(
