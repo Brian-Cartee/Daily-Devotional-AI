@@ -34,6 +34,11 @@ import {
   isHybridGreetingReciprocal,
   isDescriptiveFaithPractice,
   isLikelyFragmentTranscript,
+  isHighConfidenceIncompleteSpeech,
+  analyzeMultiActTurn,
+  isBareGratitude,
+  isSocialFarewellReciprocal,
+  historyHasChristCenteredWork,
   scrubReopenOpener,
   detectGenericPraiseRisk,
   softenGenericPraiseOpening,
@@ -1373,6 +1378,192 @@ check("detectGenericPraiseRisk catches phone-session praise", () => {
   assert.equal(detectGenericPraiseRisk("It's wonderful to hear how meaningful this project is."), true);
   assert.equal(detectGenericPraiseRisk("The voice piece is the unique leverage here."), false);
   assert.equal(softenGenericPraiseOpening("Great choice for tomorrow.", "voice app").changed, true);
+});
+
+{
+  // Full 12-turn phone session fixture: philip-lab-mrjs2inh-va4-508f1882 (post-776041be)
+  const FAKE_LIFE = /\b(i'?ve been (keeping )?busy|i'?m doing well|my (day|schedule|family|kids))\b/i;
+  const CHRIST_WORK_ASSUME =
+    /\b(points? people toward christ|toward christ|ministry|witness|faith-?based work|calling)\b/i;
+  const SESSION_508 = [
+    "Hello, Phillip. I'm doing pretty well today, how about yourself?",
+    "Uh, just watch the, uh, World Cup, uh, Spain beat France in the quarterfinal match.",
+    "Thank you very much.",
+    "Yes, um, I thought that's...",
+    "Um, most mornings I read scripture and pray before starting work. It helps me stay grounded.",
+    "Yeah, that's for sure, isn't it?",
+    "Absolutely, I think it gives me the right perspective, the right piece, and the right focus, and also the right dedication that you're, you know, this is all, you know, not for just ourselves, but for a higher power.",
+    "Yep, I need to go now but I'd like to talk again later if that's okay.",
+    "Thanks, Philip. Have a good day. Hey, actually, one more thing. I've been wondering whether voice will become a much more preferred way to engage people with AI.",
+    "Thank you, Philip. Actually, one more thing. I've been wondering whether voice will become the preferred way people engage with AI. Do you have any thoughts?",
+    "Thank you, I agree. We just wanted to run it by you and get your perspective. Thank you so much. You have a wonderful day.",
+    "You too.",
+  ];
+
+  async function deepStub508(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/world cup|spain beat france/i.test(t)) {
+      return {
+        text: "Spain beating France in the quarters is a real match to watch. What stood out to you?",
+        engine: "stub-508",
+      };
+    }
+    if (/for a higher power|right perspective/i.test(t)) {
+      return {
+        text: "That orientation toward a higher purpose keeps the day from collapsing into self alone.",
+        engine: "stub-508",
+      };
+    }
+    if (/voice will become|preferred way people engage with AI|engage people with AI/i.test(t)) {
+      return {
+        text:
+          "Voice has real potential because it feels more natural and conversational — and it can make the exchange more personal without requiring typing.",
+        engine: "stub-508",
+      };
+    }
+    if (/run it by you|get your perspective|wonderful day/i.test(t)) {
+      return {
+        text: "You're welcome. Glad I could share a perspective. Take care.",
+        engine: "stub-508",
+      };
+    }
+    if (/that's for sure/i.test(t)) {
+      return {
+        text: "It does tend to steady the day quietly.",
+        engine: "stub-508",
+      };
+    }
+    return { text: "I'm with you on that.", engine: "stub-508" };
+  }
+
+  let state508 = createFrontDoorState("Brian");
+  const results508 = [];
+  for (const t of SESSION_508) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state: state508,
+      deepGenerate: deepStub508,
+    });
+    results508.push(r);
+    state508 = r.state;
+  }
+
+  check("508f1882 T1 hybrid greeting answers reciprocal presence, no fake life", () => {
+    assert.equal(results508[0].lane, "hybrid_greeting");
+    assert.ok(/pretty well/i.test(results508[0].text), results508[0].text);
+    assert.ok(/\b(i'?m here|i'?m with you|glad (we'?re|to be) (talking|here))\b/i.test(results508[0].text), results508[0].text);
+    assert.ok(!/\bhow are you\b/i.test(results508[0].text), results508[0].text);
+    assert.ok(!FAKE_LIFE.test(results508[0].text), results508[0].text);
+  });
+
+  check("508f1882 T3 bare gratitude is natural, not intake", () => {
+    assert.equal(results508[2].intent, INTENT.GRATITUDE);
+    assert.ok(/you'?re welcome|of course|glad that helped/i.test(results508[2].text), results508[2].text);
+    assert.ok(!/worth noticing|what'?s it been like|how it feels/i.test(results508[2].text), results508[2].text);
+    assert.ok(!/[?]/.test(results508[2].text), results508[2].text);
+    assert.equal(results508[2].meta.bareGratitude || isBareGratitude(SESSION_508[2]), true);
+  });
+
+  check("508f1882 T4 incomplete speech gets repair, not emotional intake", () => {
+    assert.equal(isHighConfidenceIncompleteSpeech(SESSION_508[3], { turnCount: 4 }), true);
+    assert.equal(results508[3].lane, "fragment_repair");
+    assert.equal(results508[3].meta.incompleteSpeechRepair, true);
+    assert.ok(/missed|cut off|going to say|about to say/i.test(results508[3].text), results508[3].text);
+    assert.ok(!/on your mind|been like|weighing/i.test(results508[3].text), results508[3].text);
+  });
+
+  check("508f1882 T5 descriptive faith grounded — no Christ-work invention", () => {
+    assert.equal(results508[4].lane, "descriptive_faith");
+    assert.notEqual(results508[4].intent, INTENT.SCRIPTURE);
+    assert.ok(!CHRIST_WORK_ASSUME.test(results508[4].text), results508[4].text);
+    assert.ok(/scripture|prayer|word|ground/i.test(results508[4].text), results508[4].text);
+  });
+
+  check("508f1882 T8 latches sentOff; T9 farewell+substance answers voice immediately", () => {
+    assert.equal(results508[7].intent, INTENT.CLOSING);
+    assert.equal(results508[7].state.sentOff, true);
+    const act = analyzeMultiActTurn(SESSION_508[8], { sentOff: true, lastIntent: INTENT.CLOSING });
+    assert.equal(act.closingFollowedBySubstance, true);
+    assert.ok(/voice/i.test(act.substanceText || ""), act.substanceText);
+    assert.notEqual(results508[8].intent, INTENT.CLOSING);
+    assert.equal(results508[8].meta.closingFollowedBySubstance, true);
+    assert.ok(/voice/i.test(results508[8].text), results508[8].text);
+    assert.ok(!/alright\s*[—-]\s*take care|you'?re welcome\.?\s*alright/i.test(results508[8].text), results508[8].text);
+    assert.ok(!/absolutely,\s*go ahead/i.test(results508[8].text), results508[8].text);
+  });
+
+  check("508f1882 T11 substance-then-farewell closes; T12 you too is closing_again", () => {
+    assert.equal(results508[10].intent, INTENT.CLOSING);
+    assert.equal(results508[10].state.sentOff, true);
+    assert.ok(!/[?]/.test(results508[10].text), results508[10].text);
+    assert.equal(results508[11].intent, INTENT.CLOSING);
+    assert.equal(results508[11].lane, "closing_again");
+    assert.ok(!/[?]/.test(results508[11].text), results508[11].text);
+    assert.ok(/you too|alright|take care/i.test(results508[11].text), results508[11].text);
+    assert.ok(!/stands out|on your mind|i'?m with you\. what/i.test(results508[11].text), results508[11].text);
+  });
+}
+
+check("multi-act order: closing then substance vs substance then closing", () => {
+  const a = analyzeMultiActTurn(
+    "Thanks, Philip. Have a good day. Hey, actually, one more thing. I've been wondering whether voice will become preferred.",
+  );
+  assert.equal(a.closingFollowedBySubstance, true);
+  assert.ok(/voice/i.test(a.substanceText || ""));
+
+  const b = analyzeMultiActTurn(
+    "I agree with your perspective. Thank you — you have a wonderful day.",
+  );
+  assert.equal(b.substanceFollowedByClosing, true);
+  assert.equal(isClosingTurn(b.original), true);
+
+  const c = analyzeMultiActTurn("Thanks, but I still need help deciding about the job.");
+  assert.ok(c.classifyText && /help deciding|job/i.test(c.classifyText), c.classifyText);
+});
+
+check("descriptive faith paired: grounded vs explicit Christ-work history", async () => {
+  const alone = await runFrontDoorTurn({
+    transcript: "Most mornings I read scripture and pray before starting work. It helps me stay grounded.",
+  });
+  assert.equal(alone.lane, "descriptive_faith");
+  assert.ok(!/\bpoints? people toward christ\b/i.test(alone.text), alone.text);
+
+  let st = createFrontDoorState("Brian");
+  const prior = await runFrontDoorTurn({
+    transcript: "I'm trying to lead people to Christ through this work.",
+    state: st,
+    deepGenerate: async () => ({ text: "That's a clear aim — stay with what is concrete today.", engine: "stub" }),
+  });
+  st = prior.state;
+  assert.equal(historyHasChristCenteredWork(st, ""), true);
+  const withHist = await runFrontDoorTurn({
+    transcript: "Most mornings I read scripture and pray before starting work. It helps me stay grounded.",
+    state: st,
+  });
+  assert.equal(withHist.lane, "descriptive_faith");
+  assert.ok(/\bchrist|calling|faith-shaped|aimed toward\b/i.test(withHist.text), withHist.text);
+});
+
+check("social farewell reciprocal helpers", () => {
+  const st = { sentOff: true, lastIntent: INTENT.CLOSING, history: [{ role: "assistant", content: "Take care. I'll be here." }] };
+  assert.equal(isSocialFarewellReciprocal("You too.", st), true);
+  assert.equal(isSocialFarewellReciprocal("Same to you", st), true);
+  assert.equal(isBareGratitude("Thank you very much."), true);
+  assert.equal(isBareGratitude("Thanks, but I still need help deciding."), false);
+});
+
+check("incomplete speech does not fire on natural conjunction speech", () => {
+  const mid = { turnCount: 4 };
+  for (const t of [
+    "But I don't agree with that.",
+    "So that's what I'm thinking.",
+    "And then I went to the gym.",
+    "And I think the voice is the most important part.",
+  ]) {
+    assert.equal(isHighConfidenceIncompleteSpeech(t, mid), false, t);
+    assert.equal(isLikelyFragmentTranscript(t, mid), false, t);
+  }
 });
 
 // ---------------------------------------------------------------------------
