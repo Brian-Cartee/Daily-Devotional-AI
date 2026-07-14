@@ -33,18 +33,12 @@ function gateHit(gates, patterns) {
  *   twoPhaseBridge: boolean;
  *   followUpMode: boolean;
  *   latencyMs: number;
- *   runtimeHeaders?: ReturnType<import("./guidanceClient.mjs").parsePhilipResponseHeaders> | null;
- *   timing?: {
- *     utteranceMs: number;
- *     vadReason: string;
- *     sttMs: number;
- *     guidanceMs: number;
- *     ttsMs: number;
- *     playbackMs: number;
- *     totalTurnMs: number;
- *     replyChars: number;
- *     earlyMic: boolean;
- *   };
+ *   runtimeHeaders?: object | null;
+ *   pendingPrayerOfferBefore?: boolean;
+ *   pendingPrayerOfferAfter?: boolean;
+ *   shortAnswerGate?: boolean;
+ *   genomeVersion?: string;
+ *   timing?: object;
  * }} ctx
  */
 export function logVoiceTurnVerification(ctx) {
@@ -61,20 +55,27 @@ export function logVoiceTurnVerification(ctx) {
     || (h?.questionsAskedCount != null && h.questionsAskedCount > 0);
 
   const lane = ctx.lane ?? h?.lane ?? (ctx.endpoint.includes("phase1") ? "phase1" : "unknown");
-  const fullRuntime =
-    ctx.endpoint === "/api/guidance/response" ||
+  const isCandidateFrontDoor =
     ctx.endpoint === "/api/internal/philip-voice/guidance/turn";
   const t = ctx.timing;
+  const genome = ctx.genomeVersion ?? h?.genomeVersion ?? "thin-front-door-candidate";
+  const runtimeLabel = h?.runtimeLabel ?? "Philip Voice Lab Candidate";
 
   const lines = [
     "",
     `VOICE TURN #${ctx.voiceTurnNumber}`,
     "",
+    "Runtime:",
+    runtimeLabel,
+    "",
+    "Conversation Mode:",
+    ctx.conversationMode?.includes("Front Door") ? "Front Door" : ctx.conversationMode,
+    "",
     "Endpoint:",
     ctx.endpoint,
     "",
-    "Conversation Mode:",
-    ctx.conversationMode,
+    "Genome version:",
+    genome,
     "",
     "messages.length:",
     String(ctx.messagesLength),
@@ -97,35 +98,42 @@ export function logVoiceTurnVerification(ctx) {
     "Conversation State:",
     ctx.stateTransition ?? "n/a",
     "",
+    "pendingPrayerOffer before→after:",
+    `${ctx.pendingPrayerOfferBefore ? "yes" : "no"} → ${ctx.pendingPrayerOfferAfter ? "yes" : "no"}`,
+    "",
+    "contextual short-answer handling used:",
+    ctx.shortAnswerGate ? "yes" : "no",
+    "",
     "Reopened after goodbye:",
     ctx.reopened ? "YES" : "no",
     "",
     "Planner Source:",
-    h?.plannerSource ?? "n/a",
+    h?.plannerSource ?? "n/a (not active on candidate)",
     "",
     "Identity Kernel:",
-    h?.identityKernelMode ?? "n/a",
+    h?.identityKernelMode ?? "n/a (not active on candidate)",
     "",
     "Context Mode:",
-    h?.contextMode ?? "n/a",
+    h?.contextMode ?? "n/a (not active on candidate)",
     "",
     "Memory Policy:",
-    h?.memoryPolicy ?? "n/a",
+    h?.memoryPolicy ?? "n/a (not active on candidate)",
     "",
     "Mind Stage:",
-    h?.mindStage ?? "n/a",
+    h?.mindStage ?? "n/a (not active on candidate)",
     "",
     "Latency:",
     `${ctx.latencyMs}ms (guidance only)`,
     "",
     ...(t ? [
       "── Turn timing ──",
+      `User speech end→VAD close: ${t.userSpeechEndAt != null && t.vadCloseAt != null ? `${Math.max(0, t.vadCloseAt - t.userSpeechEndAt)}ms` : "n/a"}`,
       `User speech: ${t.utteranceMs}ms (${t.vadReason})`,
       `STT: ${t.sttMs}ms`,
       `Guidance: ${t.guidanceMs}ms`,
       `TTS fetch: ${t.ttsMs}ms`,
-      `Time to first audio: ${t.timeToFirstAudioMs != null ? `${t.timeToFirstAudioMs}ms` : "n/a"}`,
-      `Playback (agent): ${t.playbackMs}ms${t.asyncPlayback ? " (async — mic unblocks after first frame)" : " (sync)"}`,
+      `Speech end → first audio: ${t.speechEndToFirstAudioMs != null ? `${t.speechEndToFirstAudioMs}ms` : t.timeToFirstAudioMs != null ? `${t.timeToFirstAudioMs}ms` : "n/a"}`,
+      `Playback (agent publish): ${t.playbackMs}ms${t.asyncPlayback ? " (async — mic unblocks after first frame)" : " (detached publish)"}`,
       `Total turn (agent loop): ${t.totalTurnMs}ms`,
       `Reply length: ${t.replyChars} chars`,
       `Playback generation: ${t.playbackGeneration ?? "—"}`,
@@ -142,12 +150,14 @@ export function logVoiceTurnVerification(ctx) {
     `Follow-up mode: ${ctx.followUpMode ? "YES" : "no"}`,
     "",
     "── Runtime subsystems ──",
-    `Session Mind updated: ${sessionMindUpdated ? "YES" : "no"} (v${h?.mindVersion ?? "—"}, source=${h?.stateSource ?? "n/a"})`,
+    `Session Mind updated: ${sessionMindUpdated ? "YES" : "no"} (v${h?.mindVersion ?? "—"}, source=${h?.stateSource ?? "front_door"})`,
     `Memory Orchestrator: ${memoryOrchestratorRan ? "YES" : "no"} (retrievalChars=${h?.memoryRetrievalChars ?? 0})`,
     `Planner executed: ${plannerRan ? "YES" : "no"}`,
     `Anti-Repetition gates: ${antiRepetitionRan ? "YES" : "no"}${gates.length ? ` [${gates.join(", ")}]` : ""}`,
     "",
-    fullRuntime ? "✅ Full Philip Runtime Active" : "⚠️ Legacy Phase1 Only",
+    isCandidateFrontDoor
+      ? "✅ Philip Voice Lab Candidate — Front Door (production Mind/Planner/Memory not active)"
+      : "⚠️ Non-candidate endpoint",
     "",
   ];
 

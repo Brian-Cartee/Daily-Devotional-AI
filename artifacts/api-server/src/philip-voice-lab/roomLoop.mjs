@@ -27,6 +27,11 @@ import {
 import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
 import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
 import { recordTurnObservation } from "./turnObservability.mjs";
+import { awaitingConstrainedShortAnswer } from "./frontDoor.mjs";
+
+/** Candidate genome honesty marker — thin Front Door + optional gpt-4o deep lane. */
+export const CANDIDATE_GENOME_VERSION = "thin-front-door-candidate";
+export const CANDIDATE_RUNTIME_LABEL = "Philip Voice Lab Candidate";
 
 function log(...args) {
   console.log("[philip-voice-agent]", ...args);
@@ -120,21 +125,40 @@ export async function runPhilipLabTurn(job) {
   const sessionId = normalizeLabSessionId(job.sessionId);
   const voiceTurnNumber = state.completedTurns + 1;
   const turnStartAt = Date.now();
+  const userSpeechEndAt = job.userSpeechEndAt ?? turnStartAt;
+  const vadCloseAt = job.vadCloseAt ?? turnStartAt;
   const utteranceMs = pcmDurationMs(job.utterance, DEFAULT_SAMPLE_RATE);
   const turn = job.timeline.beginTurn();
-  job.timeline.mark("user_stops_speaking", { vadReason: job.vadReason, utteranceMs });
+  job.timeline.mark("user_stops_speaking", {
+    vadReason: job.vadReason,
+    utteranceMs,
+    shortAnswerGate: Boolean(job.shortAnswerGate),
+    userSpeechEndAt,
+    vadCloseAt,
+  });
   job.timeline.metric("userStopsSpeakingAt");
 
   let sttMs = 0;
   let guidanceMs = 0;
   let ttsMs = 0;
   let playbackMs = 0;
+  let sttStartAt = 0;
+  let sttEndAt = 0;
+  let guidanceStartAt = 0;
+  let guidanceEndAt = 0;
+  let ttsStartAt = 0;
+  let ttsEndAt = 0;
+  let firstAudioAt = null;
+  let playbackCompleteAt = null;
+
+  const pendingBefore = Boolean(state.brainState?.pendingPrayerOffer);
 
   try {
     job.timeline.mark("stt_start");
-    const sttStartAt = Date.now();
+    sttStartAt = Date.now();
     const transcript = await callTranscribe(job.utterance, sessionId, DEFAULT_SAMPLE_RATE);
-    sttMs = Date.now() - sttStartAt;
+    sttEndAt = Date.now();
+    sttMs = sttEndAt - sttStartAt;
     job.timeline.mark("stt_complete", {
       transcriptChars: transcript.length,
       sttMs,
@@ -153,7 +177,7 @@ export async function runPhilipLabTurn(job) {
       state.completedTurns === 0 ? "Front Door Opening" : "Front Door Follow-up";
 
     job.timeline.mark("guidance_start", { voiceTurnNumber, completedTurns: state.completedTurns });
-    const guidanceStartAt = Date.now();
+    guidanceStartAt = Date.now();
 
     const stateBefore = state.brainState;
     const brain = await callCandidateGuidanceTurn({
@@ -163,6 +187,7 @@ export async function runPhilipLabTurn(job) {
       conversationId: state.conversationId,
       sessionId,
     });
+    guidanceEndAt = Date.now();
     const replyText = brain.text;
     state.brainState = brain.state;
     state.messages = brain.state?.history ?? [
@@ -172,7 +197,7 @@ export async function runPhilipLabTurn(job) {
     ];
     const messagesLength = state.messages.length;
 
-    // Synthesized headers so downstream verification/observability stays uniform.
+    // Synthesized headers — honest about candidate Front Door (no production Mind).
     const runtimeHeaders = {
       lane: brain.lane ?? null,
       runtimeVersion: "candidate-front-door-1",
@@ -187,6 +212,8 @@ export async function runPhilipLabTurn(job) {
       gates: [],
       questionsAskedCount: null,
       memoryRetrievalChars: null,
+      genomeVersion: CANDIDATE_GENOME_VERSION,
+      runtimeLabel: CANDIDATE_RUNTIME_LABEL,
     };
 
     const stateTransition = `${stateBefore?.lastIntent ?? "start"} -> ${brain.intent}${
@@ -198,11 +225,12 @@ export async function runPhilipLabTurn(job) {
       intent: brain.intent,
       engine: brain.engine,
       reopened: brain.reopened,
-      guidanceMs: Date.now() - guidanceStartAt,
+      pendingPrayerOffer: Boolean(brain.state?.pendingPrayerOffer),
+      guidanceMs: guidanceEndAt - guidanceStartAt,
       replyChars: replyText.length,
     });
 
-    guidanceMs = Date.now() - guidanceStartAt;
+    guidanceMs = guidanceEndAt - guidanceStartAt;
     state.completedTurns += 1;
 
     turn.transcript = transcript;
@@ -215,15 +243,17 @@ export async function runPhilipLabTurn(job) {
     turn.phase1Preview = replyText.slice(0, 200);
 
     job.timeline.mark("tts_start");
-    const ttsStartAt = Date.now();
+    ttsStartAt = Date.now();
     const audio = await callTts(replyText, sessionId);
-    ttsMs = Date.now() - ttsStartAt;
+    ttsEndAt = Date.now();
+    ttsMs = ttsEndAt - ttsStartAt;
     job.timeline.mark("tts_end", { mp3Bytes: audio.length, ttsMs });
     job.timeline.metric("ttsCompleteAt");
 
     job.timeline.mark("playback_publish_start");
     job.timeline.metric("playbackPublishStartAt");
     const playbackStartAt = Date.now();
+    firstAudioAt = playbackStartAt;
 
     await job.playbackQueue.pending.catch(() => {});
     const { pcmDurationMs: pcmMs, framePublished } =
@@ -241,13 +271,22 @@ export async function runPhilipLabTurn(job) {
     const micSettleMs = envInt("PHILIP_VOICE_LAB_EARLY_MIC_SETTLE_MS", 600);
     await delay(micSettleMs);
 
-    job.playbackQueue.pending = framePublished;
+    job.playbackQueue.pending = framePublished.then((result) => {
+      playbackCompleteAt = Date.now();
+      return result;
+    });
     // Intentionally not awaited: audio delivery continues after this turn returns
     // and the caller resumes the mic. Errors are already logged inside
     // publishMp3ToSourceDetached; this just prevents an unhandled-rejection warning.
     framePublished.catch(() => {});
 
     const totalTurnMs = Date.now() - turnStartAt;
+    const speechEndToFirstAudioMs =
+      firstAudioAt != null && userSpeechEndAt != null
+        ? Math.max(0, firstAudioAt - userSpeechEndAt)
+        : null;
+
+    const pendingAfter = Boolean(brain.state?.pendingPrayerOffer);
 
     logVoiceTurnVerification({
       voiceTurnNumber,
@@ -264,17 +303,33 @@ export async function runPhilipLabTurn(job) {
       followUpMode: state.completedTurns > 1,
       latencyMs: guidanceMs,
       runtimeHeaders,
+      pendingPrayerOfferBefore: pendingBefore,
+      pendingPrayerOfferAfter: pendingAfter,
+      shortAnswerGate: Boolean(job.shortAnswerGate),
+      genomeVersion: CANDIDATE_GENOME_VERSION,
       timing: {
         utteranceMs,
         vadReason: job.vadReason ?? "vad_silence",
+        userSpeechEndAt,
+        vadCloseAt,
+        sttStartAt,
+        sttEndAt,
         sttMs,
+        guidanceStartAt,
+        guidanceEndAt,
         guidanceMs,
+        ttsStartAt,
+        ttsEndAt,
         ttsMs,
+        firstAudioAt,
+        playbackCompleteAt,
         playbackMs,
+        speechEndToFirstAudioMs,
         totalTurnMs,
         replyChars: replyText.length,
         earlyMic: true,
         pcmDurationMs: pcmMs,
+        timeToFirstAudioMs: speechEndToFirstAudioMs,
       },
     });
 
@@ -289,12 +344,33 @@ export async function runPhilipLabTurn(job) {
       lane: brain.lane,
       engine: brain.engine,
       runtimeVersion: runtimeHeaders.runtimeVersion,
+      genomeVersion: CANDIDATE_GENOME_VERSION,
       stateTransition,
       reopened: brain.reopened,
       personalMeaning: brain.personalMeaning,
       faithOffered: brain.faithOffered,
+      pendingPrayerOfferBefore: pendingBefore,
+      pendingPrayerOfferAfter: pendingAfter,
+      shortAnswerGate: Boolean(job.shortAnswerGate),
       vadReason: job.vadReason ?? "vad_silence",
-      latency: { sttMs, guidanceMs, ttsMs, playbackMs, totalTurnMs, utteranceMs },
+      latency: {
+        sttMs,
+        guidanceMs,
+        ttsMs,
+        playbackMs,
+        totalTurnMs,
+        utteranceMs,
+        userSpeechEndAt,
+        vadCloseAt,
+        sttStartAt,
+        sttEndAt,
+        guidanceStartAt,
+        guidanceEndAt,
+        ttsStartAt,
+        ttsEndAt,
+        firstAudioAt,
+        speechEndToFirstAudioMs,
+      },
     });
 
     job.timeline.endTurn({
@@ -311,6 +387,8 @@ export async function runPhilipLabTurn(job) {
       totalTurnMs,
       earlyMic: true,
       pcmDurationMs: pcmMs,
+      speechEndToFirstAudioMs,
+      pendingPrayerOffer: pendingAfter,
     });
 
     const payload = job.timeline.toJSON();
@@ -398,6 +476,11 @@ export async function runPhilipVoiceRoom(opts) {
 
           if (processing) continue;
 
+          // Context-aware VAD: pending prayer (constrained yes/no) uses a lower
+          // min-speech floor so brief affirmations are not discarded.
+          const awaitShort = awaitingConstrainedShortAnswer(conversationState.brainState);
+          collector.setAwaitingShortAnswer(awaitShort);
+
           const vad = collector.push(samples);
           if (!vad) continue;
 
@@ -405,11 +488,29 @@ export async function runPhilipVoiceRoom(opts) {
             timeline.mark("vad_event", { reason: vad.vadReason });
           }
 
-          if (!vad.utterance || vad.utterance.length < 1600) {
+          // Short-answer gate may yield brief PCM; lower the hard byte floor only then.
+          // Ordinary turns keep the 1600-byte noise guard (~16.7ms @48kHz int16 — tiny blips).
+          const minBytes = vad.shortAnswerGate ? 800 : 1600;
+          if (!vad.utterance || vad.utterance.length < minBytes) {
             if (vad.vadReason === "vad_speech_too_short") {
-              timeline.mark("vad_timeout", { reason: "speech_too_short" });
+              timeline.mark("vad_timeout", {
+                reason: "speech_too_short",
+                shortAnswerGate: Boolean(vad.shortAnswerGate),
+                speechMs: vad.speechMs ?? null,
+              });
             }
             continue;
+          }
+
+          if (vad.shortAnswerGate) {
+            log("contextual short-answer VAD accepted", {
+              speechMs: vad.speechMs,
+              shortAnswerMinSpeechMs: collector.shortAnswerMinSpeechMs,
+            });
+            timeline.mark("vad_short_answer_accepted", {
+              speechMs: vad.speechMs,
+              minSpeechMs: collector.shortAnswerMinSpeechMs,
+            });
           }
 
           processing = true;
@@ -420,6 +521,9 @@ export async function runPhilipVoiceRoom(opts) {
               sessionId,
               utterance: vad.utterance,
               vadReason: vad.vadReason,
+              shortAnswerGate: Boolean(vad.shortAnswerGate),
+              userSpeechEndAt: vad.speechEndAt ?? Date.now(),
+              vadCloseAt: Date.now(),
               audioSource,
               timeline,
               room,

@@ -39,12 +39,16 @@ function turnLogFile(conversationId) {
  *   lane: string;
  *   engine: string|null;
  *   runtimeVersion: string;
+ *   genomeVersion?: string;
  *   stateTransition: string;
  *   reopened: boolean;
  *   personalMeaning: boolean;
  *   faithOffered: boolean;
+ *   pendingPrayerOfferBefore?: boolean;
+ *   pendingPrayerOfferAfter?: boolean;
+ *   shortAnswerGate?: boolean;
  *   vadReason: string;
- *   latency: { sttMs: number; guidanceMs: number; ttsMs: number; playbackMs: number; totalTurnMs: number; utteranceMs: number };
+ *   latency: object;
  * }} obs
  */
 export async function recordTurnObservation(obs) {
@@ -60,10 +64,14 @@ export async function recordTurnObservation(obs) {
     lane: obs.lane,
     engine: obs.engine,
     runtimeVersion: obs.runtimeVersion,
+    genomeVersion: obs.genomeVersion ?? "thin-front-door-candidate",
     stateTransition: obs.stateTransition,
     reopened: obs.reopened,
     personalMeaning: obs.personalMeaning,
     faithOffered: obs.faithOffered,
+    pendingPrayerOfferBefore: Boolean(obs.pendingPrayerOfferBefore),
+    pendingPrayerOfferAfter: Boolean(obs.pendingPrayerOfferAfter),
+    shortAnswerGate: Boolean(obs.shortAnswerGate),
     vadReason: obs.vadReason,
     latency: obs.latency,
   };
