@@ -31,6 +31,13 @@ import {
   composeRepeatRepair,
   isClosingTurn,
   isReciprocalSmallTalk,
+  isHybridGreetingReciprocal,
+  isDescriptiveFaithPractice,
+  isLikelyFragmentTranscript,
+  scrubReopenOpener,
+  detectGenericPraiseRisk,
+  softenGenericPraiseOpening,
+  shouldPreferStatementReply,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
 import {
   PHILIP_VOICE_GENOME_VERSION,
@@ -749,7 +756,7 @@ check("compact genome versioned and sized", () => {
   assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v1");
   assert.ok(COMPACT_PHILIP_GENOME.length > 400);
   const tokens = estimateGenomeTokens();
-  assert.ok(tokens >= 200 && tokens <= 1200, `unexpected token estimate: ${tokens}`);
+  assert.ok(tokens >= 200 && tokens <= 1600, `unexpected token estimate: ${tokens}`);
   console.log(`    genome≈${tokens} tokens (${COMPACT_PHILIP_GENOME.length} chars)`);
 });
 
@@ -820,11 +827,15 @@ check("sole thank-you stays gratitude deterministic candidate", () => {
     assert.ok(!FAITH_WORDS.test(results[1].text), results[1].text);
   });
 
-  check("T3 morning prayer descriptive ≠ prayer request; routes deep", () => {
+  check("T3 morning prayer descriptive ≠ prayer request; no scripture digression", () => {
     assert.notEqual(results[2].intent, INTENT.PRAYER);
-    assert.equal(results[2].meta.routedDeep, true);
-    assert.ok(/morning|pray|show up/i.test(results[2].text), results[2].text);
+    assert.notEqual(results[2].intent, INTENT.SCRIPTURE);
+    assert.equal(results[2].meta.descriptiveFaith, true);
+    assert.equal(results[2].lane, "descriptive_faith");
+    assert.equal(results[2].meta.routedDeep, false);
+    assert.ok(/pray|scripture|word|morning|discipline|steadiness|routine/i.test(results[2].text), results[2].text);
     assert.ok(!/Work being a lot/i.test(results[2].text), results[2].text);
+    assert.ok(!/resonat|particular scripture|what verse/i.test(results[2].text), results[2].text);
   });
 
   check("T4 direct prayer → Amen, second-person / named", () => {
@@ -1098,6 +1109,187 @@ check("closing helper: gratitude alone is not closing", () => {
   assert.equal(isClosingTurn("Thank you, that really helped."), false);
   assert.equal(isClosingTurn("All right, thank you, you have a good day."), true);
   assert.equal(isClosingTurn("Take care — I'm going to watch the game now."), true);
+});
+
+{
+  // Full 12-turn phone session fixture: philip-lab-mrjs2inh-va4-f02325a5
+  const GENERIC_PRAISE =
+    /\b(that'?s (wonderful|beautiful|great|fantastic)|it'?s (wonderful|beautiful)|i love that|great choice|thoughtful approach|beautiful (mission|rhythm)|that makes a lot of sense)\b/i;
+  const FAKE_LIFE = /\b(i'?ve been (keeping )?busy|i'?m doing well|my (day|schedule))\b/i;
+  const SESSION = [
+    "Hey Phillip, I'm doing pretty well, how about yourself?",
+    "I'm good. I've been watching the World Cup and working on my app today.",
+    "It's slow, but it's good. Everything's been good. We've made a lot of progress lately, but now it's just testing and refining in different areas.",
+    "Just something to commit my life to, something to take my focus, try to bring good to the world, try to lead people to Christ. The whole thing has been a spiritual and just a blessing all the way around.",
+    "Well, I think it has influenced my work a lot, as far as where my faith has grown lately and how it is implemented on a daily basis. It helps me with the routine to stay in the Word and stay grounded and everything, to kind of keep focused and keep a clear head.",
+    "In the morning, I usually read the scripture and say a prayer, and then in the evenings, I do the same thing, I try to do a prayer before bed. And then throughout the day, I'm working on everything that is pretty much faith-based. So my whole day, I'm exposed to different scriptures, different things of the spirit, and just every day working towards connecting people to Christ is kind of a ministry in and of itself, even though it's work.",
+    "No, not anything particular. I need to go now, but I'd like to talk later again.",
+    "Thanks, Philip. Have a good day.",
+    "Hey, actually, one more thing. I'm uncertain where to focus next for tomorrow. Any suggestions?",
+    "Well, I think where there is a voice app, a voice that is Phillip, that is probably the most impactful, that is what I'm working on and testing and doing everything on currently as we speak. So that's probably the most impactful, the most potential, and also the most important. Everything else is kind of very more, everybody else has it, so there's nothing unique about the rest of the app.",
+    "of the points to have, so it was like a good thing.",
+    "Nothing that I can think of off the top of my head. Just really trying to get it to where it communicates naturally, effectively, before it goes into actually a more of a faith. I feel like you gotta establish trust in an actual connective way, conversationally, before you can start witnessing or unless someone, unless actually the user requests as such.",
+  ];
+
+  async function deepStubSession(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/absolutely,\s*go ahead/i.test("x")) return { text: "no", engine: "stub" };
+    if (ctx.reopened || /uncertain where to focus|any suggestions/i.test(t)) {
+      return {
+        text:
+          "Absolutely, go ahead. Since your work is faith-based, prioritize the area with the most immediate impact. What seems most pressing?",
+        engine: "stub-session",
+      };
+    }
+    if (/world cup|working on my app today/i.test(t)) {
+      return {
+        text: "World Cup on and the app in motion — two real tracks today. How's the app side moving?",
+        engine: "stub-session",
+      };
+    }
+    if (/testing and refining/i.test(t)) {
+      return {
+        text: "Testing and refining is the slow middle — progress without fireworks. The craft is showing up in the iteration.",
+        engine: "stub-session",
+      };
+    }
+    if (/lead people to Christ|commit my life/i.test(t)) {
+      return {
+        text:
+          "It's wonderful to hear how meaningful this project is for you. How do you feel your faith has influenced your approach to this work?",
+        engine: "stub-session",
+      };
+    }
+    if (/stay in the Word|faith has grown/i.test(t)) {
+      return {
+        text: "The Word as daily grounding is carrying the focus. How do you usually incorporate your faith into your daily routine?",
+        engine: "stub-session",
+      };
+    }
+    if (/voice that is Phillip|nothing unique about the rest/i.test(t)) {
+      return {
+        text:
+          "Focusing on the voice app sounds like a great choice. How does that sound for a plan?",
+        engine: "stub-session",
+      };
+    }
+    if (/establish trust|before you can start witnessing/i.test(t)) {
+      return {
+        text:
+          "That makes a lot of sense. Trust and natural conversation before witnessing — only when invited — is the right order.",
+        engine: "stub-session",
+      };
+    }
+    if (/mother|job|priorit|world cup/i.test(t)) return deepStub(ctx);
+    return { text: "I'm with you on that — say more about what stands out.", engine: "stub-session" };
+  }
+
+  let state = createFrontDoorState("Brian");
+  const results = [];
+  for (const t of SESSION) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state,
+      deepGenerate: deepStubSession,
+    });
+    results.push(r);
+    state = r.state;
+  }
+
+  check("f02325a5 T1 hybrid greeting acknowledges status, no re-ask, no fake life", () => {
+    assert.equal(isHybridGreetingReciprocal(SESSION[0]), true);
+    assert.equal(results[0].lane, "hybrid_greeting");
+    assert.equal(results[0].meta.routedDeep, false);
+    assert.ok(/pretty well|glad/i.test(results[0].text), results[0].text);
+    assert.ok(!/\bhow are you\b/i.test(results[0].text), results[0].text);
+    assert.ok(!FAKE_LIFE.test(results[0].text), results[0].text);
+  });
+
+  check("f02325a5 T6 descriptive faith ≠ scripture request", () => {
+    assert.equal(isDescriptiveFaithPractice(SESSION[5]), true);
+    assert.notEqual(results[5].intent, INTENT.SCRIPTURE);
+    assert.equal(results[5].lane, "descriptive_faith");
+    assert.equal(results[5].meta.routedDeep, false);
+    assert.ok(!/resonat|particular scripture|what verse/i.test(results[5].text), results[5].text);
+  });
+
+  check("f02325a5 explicit scripture/prayer requests still work", async () => {
+    const verse = await runFrontDoorTurn({
+      transcript: "Is there a verse for anxiety?",
+      deepGenerate: async () => ({
+        text: "There's a passage that fits here — want me to bring a verse in, or keep talking first?",
+        engine: "stub",
+      }),
+    });
+    assert.equal(verse.intent, INTENT.SCRIPTURE);
+    const pray = await runFrontDoorTurn({
+      transcript: "Would you pray for me about clarity?",
+      deepGenerate: async () => ({
+        text: "Father, give him clarity and patience. Amen.",
+        engine: "stub",
+      }),
+    });
+    assert.equal(pray.intent, INTENT.PRAYER);
+  });
+
+  check("f02325a5 T4 praise softened without paid retry", () => {
+    assert.equal(results[3].meta.praiseSoftened, true);
+    assert.ok(!GENERIC_PRAISE.test(results[3].text), results[3].text);
+  });
+
+  check("f02325a5 question cadence forces statement after two questions", () => {
+    assert.equal(shouldPreferStatementReply({ consecutiveAssistantQuestions: 2 }, { intent: INTENT.CASUAL }), true);
+    assert.equal(shouldPreferStatementReply({ consecutiveAssistantQuestions: 2 }, { intent: INTENT.CRISIS }), false);
+    // Closings / fragment repair should reset or avoid endless interview feel.
+    assert.ok(results.some((r) => r.meta.cadenceForcedStatement || (r.state.consecutiveAssistantQuestions ?? 0) === 0));
+  });
+
+  check("f02325a5 T7–T8 closing + repeated farewell", () => {
+    assert.equal(results[6].intent, INTENT.CLOSING);
+    assert.equal(results[6].lane, "closing");
+    assert.equal(results[6].state.sentOff, true);
+    assert.ok(!/[?]/.test(results[6].text), results[6].text);
+    assert.equal(results[7].lane, "closing_again");
+    assert.equal(results[7].meta.repeatedFarewell, true);
+    assert.ok(!/[?]/.test(results[7].text), results[7].text);
+  });
+
+  check("f02325a5 T9 re-entry clears sentOff and avoids Absolutely go ahead", () => {
+    assert.equal(results[8].reopened, true);
+    assert.equal(results[8].state.sentOff, false);
+    assert.equal(results[8].meta.sentOffTransition, "sentOff:cleared");
+    assert.ok(!/absolutely,\s*go ahead/i.test(results[8].text), results[8].text);
+    assert.ok(!/^\s*go ahead/i.test(results[8].text), results[8].text);
+  });
+
+  check("f02325a5 T11 fragment repair does not invent continuity", () => {
+    assert.equal(isLikelyFragmentTranscript(SESSION[10], { turnCount: 10 }), true);
+    assert.equal(results[10].lane, "fragment_repair");
+    assert.equal(results[10].meta.fragmentRepair, true);
+    assert.ok(/caught|missed|say that|what were you saying/i.test(results[10].text), results[10].text);
+    assert.ok(!/unique|mission|voice app/i.test(results[10].text), results[10].text);
+  });
+
+  check("genome discourages praise and cadence interview behavior", () => {
+    assert.match(COMPACT_PHILIP_GENOME, /ENGAGEMENT WITHOUT GENERIC PRAISE/);
+    assert.match(COMPACT_PHILIP_GENOME, /QUESTION CADENCE/);
+    assert.match(COMPACT_PHILIP_GENOME, /DESCRIPTIVE FAITH PRACTICE/);
+    assert.match(COMPACT_PHILIP_GENOME, /Negative example/);
+  });
+}
+
+check("scrubReopenOpener removes Absolutely go ahead", () => {
+  assert.equal(
+    scrubReopenOpener("Absolutely, go ahead. Focus on the voice piece tomorrow."),
+    "Focus on the voice piece tomorrow.",
+  );
+});
+
+check("detectGenericPraiseRisk catches phone-session praise", () => {
+  assert.equal(detectGenericPraiseRisk("It's wonderful to hear how meaningful this project is."), true);
+  assert.equal(detectGenericPraiseRisk("The voice piece is the unique leverage here."), false);
+  assert.equal(softenGenericPraiseOpening("Great choice for tomorrow.", "voice app").changed, true);
 });
 
 // ---------------------------------------------------------------------------
