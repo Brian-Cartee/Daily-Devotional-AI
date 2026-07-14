@@ -90,6 +90,8 @@ export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if (intent === INTENT.GRATITUDE) return false;
   // Reciprocal check-ins stay on the front door — never deep (avoids invented human life).
   if (intent === INTENT.CASUAL && isReciprocalSmallTalk(rawText)) return false;
+  if (isDescriptiveFaithPractice(rawText)) return false;
+  if (isHybridGreetingReciprocal(rawText)) return false;
   if (DEEP_INTENTS.includes(intent)) return true;
   if (intent === INTENT.INFORMATIONAL) return true;
   if (isConversationalRepair(rawText, state)) return true;
@@ -121,12 +123,16 @@ export function resolveFrontDoorClassification(rawText, state) {
   const ordinarySubstance =
     (!DEEP_INTENTS.includes(intent) &&
       !isReciprocalSmallTalk(classifyText) &&
+      !isDescriptiveFaithPractice(classifyText) &&
+      !isHybridGreetingReciprocal(classifyText) &&
       (isMeaningfulOrdinaryTurn(classifyText, state, intent) ||
         (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)))) ||
     conversationalRepair;
   const routeDeep =
     ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
     !isReciprocalSmallTalk(classifyText) &&
+    !isDescriptiveFaithPractice(classifyText) &&
+    !isHybridGreetingReciprocal(classifyText) &&
     (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
   return {
     original,
@@ -316,9 +322,53 @@ const RECIPROCAL_SMALLTALK_PATTERNS = [
   /\bhow'?s your day( going)?\b/,
   /\bhow is your day( going)?\b/,
   /\bwhat have you been up to\b/,
+  /\bhow (are|have) things( with you| going)?\b/,
   /\band (you|yourself)\??\s*$/,
   /^\s*how (are|have) you( been| doing| today)?\??\s*$/,
 ];
+
+/** Brief status already offered in an opening (must not be re-asked). */
+const STATUS_ALREADY_PATTERNS = [
+  /\bi(?:'| a)?m (doing )?(pretty |really )?(well|good|fine|ok|okay|great|alright|all right)\b/,
+  /\bi(?:'| a)?m (a little |kind of |kinda )?(tired|exhausted|rough|busy|stressed|better)\b/,
+  /\b(pretty|really|quite) good( today)?\b/,
+  /\brough (morning|day|night)\b/,
+  /\bnot (too )?bad\b/,
+];
+
+/**
+ * True when an opening greets + (optionally) shares status + asks how Philip is.
+ * Must not be treated as a bare greeting that re-asks "How are you?"
+ */
+export function isHybridGreetingReciprocal(rawText) {
+  const text = norm(rawText);
+  if (!text) return false;
+  if (isClosingTurn(text)) return false;
+  if (matchesAny(text, CRISIS_PATTERNS) || matchesAny(text, PRACTICAL_PATTERNS)) return false;
+  if (wordCount(text) > 28) return false;
+  const hasOpener =
+    /^\s*(hi|hey|hello|yo|hiya|howdy)\b/.test(text) ||
+    /^\s*good (morning|afternoon|evening)\b/.test(text);
+  if (!hasOpener) return false;
+  if (!matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) return false;
+  return true;
+}
+
+export function extractOpeningStatusBrief(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return "";
+  const t = norm(original);
+  if (/\brough (morning|day|night)\b/.test(t)) return "it's been a rough stretch";
+  if (/\bi(?:'| a)?m (a little |kind of |kinda )?tired\b/.test(t)) return "you're a little tired";
+  if (/\bi(?:'| a)?m (doing )?(pretty |really )?(well|good|fine|great)\b/.test(t) || /\bpretty good\b/.test(t)) {
+    return "you're doing pretty well";
+  }
+  if (/\bnot (too )?bad\b/.test(t) || /\bi(?:'| a)?m (ok|okay|alright|all right)\b/.test(t)) {
+    return "you're holding up alright";
+  }
+  if (matchesAny(t, STATUS_ALREADY_PATTERNS)) return "you've shared how things are";
+  return "";
+}
 
 /**
  * True when the turn is clearly ending the session (farewell or gratitude+farewell).
@@ -356,12 +406,58 @@ export function isReciprocalSmallTalk(rawText) {
   if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) {
     return false;
   }
+  // Hybrid openings are reciprocal even with a greeting opener.
+  if (isHybridGreetingReciprocal(text)) return true;
   // Short reciprocal check-ins, optionally after a brief status ("I'm pretty good. How about yourself?")
   if (!matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) return false;
   if (wordCount(text) <= 14) return true;
   // Longer only if the reciprocal ask is the main move and there's no heavy ask.
   if (wordCount(text) <= 20 && !matchesAny(text, EMOTIONAL_PATTERNS)) return true;
   return false;
+}
+
+/**
+ * Explicit Scripture *asks* — not descriptive mentions of reading Scripture.
+ */
+const SCRIPTURE_REQUEST_PATTERNS = [
+  /\bwhat (scripture|verse|passage|bible)\b/,
+  /\bis there a (scripture|verse|passage|bible verse)\b/,
+  /\b(can|could|would) you (please )?(share|give|read|bring|suggest) (a |me )?(scripture|verse|passage)\b/,
+  /\bhelp me understand (this )?(passage|verse|scripture)\b/,
+  /\bwhat does the bible say\b/,
+  /\b(give|bring|share) me (a |that )?(scripture|verse|passage)\b/,
+  /\bwhat (should|could) i (read|pray)\b/,
+];
+
+/**
+ * Descriptive faith practice / routine — not a Scripture request or crisis disclosure.
+ * "I read Scripture every morning" must NOT become INTENT.SCRIPTURE.
+ */
+export function isDescriptiveFaithPractice(rawText) {
+  const text = norm(rawText);
+  if (!text) return false;
+  if (matchesAny(text, SCRIPTURE_REQUEST_PATTERNS)) return false;
+  if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return false;
+  if (matchesAny(text, SPIRITUAL_PERSONAL_PATTERNS)) return false;
+  if (matchesAny(text, CRISIS_PATTERNS)) return false;
+  const hasFaithLex =
+    /\b(scripture|scriptures|bible|prayer|pray|faith|christ|jesus|god|spirit|the word)\b/.test(
+      text,
+    );
+  if (!hasFaithLex) return false;
+  const routine =
+    /\b(every morning|every night|before bed|in the morning|in the evenings?|throughout the day|my (whole )?day|routine|habit)\b/.test(
+      text,
+    ) ||
+    /\b(read|reading) (the )?(scripture|bible|word)\b/.test(text) ||
+    /\b(say|saying|said) a prayer\b/.test(text) ||
+    /\bpray(er|ing)? before\b/.test(text) ||
+    /\bstay(ing)? (in the word|grounded)\b/.test(text) ||
+    /\bexposed to (different )?(scriptures?|the word)\b/.test(text) ||
+    /\bfaith[-\s]?based (work|app|business|ministry)\b/.test(text) ||
+    /\bministry in and of itself\b/.test(text) ||
+    /\bi pray every\b/.test(text);
+  return Boolean(routine);
 }
 
 /**
@@ -387,6 +483,7 @@ const PRAYER_REQUEST_PATTERNS = [
 /** Legacy alias kept for tests/importers that still reference PRAYER_PATTERNS. */
 const PRAYER_PATTERNS = PRAYER_REQUEST_PATTERNS;
 
+/** Broad scripture vocabulary — use with isDescriptiveFaithPractice / SCRIPTURE_REQUEST_PATTERNS. */
 const SCRIPTURE_PATTERNS = [
   /\b(scripture|bible|verse|passage)\b/,
   /\b(psalm|proverb|gospel)\b/,
@@ -744,13 +841,20 @@ export function classifyIntent(rawText, state) {
 
   // Explicit prayer request/opening only — descriptive prayer habits stay elsewhere.
   if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return INTENT.PRAYER;
-  if (matchesAny(text, SCRIPTURE_PATTERNS)) return INTENT.SCRIPTURE;
+  // Explicit Scripture ask only — descriptive reading/prayer routines stay elsewhere.
+  if (matchesAny(text, SCRIPTURE_REQUEST_PATTERNS)) return INTENT.SCRIPTURE;
+  if (matchesAny(text, SCRIPTURE_PATTERNS) && !isDescriptiveFaithPractice(text)) {
+    return INTENT.SCRIPTURE;
+  }
+
+  // Hybrid greeting + status + "how about you?" — not a bare greeting that re-asks how they are.
+  if (isHybridGreetingReciprocal(text)) return INTENT.GREETING;
 
   // Greeting wins for a genuine opening ("hey philip, how are you?") — but not if
   // the same turn already carries a heavier disclosure or a real ask.
   const looksGreeting = matchesAny(text, GREETING_PATTERNS);
   const heavy = matchesAny(text, EMOTIONAL_PATTERNS) || matchesAny(text, PRACTICAL_PATTERNS);
-  const reciprocalOnly = isReciprocalSmallTalk(text) && !/^\s*(hi|hey|hello|yo|hiya|howdy)\b/i.test(text);
+  const reciprocalOnly = isReciprocalSmallTalk(text) && !/^\s*(hi|hey|hello|yo|hiya|howdy|good (morning|afternoon|evening))\b/i.test(text);
   if (looksGreeting && !heavy && !reciprocalOnly && wordCount(text) <= 12) {
     return INTENT.GREETING;
   }
@@ -761,6 +865,11 @@ export function classifyIntent(rawText, state) {
   const productFaith = isProductOrWorkFaithContext(text);
   const personalSpiritual = isPersonalSpiritualOpening(text);
   if (personalSpiritual) return INTENT.SPIRITUAL;
+  // Descriptive faith practice with Christ/faith vocabulary stays ordinary context —
+  // never an auto Scripture recommendation. Front Door observes; GPT does not digress.
+  if (isDescriptiveFaithPractice(text) && !productFaith) {
+    return INTENT.CASUAL;
+  }
   if (!productFaith && matchesAny(text, SPIRITUAL_PATTERNS)) return INTENT.SPIRITUAL;
 
   // Bare gratitude only — trailing substance is handled via extractTrailingSubstance
@@ -852,6 +961,8 @@ export function createFrontDoorState(firstName = "") {
     abuseCount: 0,
     lastNameTurn: -99,
     personalMeaningSeen: false,
+    /** Consecutive Philip replies that ended in a question (ordinary cadence). */
+    consecutiveAssistantQuestions: 0,
     history: [], // [{ role: "user"|"assistant", content }]
   };
 }
@@ -869,6 +980,7 @@ export function hydrateFrontDoorState(raw, firstName = "") {
     prayerOfferedAtTurn:
       raw.prayerOfferedAtTurn == null ? null : Number(raw.prayerOfferedAtTurn),
     prayerCompleted: Boolean(raw.prayerCompleted),
+    consecutiveAssistantQuestions: Number(raw.consecutiveAssistantQuestions || 0) || 0,
     history: Array.isArray(raw.history) ? raw.history : [],
   };
 }
@@ -897,6 +1009,22 @@ const GREETING_TEMPLATES = [
   (n) => `Hi${n ? " " + n : ""}. It's good to be here with you. How are things today?`,
 ];
 
+/** Hybrid greetings that already include status and/or a reciprocal ask. */
+const HYBRID_GREETING_TEMPLATES = [
+  (status, name) =>
+    status
+      ? `Good to hear ${status}${name ? ", " + name : ""}. I'm glad we're talking — what's been going on?`
+      : `Hey${name ? " " + name : ""}. I'm glad we're talking. I'm right here with you — what's been going on?`,
+  (status, name) =>
+    status
+      ? `Glad to hear ${status}. I'm with you${name ? ", " + name : ""} — what's on your mind?`
+      : `Hey${name ? " " + name : ""} — I'm with you. What's on your mind?`,
+  (status, name) =>
+    status
+      ? `Thanks for saying that — ${status}. I'm glad to be here with you${name ? ", " + name : ""}.`
+      : `Hi${name ? " " + name : ""}. I'm glad to be here with you. What's been going on?`,
+];
+
 const CASUAL_TEMPLATES = [
   (t) => `${t} Sounds like it's been on your mind — what's that been like?`,
   (t) => `${t} I'd like to hear more about how that's going for you.`,
@@ -909,8 +1037,18 @@ const CASUAL_MEANING_TEMPLATES = [
   () => `I'm hearing something underneath the schedule there. No pressure, but I'm glad to listen if you want to go into it.`,
 ];
 
+/** Grounded observation for descriptive faith practice — no verse request. */
+const DESCRIPTIVE_FAITH_TEMPLATES = [
+  () =>
+    `There's a steadiness in keeping Scripture and prayer in the morning and evening like that — it sounds like it's shaping the work itself.`,
+  () =>
+    `Keeping the Word and prayer as anchors through the day is no small discipline — especially when the work itself points people toward Christ.`,
+  () =>
+    `It sounds like the routine isn't separate from the calling — prayer and Scripture are carrying the work, not decorating it.`,
+];
+
 const GRATITUDE_TEMPLATES = [
-  (n) => `That's genuinely good to hear${n ? ", " + n : ""}. What's it been like for you?`,
+  (n) => `Glad that landed${n ? ", " + n : ""}. What's it been like for you?`,
   () => `Glad that landed. Tell me a little about how it feels.`,
   () => `That's worth noticing. What made it land for you?`,
 ];
@@ -932,6 +1070,11 @@ const RECIPROCAL_TEMPLATES = [
   () => `I'm glad you're here. What's been going on with you?`,
   () => `I'm right here with you — what's on your mind?`,
   () => `I'm glad to talk. What's been going on?`,
+];
+
+const FRAGMENT_REPAIR_TEMPLATES = [
+  () => `I may not have caught all of that — could you say that part again?`,
+  () => `I might have missed the full thought there. What were you saying?`,
 ];
 
 function recentUserTopics(state) {
@@ -1064,18 +1207,115 @@ export function composeConductResponse({ conduct, state, persistent }) {
   }
 }
 
-/** Answer-first scaffolding for a direct question — never a deflection or a send-off. */
+/** Answer-first scaffolding for a return after goodbye — never "go ahead" permission. */
 function reopenPrefix(state) {
   return state.reopened
     ? pick(
         [
-          "Of course — I'm right here. ",
-          "Yes, I'm still with you. ",
-          "Absolutely, go ahead. ",
+          "Of course — I'm still here. ",
+          "Yes — I'm right here. ",
+          "I'm still with you. ",
         ],
         state.turnCount,
       )
     : "";
+}
+
+/** Strip clumsy reopen openers the model sometimes invents. */
+export function scrubReopenOpener(rawText) {
+  let text = String(rawText || "").trim();
+  text = text.replace(/^\s*absolutely[,.]?\s*go ahead[.!]?\s*/i, "");
+  text = text.replace(/^\s*go ahead[.!]?\s*/i, "");
+  text = text.replace(/^\s*absolutely[,.]?\s+/i, "");
+  return text.trim();
+}
+
+const GENERIC_PRAISE_OPENER =
+  /^(that'?s (wonderful|beautiful|great|fantastic|impressive)|it'?s (wonderful|beautiful)|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting)\b/i;
+
+export function detectGenericPraiseRisk(rawText) {
+  const t = String(rawText || "").trim();
+  if (!t) return false;
+  if (GENERIC_PRAISE_OPENER.test(t)) return true;
+  return /\b(that'?s (wonderful|beautiful|fantastic|a great approach|impressive)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach)\b/i.test(
+    t,
+  );
+}
+
+/**
+ * Zero-cost soft rewrite of a praise-led opening — no paid retry.
+ * Keeps remainder of the reply when possible.
+ */
+export function softenGenericPraiseOpening(rawText, transcript) {
+  const text = String(rawText || "").trim();
+  if (!detectGenericPraiseRisk(text)) return { text, changed: false };
+  const cue = extractConcreteCue(transcript) || "that";
+  const rest = text
+    .replace(/^[^.!?]+[.!?]\s*/, "")
+    .trim();
+  const lead = `I'm with you on ${cue}.`;
+  const next = rest && !detectGenericPraiseRisk(rest) ? `${lead} ${rest}` : lead;
+  return { text: next.replace(/\s+/g, " ").trim(), changed: true };
+}
+
+export function replyEndsWithQuestion(rawText) {
+  return /\?\s*$/.test(String(rawText || "").trim());
+}
+
+/**
+ * Conservative mid-conversation fragment heuristic.
+ * Prefer inviting a repeat over inventing continuity.
+ */
+export function isLikelyFragmentTranscript(rawText, state) {
+  if ((state?.turnCount ?? 0) < 1) return false;
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const t = norm(original);
+  const words = wordCount(t);
+  if (words < 3 || words > 14) return false;
+  if (matchesAny(t, CRISIS_PATTERNS)) return false;
+  if (isClosingTurn(t)) return false;
+  if (matchesAny(t, GREETING_PATTERNS)) return false;
+  if (matchesAny(t, PRAYER_REQUEST_PATTERNS)) return false;
+  if (matchesAny(t, PRACTICAL_PATTERNS)) return false;
+  if (isHybridGreetingReciprocal(t) || isReciprocalSmallTalk(t)) return false;
+  // Clear sentence with capital start and terminal punct is usually fine.
+  if (/^[A-Z]/.test(original) && /[.!?]$/.test(original) && words >= 6) return false;
+  // Mid-thought openers / dangling clause feel.
+  if (/^(of|and|but|so|because|which|that|just|like|the)\b/i.test(original)) return true;
+  if (!/\b(i|we|you|my|our|it|this|that)\b/i.test(original) && words <= 8) return true;
+  return false;
+}
+
+export function composeFragmentRepair(state) {
+  return {
+    text: pick(FRAGMENT_REPAIR_TEMPLATES, state.turnCount)(),
+    engine: "front_door",
+    intent: INTENT.CASUAL,
+    lane: "fragment_repair",
+  };
+}
+
+/**
+ * If two prior Philip turns ended in questions, this reply should not.
+ * Crisis and pending-prayer overrides stay outside this helper.
+ */
+export function shouldPreferStatementReply(state, { intent, conduct } = {}) {
+  if (intent === INTENT.CRISIS) return false;
+  if (conduct) return false;
+  if (state?.pendingPrayerOffer) return false;
+  return (state?.consecutiveAssistantQuestions ?? 0) >= 2;
+}
+
+export function stripTrailingQuestion(rawText) {
+  let text = String(rawText || "").trim();
+  if (!/\?\s*$/.test(text)) return text;
+  // Drop only the final interrogative sentence when multiple exist.
+  const parts = text.split(/(?<=[.!])\s+/);
+  if (parts.length > 1 && /\?\s*$/.test(parts[parts.length - 1])) {
+    return parts.slice(0, -1).join(" ").trim();
+  }
+  return text.replace(/\?\s*$/, ".").trim();
 }
 
 function derivePrayerContext(state, transcript) {
@@ -1141,6 +1381,19 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
   const seed = state.turnCount;
   switch (intent) {
     case INTENT.GREETING: {
+      if (isHybridGreetingReciprocal(transcript)) {
+        const status = extractOpeningStatusBrief(transcript);
+        const name = maybeName(state, { force: !state.greeted });
+        let text = pick(HYBRID_GREETING_TEMPLATES, seed)(status, name);
+        // Never re-ask how they are when they already said.
+        if (status) text = text.replace(/\bhow are you( doing| today)?\??/gi, "").replace(/\s+/g, " ").trim();
+        if (!/[.!?]$/.test(text)) text = `${text}.`;
+        // Prefer presence over stacking another how-are-you style probe when status present.
+        if (status && /\?\s*$/.test(text) && seed % 3 === 2) {
+          text = text.replace(/\?\s*$/, ".");
+        }
+        return { text, engine: "front_door", lane: "hybrid_greeting" };
+      }
       const name = maybeName(state, { force: !state.greeted });
       return { text: pick(GREETING_TEMPLATES, seed)(name), engine: "front_door" };
     }
@@ -1150,6 +1403,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
           text: pick(RECIPROCAL_TEMPLATES, seed)(),
           engine: "front_door",
           lane: "reciprocal_casual",
+        };
+      }
+      if (isDescriptiveFaithPractice(transcript)) {
+        return {
+          text: pick(DESCRIPTIVE_FAITH_TEMPLATES, seed)(),
+          engine: "front_door",
+          lane: "descriptive_faith",
         };
       }
       if (personalMeaning) {
@@ -1175,6 +1435,16 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
     case INTENT.CRISIS: {
       const name = maybeName(state, { force: true });
       return { text: pick(CRISIS_TEMPLATES, seed)(name), engine: "front_door" };
+    }
+    case INTENT.SPIRITUAL: {
+      if (isDescriptiveFaithPractice(transcript)) {
+        return {
+          text: pick(DESCRIPTIVE_FAITH_TEMPLATES, seed)(),
+          engine: "front_door",
+          lane: "descriptive_faith",
+        };
+      }
+      return null;
     }
     default:
       return null; // deep intent
@@ -1310,6 +1580,16 @@ function advanceState(state, {
   } else {
     next.reopened = false;
   }
+
+  // Ordinary question cadence (crisis / prayer clarify handled separately).
+  if (intent === INTENT.CRISIS || next.pendingPrayerOffer) {
+    next.consecutiveAssistantQuestions = 0;
+  } else if (replyEndsWithQuestion(replyText)) {
+    next.consecutiveAssistantQuestions = (state.consecutiveAssistantQuestions ?? 0) + 1;
+  } else {
+    next.consecutiveAssistantQuestions = 0;
+  }
+
   // Crisis clears pending prayer — safety first.
   if (intent === INTENT.CRISIS) {
     next.pendingPrayerOffer = false;
@@ -1507,6 +1787,51 @@ export async function runFrontDoorTurn(input) {
         pendingPrayerOffer: false,
         prayerDecision: null,
         openingRepair,
+        fragmentRepair: false,
+      },
+    };
+  }
+
+  // Mid-conversation fragmentary STT — invite a repeat rather than invent continuity.
+  if (isLikelyFragmentTranscript(transcript, state)) {
+    const composed = composeFragmentRepair(state);
+    const nextState = advanceState(state, {
+      intent: composed.intent,
+      conduct: null,
+      transcript,
+      replyText: composed.text,
+      personalMeaning: false,
+      reopened: false,
+      faithOffered: false,
+      usedName: false,
+      pendingPrayerOffer: state.pendingPrayerOffer,
+      prayerCompleted: state.prayerCompleted,
+      prayerOfferedAtTurn: state.prayerOfferedAtTurn,
+      prayerContext: state.prayerContext,
+    });
+    return {
+      text: composed.text,
+      intent: composed.intent,
+      conduct: null,
+      lane: composed.lane,
+      engine: composed.engine,
+      reopened: false,
+      personalMeaning: false,
+      faithOffered: false,
+      state: nextState,
+      meta: {
+        sentenceCount: sentenceCount(composed.text),
+        usedName: false,
+        sentOff: nextState.sentOff,
+        turnCount: nextState.turnCount,
+        offeredFaith: false,
+        conduct: null,
+        abuseCount: nextState.abuseCount,
+        pendingPrayerOffer: nextState.pendingPrayerOffer,
+        prayerDecision: null,
+        openingRepair: false,
+        fragmentRepair: true,
+        consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
       },
     };
   }
@@ -1530,6 +1855,7 @@ export async function runFrontDoorTurn(input) {
   const repeatedFarewell = wasSentOff && intent === INTENT.CLOSING;
 
   const isDeep = !conduct && resolved.routeDeep && !reciprocalCasual;
+  const preferStatement = shouldPreferStatementReply(state, { intent, conduct });
   const offerFaith = !conduct && shouldOfferFaith(state, intent);
   const recentAssistants = recentAssistantTexts(state, 4);
   const prevAssistant = lastAssistantText(state);
@@ -1539,6 +1865,8 @@ export async function runFrontDoorTurn(input) {
   let repeatRepair = false;
   let composedLane = null;
   let composedRepeatedFarewell = false;
+  let praiseSoftened = false;
+  let cadenceForcedStatement = false;
 
   const deepCtx = {
     intent,
@@ -1554,6 +1882,8 @@ export async function runFrontDoorTurn(input) {
     gratitudePreserved: resolved.gratitudePreserved,
     multiIntent: resolved.multiIntent,
     recentAssistantReplies: recentAssistants,
+    preferStatement,
+    descriptiveFaith: isDescriptiveFaithPractice(resolved.classifyText),
   };
 
   if (conduct) {
@@ -1585,10 +1915,16 @@ export async function runFrontDoorTurn(input) {
       personalMeaning: false, // meaningful ordinary is deep; keep mini templates minimal
       reciprocal: reciprocalCasual,
     });
-    text = composed.text;
-    engine = composed.engine;
-    composedLane = composed.lane || null;
-    composedRepeatedFarewell = Boolean(composed.repeatedFarewell);
+    if (composed?.text) {
+      text = composed.text;
+      engine = composed.engine;
+      composedLane = composed.lane || null;
+      composedRepeatedFarewell = Boolean(composed.repeatedFarewell);
+    } else {
+      const fb = reflectiveFallback({ intent, state, transcript: resolved.classifyText });
+      text = fb.text;
+      engine = fb.engine;
+    }
   } else if (typeof input.deepGenerate === "function") {
     const result = await input.deepGenerate(deepCtx);
     text = String(result?.text || "").trim();
@@ -1629,9 +1965,27 @@ export async function runFrontDoorTurn(input) {
     repeatRepair = true;
   }
 
-  // A reopen must lead with re-acknowledgement if the generator didn't already.
-  if (reopened && !/^\s*(of course|yes|absolutely|i'm still|i am still)/i.test(text)) {
-    text = `${reopenPrefix({ ...state, reopened: true })}${text}`.trim();
+  // Scrub clumsy reopen openers; then add a natural return ack if still needed.
+  if (reopened) {
+    text = scrubReopenOpener(text);
+    if (!/^\s*(of course|yes|i'?m still|i am still)/i.test(text)) {
+      text = `${reopenPrefix({ ...state, reopened: true })}${text}`.trim();
+    }
+  }
+
+  // Zero-cost anti-praise softening (no paid retry).
+  if (text && detectGenericPraiseRisk(text)) {
+    const softened = softenGenericPraiseOpening(text, transcript);
+    if (softened.changed) {
+      text = softened.text;
+      praiseSoftened = true;
+    }
+  }
+
+  // Question cadence: after two consecutive question-ending replies, contribute a statement.
+  if (preferStatement && replyEndsWithQuestion(text) && intent !== INTENT.CRISIS) {
+    text = stripTrailingQuestion(text);
+    cadenceForcedStatement = true;
   }
 
   if (offerFaith && !/(pray|faith|god)\b/i.test(text)) {
@@ -1724,6 +2078,14 @@ export async function runFrontDoorTurn(input) {
       conversationalRepair: resolved.conversationalRepair,
       repeatRepair,
       classifyText: resolved.classifyText,
+      hybridGreeting: isHybridGreetingReciprocal(resolved.classifyText),
+      descriptiveFaith: isDescriptiveFaithPractice(resolved.classifyText),
+      fragmentRepair: false,
+      consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
+      preferStatement,
+      cadenceForcedStatement,
+      genericPraiseRisk: detectGenericPraiseRisk(text),
+      praiseSoftened,
     },
   };
 }
