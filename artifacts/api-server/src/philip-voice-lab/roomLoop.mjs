@@ -229,6 +229,10 @@ export async function runPhilipLabTurn(job) {
 
     const stateTransition = `${stateBefore?.lastIntent ?? "start"} -> ${brain.intent}${
       brain.reopened ? " (reopened)" : ""
+    }${brain.lane ? ` [${brain.lane}]` : ""}${
+      brain.meta?.reciprocalCasual ? " [reciprocal_casual]" : ""
+    }${brain.meta?.repeatedFarewell ? " [repeated_farewell]" : ""}${
+      brain.meta?.sentOffTransition ? ` {${brain.meta.sentOffTransition}}` : ""
     }${brain.state?.sentOff ? " [sent_off]" : ""}`;
 
     job.timeline.mark("guidance_response_complete", {

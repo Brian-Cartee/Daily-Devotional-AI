@@ -88,6 +88,8 @@ export function isConversationalRepair(rawText, state) {
 export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if ([INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent)) return false;
   if (intent === INTENT.GRATITUDE) return false;
+  // Reciprocal check-ins stay on the front door — never deep (avoids invented human life).
+  if (intent === INTENT.CASUAL && isReciprocalSmallTalk(rawText)) return false;
   if (DEEP_INTENTS.includes(intent)) return true;
   if (intent === INTENT.INFORMATIONAL) return true;
   if (isConversationalRepair(rawText, state)) return true;
@@ -118,11 +120,13 @@ export function resolveFrontDoorClassification(rawText, state) {
   const conversationalRepair = isConversationalRepair(original, state);
   const ordinarySubstance =
     (!DEEP_INTENTS.includes(intent) &&
+      !isReciprocalSmallTalk(classifyText) &&
       (isMeaningfulOrdinaryTurn(classifyText, state, intent) ||
         (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)))) ||
     conversationalRepair;
   const routeDeep =
     ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
+    !isReciprocalSmallTalk(classifyText) &&
     (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
   return {
     original,
@@ -287,14 +291,78 @@ const CLOSING_PATTERNS = [
   /^\s*bye\b/,
   /\bbye( now| for now)?\s*[.!]?\s*$/,
   /\bgood ?night\b/,
-  /\btalk (to you )?(later|soon)\b/,
+  /\btalk (to you )?(later|soon|again)\b/,
+  /\bspeak(ing)? (to you |with you )?(later|soon|again)\b/,
+  /\blook forward to (speaking|talking|chatting) (to you |with you )?again\b/,
+  /\b(we can|we'?ll|i'?ll) (talk|speak|chat) (again|later|soon|tomorrow)\b/,
+  /\bsee (you|ya) (tomorrow|later|soon)?\b/,
+  /\btake care\b/,
   /\bgotta (go|run)\b/,
   /\bi('| a)?m done\b/,
   /\bthat'?s all( for now)?\b/,
-  /\bsee (you|ya)\b/,
-  /\btake care\b/,
-  /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off)\b/,
+  /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off|leave)\b/,
+  /\bi need to go\b/,
+  /\bhave a good (day|night|one|evening|afternoon)\b/,
+  /\benjoy (your|the) (day|night|evening|match|game|rest)\b/,
+  /\bi(?:'| a)?m going to watch\b/,
+  /\ball right[,.]?\s*(thank(s| you)|thanks)\b/,
+  /\b(thank(s| you)|thanks).{0,40}\b(have a good|take care|goodbye|bye|talk later|talk soon)\b/,
 ];
+
+/** Reciprocal small-talk — relational check-ins, not practical advice. */
+const RECIPROCAL_SMALLTALK_PATTERNS = [
+  /\bhow (about|are) (you|yourself)\b/,
+  /\bwhat about you\b/,
+  /\bhow'?s your day( going)?\b/,
+  /\bhow is your day( going)?\b/,
+  /\bwhat have you been up to\b/,
+  /\band (you|yourself)\??\s*$/,
+  /^\s*how (are|have) you( been| doing| today)?\??\s*$/,
+];
+
+/**
+ * True when the turn is clearly ending the session (farewell or gratitude+farewell).
+ * Bare thanks alone is NOT closing.
+ */
+export function isClosingTurn(rawText) {
+  const text = norm(rawText);
+  if (!text) return false;
+  if (matchesAny(text, CRISIS_PATTERNS)) return false;
+  if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return false;
+  if (matchesAny(text, EMOTIONAL_PATTERNS) && wordCount(text) >= 14) return false;
+  if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesAny(text, CLOSING_PATTERNS)) return false;
+
+  const hasClosing = matchesAny(text, CLOSING_PATTERNS);
+  if (!hasClosing) return false;
+
+  // Farewell can be longer when it's clearly a wrap-up ("look forward to talking again…").
+  if (wordCount(text) <= 8) return true;
+  if (wordCount(text) <= 36 && !/[?]/.test(text)) return true;
+  // Grateful + farewell with a short question about tomorrow timing still closes.
+  if (
+    wordCount(text) <= 40 &&
+    matchesAny(text, GRATITUDE_PATTERNS) &&
+    /\b(tomorrow|later|soon|again|good day|take care|bye)\b/.test(text)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function isReciprocalSmallTalk(rawText) {
+  const text = norm(rawText);
+  if (!text) return false;
+  if (isClosingTurn(text)) return false;
+  if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) {
+    return false;
+  }
+  // Short reciprocal check-ins, optionally after a brief status ("I'm pretty good. How about yourself?")
+  if (!matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) return false;
+  if (wordCount(text) <= 14) return true;
+  // Longer only if the reciprocal ask is the main move and there's no heavy ask.
+  if (wordCount(text) <= 20 && !matchesAny(text, EMOTIONAL_PATTERNS)) return true;
+  return false;
+}
 
 /**
  * Explicit prayer *requests* / openings — not mere descriptive mentions.
@@ -669,13 +737,10 @@ export function classifyIntent(rawText, state) {
 
   if (matchesAny(text, CRISIS_PATTERNS)) return INTENT.CRISIS;
 
-  const isQuestion = /\?/.test(text) || matchesAny(text, PRACTICAL_PATTERNS) || matchesAny(text, INFORMATIONAL_PATTERNS);
-  const shortTurn = wordCount(text) <= 6;
+  // Closing wins over gratitude/casual when the person is clearly ending.
+  if (isClosingTurn(text)) return INTENT.CLOSING;
 
-  // A pure goodbye (short, no trailing substance / question) is a closing.
-  if (matchesAny(text, CLOSING_PATTERNS) && !isQuestion && shortTurn) {
-    return INTENT.CLOSING;
-  }
+  const isQuestion = /\?/.test(text) || matchesAny(text, PRACTICAL_PATTERNS) || matchesAny(text, INFORMATIONAL_PATTERNS);
 
   // Explicit prayer request/opening only — descriptive prayer habits stay elsewhere.
   if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return INTENT.PRAYER;
@@ -685,9 +750,13 @@ export function classifyIntent(rawText, state) {
   // the same turn already carries a heavier disclosure or a real ask.
   const looksGreeting = matchesAny(text, GREETING_PATTERNS);
   const heavy = matchesAny(text, EMOTIONAL_PATTERNS) || matchesAny(text, PRACTICAL_PATTERNS);
-  if (looksGreeting && !heavy && wordCount(text) <= 12) {
+  const reciprocalOnly = isReciprocalSmallTalk(text) && !/^\s*(hi|hey|hello|yo|hiya|howdy)\b/i.test(text);
+  if (looksGreeting && !heavy && !reciprocalOnly && wordCount(text) <= 12) {
     return INTENT.GREETING;
   }
+
+  // Reciprocal small talk before practical ("How about yourself?" is not advice-seeking).
+  if (isReciprocalSmallTalk(text)) return INTENT.CASUAL;
 
   const productFaith = isProductOrWorkFaithContext(text);
   const personalSpiritual = isPersonalSpiritualOpening(text);
@@ -842,20 +911,65 @@ const CASUAL_MEANING_TEMPLATES = [
 
 const GRATITUDE_TEMPLATES = [
   (n) => `That's genuinely good to hear${n ? ", " + n : ""}. What's it been like for you?`,
-  () => `I love that. Tell me a little about it.`,
-  () => `That's worth celebrating. What made it land for you?`,
+  () => `Glad that landed. Tell me a little about how it feels.`,
+  () => `That's worth noticing. What made it land for you?`,
 ];
 
 const CLOSING_TEMPLATES = [
-  (n) => `Take care${n ? ", " + n : ""}. I'm here whenever you want to talk again.`,
-  () => `Good talking with you. Come back anytime — I'll be here.`,
-  () => `Rest well. Whenever you're ready to pick this up again, I'm around.`,
+  (n) => `I'd like that${n ? ", " + n : ""}. I'll be here whenever you're ready.`,
+  () => `Glad we could talk. Come back anytime — I'll be right here.`,
+  () => `Take care. I'll be here when you want to pick this up again.`,
 ];
 
 const CLOSING_AGAIN_TEMPLATES = [
-  () => `Of course. Take care of yourself.`,
-  () => `Anytime. I'll be here.`,
+  () => `Of course. Take care.`,
+  () => `You too. I'll be here.`,
+  () => `Alright — take care.`,
 ];
+
+/** Soft reciprocal return — no invented human day or schedule. */
+const RECIPROCAL_TEMPLATES = [
+  () => `I'm glad you're here. What's been going on with you?`,
+  () => `I'm right here with you — what's on your mind?`,
+  () => `I'm glad to talk. What's been going on?`,
+];
+
+function recentUserTopics(state) {
+  const recent = [...(state?.history || [])]
+    .reverse()
+    .filter((h) => h.role === "user")
+    .slice(0, 3)
+    .map((h) => String(h.content || ""))
+    .join(" ");
+  return recent;
+}
+
+function composeClosingResponse(state, transcript) {
+  const name = maybeName(state);
+  const repeated = Boolean(state.sentOff);
+  if (repeated) {
+    return {
+      text: pick(CLOSING_AGAIN_TEMPLATES, state.turnCount)(),
+      engine: "front_door",
+      lane: "closing_again",
+      repeatedFarewell: true,
+    };
+  }
+  const recent = recentUserTopics(state) + " " + String(transcript || "");
+  let text;
+  if (/\b(world cup|match|game|semi-?final|watch(ing)?)\b/i.test(recent)) {
+    text = name
+      ? `I'd like that, ${name}. Enjoy the match — I'll be here when you're ready.`
+      : `I'd like that. Enjoy the match — I'll be here when you're ready.`;
+  } else if (/\bthank(s| you)\b/i.test(transcript || "")) {
+    text = name ? `You're welcome, ${name}. Take care.` : `You're welcome. Take care.`;
+  } else {
+    text = pick(CLOSING_TEMPLATES, state.turnCount)(name);
+  }
+  // Closings must not ask another question.
+  text = text.replace(/\?\s*$/, ".").trim();
+  return { text, engine: "front_door", lane: "closing", repeatedFarewell: false };
+}
 
 const CRISIS_TEMPLATES = [
   (n) =>
@@ -1023,7 +1137,7 @@ export function composeOpeningRepair(kind, state) {
  * Compose a response for the non-deep intents entirely in-process (deterministic).
  * Returns null for intents that should be handled by the deep brain.
  */
-export function composeFrontDoorResponse({ intent, state, transcript, personalMeaning }) {
+export function composeFrontDoorResponse({ intent, state, transcript, personalMeaning, reciprocal }) {
   const seed = state.turnCount;
   switch (intent) {
     case INTENT.GREETING: {
@@ -1031,6 +1145,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
       return { text: pick(GREETING_TEMPLATES, seed)(name), engine: "front_door" };
     }
     case INTENT.CASUAL: {
+      if (reciprocal || isReciprocalSmallTalk(transcript)) {
+        return {
+          text: pick(RECIPROCAL_TEMPLATES, seed)(),
+          engine: "front_door",
+          lane: "reciprocal_casual",
+        };
+      }
       if (personalMeaning) {
         return { text: pick(CASUAL_MEANING_TEMPLATES, seed)(), engine: "front_door" };
       }
@@ -1049,11 +1170,7 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
       };
     }
     case INTENT.CLOSING: {
-      const name = maybeName(state);
-      const text = state.sentOff
-        ? pick(CLOSING_AGAIN_TEMPLATES, seed)()
-        : pick(CLOSING_TEMPLATES, seed)(name);
-      return { text, engine: "front_door" };
+      return composeClosingResponse(state, transcript);
     }
     case INTENT.CRISIS: {
       const name = maybeName(state, { force: true });
@@ -1081,7 +1198,10 @@ function casualAck(transcript) {
   if (/\bweekend|vacation|holiday|weather\b/.test(t)) {
     return "That sounds like a nice change of pace.";
   }
-  return "That sounds like a real part of your days right now.";
+  // Prefer specific recognition over a generic "real part of your days" probe.
+  const cue = extractConcreteCue(transcript);
+  if (cue) return `I'm with you on ${cue}.`;
+  return "I'm with you.";
 }
 
 /**
@@ -1393,18 +1513,23 @@ export async function runFrontDoorTurn(input) {
 
   const resolved = resolveFrontDoorClassification(transcript, state);
   const intent = resolved.intent;
+  const reciprocalCasual =
+    intent === INTENT.CASUAL && isReciprocalSmallTalk(resolved.classifyText);
   // Crisis (self-harm) always wins and stays on the crisis protocol; conduct is
   // evaluated for every other turn (use full transcript for safety/boundary cues).
   const conduct = intent === INTENT.CRISIS ? null : classifyConduct(transcript);
   const personalMeaning =
     !conduct &&
+    !reciprocalCasual &&
     (intent === INTENT.CASUAL || resolved.meaningfulOrdinary) &&
     detectPersonalMeaning(resolved.classifyText);
 
   // Re-entry: user had said goodbye, now returns with real content or a question.
-  const reopened = state.sentOff && intent !== INTENT.CLOSING && isSubstantive(transcript);
+  const wasSentOff = Boolean(state.sentOff);
+  const reopened = wasSentOff && intent !== INTENT.CLOSING && isSubstantive(transcript);
+  const repeatedFarewell = wasSentOff && intent === INTENT.CLOSING;
 
-  const isDeep = !conduct && resolved.routeDeep;
+  const isDeep = !conduct && resolved.routeDeep && !reciprocalCasual;
   const offerFaith = !conduct && shouldOfferFaith(state, intent);
   const recentAssistants = recentAssistantTexts(state, 4);
   const prevAssistant = lastAssistantText(state);
@@ -1412,6 +1537,8 @@ export async function runFrontDoorTurn(input) {
   let text;
   let engine;
   let repeatRepair = false;
+  let composedLane = null;
+  let composedRepeatedFarewell = false;
 
   const deepCtx = {
     intent,
@@ -1456,9 +1583,12 @@ export async function runFrontDoorTurn(input) {
       state,
       transcript: resolved.classifyText,
       personalMeaning: false, // meaningful ordinary is deep; keep mini templates minimal
+      reciprocal: reciprocalCasual,
     });
     text = composed.text;
     engine = composed.engine;
+    composedLane = composed.lane || null;
+    composedRepeatedFarewell = Boolean(composed.repeatedFarewell);
   } else if (typeof input.deepGenerate === "function") {
     const result = await input.deepGenerate(deepCtx);
     text = String(result?.text || "").trim();
@@ -1541,13 +1671,26 @@ export async function runFrontDoorTurn(input) {
     ? `conduct:${conduct}`
     : reopened
       ? "reopen"
-      : resolved.conversationalRepair
-        ? "conversational_repair"
-        : resolved.meaningfulOrdinary
-          ? "ordinary_meaningful"
-          : intent === INTENT.CASUAL && personalMeaning
-            ? "casual_meaning"
-            : intent;
+      : composedLane
+        ? composedLane
+        : resolved.conversationalRepair
+          ? "conversational_repair"
+          : resolved.meaningfulOrdinary
+            ? "ordinary_meaningful"
+            : intent === INTENT.CASUAL && personalMeaning
+              ? "casual_meaning"
+              : intent;
+
+  const sentOffTransition =
+    intent === INTENT.CLOSING
+      ? wasSentOff
+        ? "sentOff:already"
+        : "sentOff:latched"
+      : reopened
+        ? "sentOff:cleared"
+        : wasSentOff
+          ? "sentOff:held"
+          : "sentOff:off";
 
   return {
     text,
@@ -1563,6 +1706,10 @@ export async function runFrontDoorTurn(input) {
       sentenceCount: sentenceCount(text),
       usedName,
       sentOff: nextState.sentOff,
+      sentOffBefore: wasSentOff,
+      sentOffTransition,
+      repeatedFarewell: repeatedFarewell || composedRepeatedFarewell,
+      reciprocalCasual,
       turnCount: nextState.turnCount,
       offeredFaith: offerFaith,
       conduct: conduct ?? null,
