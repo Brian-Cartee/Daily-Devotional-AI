@@ -75,6 +75,265 @@ export function extractTrailingSubstance(rawText) {
   return null;
 }
 
+/** Mid-turn bridges that reopen after a farewell clause. */
+const FAREWELL_REOPEN_BRIDGE =
+  /\b((hey|oh|ok|okay)[,.]?\s+)?(actually|wait|one more thing|one more question|before i go|real quick|but before)\b/i;
+
+/** Short social reciprocals after a close ("You too."). */
+const SOCIAL_FAREWELL_RECIPROCAL =
+  /^\s*(thanks?|thank you)[,.]?\s*(you too|same to you|likewise|you as well)\s*[!.]?\s*$/i;
+const SOCIAL_FAREWELL_RECIPROCAL_BARE =
+  /^\s*(you too|same to you|likewise|you as well|take care|bye|goodbye|good ?night|have a good (one|day|night))\s*[!.]?\s*$/i;
+
+function clauseLooksClosing(text) {
+  const t = norm(text);
+  if (!t) return false;
+  return matchesAny(t, CLOSING_PATTERNS);
+}
+
+function clauseLooksGratitudeOnly(text) {
+  const t = norm(text);
+  if (!t) return false;
+  if (clauseLooksClosing(t)) return false;
+  return (
+    /^\s*(thanks|thank you|thankyou)([,.!]|\s)*(philip|a lot|so much|again|very much)?[.!]?\s*$/i.test(
+      t,
+    ) || /^\s*i appreciate (it|that|you)\s*[.!]?\s*$/i.test(t)
+  );
+}
+
+function clauseLooksSubstance(text) {
+  const t = String(text || "").trim();
+  if (!t) return false;
+  if (clauseLooksClosing(t) && wordCount(t) <= 10 && !/[?]/.test(t) && !FAREWELL_REOPEN_BRIDGE.test(t)) {
+    return false;
+  }
+  if (clauseLooksGratitudeOnly(t)) return false;
+  if (/[?]/.test(t)) return true;
+  if (FAREWELL_REOPEN_BRIDGE.test(t) && wordCount(t) >= 4) return true;
+  if (wordCount(t) >= 5) return true;
+  if (wordCount(t) >= 3 && TRAILING_SUBSTANCE_CUES.test(t)) return true;
+  return false;
+}
+
+/** Split into ordered clauses without depending on isClosingTurn (avoids recursion). */
+export function splitTurnClauses(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return [];
+  // Prefer sentence boundaries; also split before an explicit reopen bridge mid-utterance.
+  const buffered = original
+    .replace(/([.!?])\s+/g, "$1\n")
+    .replace(FAREWELL_REOPEN_BRIDGE, (m, offset, whole) =>
+      offset > 0 && !/\n\s*$/.test(whole.slice(Math.max(0, offset - 3), offset)) ? `\n${m}` : m,
+    );
+  return buffered
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Order-aware multi-act representation.
+ * Latest meaningful conversational act controls routing.
+ */
+export function analyzeMultiActTurn(rawText, state = null) {
+  const original = String(rawText || "").trim();
+  const empty = {
+    original,
+    acts: [],
+    orderMode: "empty",
+    classifyText: "",
+    substanceText: null,
+    closingText: null,
+    closingFollowedBySubstance: false,
+    substanceFollowedByClosing: false,
+    bareGratitude: false,
+    socialFarewellReciprocal: false,
+  };
+  if (!original) return empty;
+
+  if (isSocialFarewellReciprocal(original, state)) {
+    return {
+      ...empty,
+      acts: [{ type: "social_farewell_reciprocal", text: original }],
+      orderMode: "social_farewell_reciprocal",
+      classifyText: original,
+      socialFarewellReciprocal: true,
+      closingText: original,
+    };
+  }
+
+  if (isBareGratitude(original)) {
+    return {
+      ...empty,
+      acts: [{ type: "gratitude", text: original }],
+      orderMode: "bare_gratitude",
+      classifyText: original,
+      bareGratitude: true,
+    };
+  }
+
+  const softTrailing = extractTrailingSubstance(original);
+  if (softTrailing && !clauseLooksClosing(softTrailing)) {
+    // Leading thanks/ack + substance, no farewell clash.
+    if (!clauseLooksClosing(original) || clauseLooksSubstance(softTrailing)) {
+      // Fall through only if farewell-then-substance isn't a better fit.
+    }
+  }
+
+  const clauses = splitTurnClauses(original);
+  const acts = clauses.map((text) => {
+    if (clauseLooksClosing(text) && !FAREWELL_REOPEN_BRIDGE.test(text)) {
+      return { type: "closing", text };
+    }
+    if (clauseLooksGratitudeOnly(text)) return { type: "gratitude", text };
+    if (clauseLooksSubstance(text)) return { type: "substance", text };
+    if (clauseLooksClosing(text)) return { type: "closing", text };
+    return { type: "other", text };
+  });
+
+  let lastClosingIdx = -1;
+  let lastSubstanceIdx = -1;
+  for (let i = 0; i < acts.length; i++) {
+    if (acts[i].type === "closing") lastClosingIdx = i;
+    if (acts[i].type === "substance") lastSubstanceIdx = i;
+  }
+
+  // Closing / gratitude-close followed by later substance → substance wins.
+  if (lastClosingIdx >= 0 && lastSubstanceIdx > lastClosingIdx) {
+    const substanceText = acts
+      .slice(lastClosingIdx + 1)
+      .filter((a) => a.type === "substance" || a.type === "other")
+      .map((a) => a.text)
+      .join(" ")
+      .trim();
+    const closingText = acts
+      .slice(0, lastClosingIdx + 1)
+      .map((a) => a.text)
+      .join(" ")
+      .trim();
+    if (substanceText && clauseLooksSubstance(substanceText)) {
+      return {
+        original,
+        acts,
+        orderMode: "closing_then_substance",
+        classifyText: substanceText,
+        substanceText,
+        closingText,
+        closingFollowedBySubstance: true,
+        substanceFollowedByClosing: false,
+        bareGratitude: false,
+        socialFarewellReciprocal: false,
+      };
+    }
+  }
+
+  // Substance (or mixed content) followed by a farewell → close.
+  if (lastClosingIdx >= 0 && lastClosingIdx === acts.length - 1 && lastSubstanceIdx >= 0 && lastSubstanceIdx < lastClosingIdx) {
+    const substanceText = acts
+      .slice(0, lastClosingIdx)
+      .filter((a) => a.type === "substance" || a.type === "other" || a.type === "gratitude")
+      .map((a) => a.text)
+      .join(" ")
+      .trim();
+    const closingText = acts[lastClosingIdx].text;
+    if (substanceText && (clauseLooksSubstance(substanceText) || wordCount(substanceText) >= 4)) {
+      return {
+        original,
+        acts,
+        orderMode: "substance_then_closing",
+        classifyText: original,
+        substanceText,
+        closingText,
+        closingFollowedBySubstance: false,
+        substanceFollowedByClosing: true,
+        bareGratitude: false,
+        socialFarewellReciprocal: false,
+      };
+    }
+  }
+
+  // Softener strip for thanks-led substance without farewell.
+  if (softTrailing) {
+    return {
+      original,
+      acts: acts.length ? acts : [{ type: "substance", text: softTrailing }],
+      orderMode: "softener_then_substance",
+      classifyText: softTrailing,
+      substanceText: softTrailing,
+      closingText: null,
+      closingFollowedBySubstance: false,
+      substanceFollowedByClosing: false,
+      bareGratitude: false,
+      socialFarewellReciprocal: false,
+      multiIntentSoftener: true,
+    };
+  }
+
+  if (lastClosingIdx >= 0 && lastSubstanceIdx < 0) {
+    return {
+      original,
+      acts,
+      orderMode: "closing_only",
+      classifyText: original,
+      substanceText: null,
+      closingText: original,
+      closingFollowedBySubstance: false,
+      substanceFollowedByClosing: false,
+      bareGratitude: false,
+      socialFarewellReciprocal: false,
+    };
+  }
+
+  return {
+    original,
+    acts: acts.length ? acts : [{ type: "substance", text: original }],
+    orderMode: "substance_only",
+    classifyText: original,
+    substanceText: original,
+    closingText: null,
+    closingFollowedBySubstance: false,
+    substanceFollowedByClosing: false,
+    bareGratitude: false,
+    socialFarewellReciprocal: false,
+  };
+}
+
+export function isBareGratitude(rawText) {
+  const t = norm(rawText);
+  if (!t) return false;
+  if (clauseLooksClosing(t) && !/^\s*(thanks|thank you)/i.test(t)) return false;
+  return (
+    /^\s*(thanks|thank you|thankyou)([,.!]|\s)*(very much|a lot|so much|again)?[.!]?\s*$/i.test(t) ||
+    /^\s*i appreciate (it|that|you)\s*[.!]?\s*$/i.test(t) ||
+    /^\s*(that helps|helpful)[,.]?\s*(thanks|thank you)?[.!]?\s*$/i.test(t)
+  );
+}
+
+/** Recent farewell context from assistant or latched sentOff / lastIntent. */
+export function recentClosingContext(state) {
+  if (!state) return false;
+  if (state.sentOff) return true;
+  if (state.lastIntent === INTENT.CLOSING) return true;
+  const last = lastAssistantText(state);
+  if (/\b(take care|i'?ll be (right )?here|come back|glad we could talk|you'?re welcome|talk soon|have a good)\b/i.test(last)) {
+    return true;
+  }
+  return false;
+}
+
+export function isSocialFarewellReciprocal(rawText, state = null) {
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const t = norm(original);
+  if (wordCount(t) > 8) return false;
+  const matched = SOCIAL_FAREWELL_RECIPROCAL.test(t) || SOCIAL_FAREWELL_RECIPROCAL_BARE.test(t);
+  if (!matched) return false;
+  // Bare "take care"/"bye" always close. "You too" needs closing context if sentOff missed a latch.
+  if (/^\s*(take care|bye|goodbye|good ?night|have a good (one|day|night))\b/i.test(t)) return true;
+  return recentClosingContext(state) || Boolean(state?.sentOff) || state?.lastIntent === INTENT.CLOSING;
+}
+
 export function isConversationalRepair(rawText, state) {
   const t = norm(rawText);
   if (!CONVERSATIONAL_REPAIR.test(t)) return false;
@@ -114,11 +373,76 @@ export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
 /** Classify + multi-intent strip + deep-routing decision for one turn. */
 export function resolveFrontDoorClassification(rawText, state) {
   const original = String(rawText || "").trim();
-  const trailing = extractTrailingSubstance(original);
-  const classifyText = trailing || original;
-  const multiIntent = Boolean(trailing);
-  const gratitudePreserved = multiIntent && /^\s*(thanks|thank you|thankyou)\b/i.test(original);
-  const intent = classifyIntent(classifyText, state);
+  const multi = analyzeMultiActTurn(original, state);
+
+  if (multi.socialFarewellReciprocal) {
+    return {
+      original,
+      classifyText: original,
+      intent: INTENT.CLOSING,
+      multiIntent: false,
+      gratitudePreserved: false,
+      meaningfulOrdinary: false,
+      conversationalRepair: false,
+      routeDeep: false,
+      orderMode: multi.orderMode,
+      conversationalActs: multi.acts,
+      closingFollowedBySubstance: false,
+      substanceFollowedByClosing: false,
+      bareGratitude: false,
+      socialFarewellReciprocal: true,
+    };
+  }
+
+  if (multi.bareGratitude) {
+    return {
+      original,
+      classifyText: original,
+      intent: INTENT.GRATITUDE,
+      multiIntent: false,
+      gratitudePreserved: false,
+      meaningfulOrdinary: false,
+      conversationalRepair: false,
+      routeDeep: false,
+      orderMode: multi.orderMode,
+      conversationalActs: multi.acts,
+      closingFollowedBySubstance: false,
+      substanceFollowedByClosing: false,
+      bareGratitude: true,
+      socialFarewellReciprocal: false,
+    };
+  }
+
+  // Farewell then substance → classify and route on the trailing substance.
+  let classifyText = multi.classifyText || original;
+  if (multi.closingFollowedBySubstance && multi.substanceText) {
+    classifyText = multi.substanceText;
+  } else if (multi.multiIntentSoftener && multi.substanceText) {
+    classifyText = multi.substanceText;
+  }
+
+  // Softener nested inside extracted substance.
+  const nested = extractTrailingSubstance(classifyText);
+  if (nested) classifyText = nested;
+
+  const multiIntent = Boolean(
+    multi.closingFollowedBySubstance ||
+      multi.substanceFollowedByClosing ||
+      multi.multiIntentSoftener ||
+      (nested && nested !== original),
+  );
+  const gratitudePreserved =
+    multiIntent &&
+    /^\s*(thanks|thank you|thankyou)\b/i.test(original) &&
+    !multi.substanceFollowedByClosing;
+
+  let intent;
+  if (multi.substanceFollowedByClosing) {
+    intent = INTENT.CLOSING;
+  } else {
+    intent = classifyIntent(classifyText, state);
+  }
+
   const conversationalRepair = isConversationalRepair(original, state);
   const ordinarySubstance =
     (!DEEP_INTENTS.includes(intent) &&
@@ -143,6 +467,12 @@ export function resolveFrontDoorClassification(rawText, state) {
     meaningfulOrdinary: Boolean(ordinarySubstance && routeDeep),
     conversationalRepair,
     routeDeep: Boolean(routeDeep),
+    orderMode: multi.orderMode,
+    conversationalActs: multi.acts,
+    closingFollowedBySubstance: Boolean(multi.closingFollowedBySubstance),
+    substanceFollowedByClosing: Boolean(multi.substanceFollowedByClosing),
+    bareGratitude: false,
+    socialFarewellReciprocal: false,
   };
 }
 
@@ -308,7 +638,8 @@ const CLOSING_PATTERNS = [
   /\bthat'?s all( for now)?\b/,
   /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off|leave)\b/,
   /\bi need to go\b/,
-  /\bhave a good (day|night|one|evening|afternoon)\b/,
+  /\bhave a (good|great|wonderful|nice) (day|night|one|evening|afternoon)\b/,
+  /\byou have a (good|great|wonderful|nice) (day|night|one)\b/,
   /\benjoy (your|the) (day|night|evening|match|game|rest)\b/,
   /\bi(?:'| a)?m going to watch\b/,
   /\ball right[,.]?\s*(thank(s| you)|thanks)\b/,
@@ -373,10 +704,18 @@ export function extractOpeningStatusBrief(rawText) {
 /**
  * True when the turn is clearly ending the session (farewell or gratitude+farewell).
  * Bare thanks alone is NOT closing.
+ * Order-aware: farewell followed by later substance is NOT a closing turn.
  */
-export function isClosingTurn(rawText) {
-  const text = norm(rawText);
-  if (!text) return false;
+export function isClosingTurn(rawText, state = null) {
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const multi = analyzeMultiActTurn(original, state);
+  if (multi.closingFollowedBySubstance) return false;
+  if (multi.socialFarewellReciprocal) return true;
+  if (multi.bareGratitude) return false;
+  if (multi.substanceFollowedByClosing) return true;
+
+  const text = norm(original);
   if (matchesAny(text, CRISIS_PATTERNS)) return false;
   if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return false;
   if (matchesAny(text, EMOTIONAL_PATTERNS) && wordCount(text) >= 14) return false;
@@ -874,9 +1213,10 @@ export function classifyIntent(rawText, state) {
 
   // Bare gratitude only — trailing substance is handled via extractTrailingSubstance
   // before this classifier is called for the remainder.
+  if (isBareGratitude(text)) return INTENT.GRATITUDE;
   if (matchesAny(text, GRATITUDE_PATTERNS) && !matchesAny(text, EMOTIONAL_PATTERNS)) {
     const sole =
-      /^\s*(thanks|thank you|thankyou)([,.!]|\s)*(a lot|so much|again)?[.!]?\s*$/i.test(text) ||
+      /^\s*(thanks|thank you|thankyou)([,.!]|\s)*(a lot|so much|again|very much)?[.!]?\s*$/i.test(text) ||
       (wordCount(text) <= 4 && !/[?]/.test(text) && !matchesAny(text, CASUAL_PATTERNS) && !matchesAny(text, PRACTICAL_PATTERNS));
     if (sole) return INTENT.GRATITUDE;
     // Mixed gratitude + content landed here only if substance wasn't stripped first.
@@ -1013,15 +1353,15 @@ const GREETING_TEMPLATES = [
 const HYBRID_GREETING_TEMPLATES = [
   (status, name) =>
     status
-      ? `Good to hear ${status}${name ? ", " + name : ""}. I'm glad we're talking — what's been going on?`
-      : `Hey${name ? " " + name : ""}. I'm glad we're talking. I'm right here with you — what's been going on?`,
+      ? `Good to hear ${status}${name ? ", " + name : ""}. I'm here and glad we're talking. What's been good about today?`
+      : `Hey${name ? " " + name : ""}. I'm here and glad we're talking. What's been going on?`,
   (status, name) =>
     status
-      ? `Glad to hear ${status}. I'm with you${name ? ", " + name : ""} — what's on your mind?`
-      : `Hey${name ? " " + name : ""} — I'm with you. What's on your mind?`,
+      ? `Glad to hear ${status}. I'm with you${name ? ", " + name : ""} — glad we're talking. What's on your mind?`
+      : `Hey${name ? " " + name : ""} — I'm here with you. What's on your mind?`,
   (status, name) =>
     status
-      ? `Thanks for saying that — ${status}. I'm glad to be here with you${name ? ", " + name : ""}.`
+      ? `Good to hear ${status}. I'm glad to be here with you${name ? ", " + name : ""}. What's been going on?`
       : `Hi${name ? " " + name : ""}. I'm glad to be here with you. What's been going on?`,
 ];
 
@@ -1037,20 +1377,47 @@ const CASUAL_MEANING_TEMPLATES = [
   () => `I'm hearing something underneath the schedule there. No pressure, but I'm glad to listen if you want to go into it.`,
 ];
 
-/** Grounded observation for descriptive faith practice — no verse request. */
-const DESCRIPTIVE_FAITH_TEMPLATES = [
+/** Grounded descriptive faith — never invent ministry/work purpose. */
+const DESCRIPTIVE_FAITH_TEMPLATES_GROUNDED = [
   () =>
-    `There's a steadiness in keeping Scripture and prayer in the morning and evening like that — it sounds like it's shaping the work itself.`,
+    `There's a steadiness in keeping Scripture and prayer before the day starts — that kind of rhythm tends to keep a person grounded.`,
   () =>
-    `Keeping the Word and prayer as anchors through the day is no small discipline — especially when the work itself points people toward Christ.`,
+    `Keeping the Word and prayer as morning anchors is no small discipline. That grounding can carry quietly into whatever the day asks.`,
   () =>
-    `It sounds like the routine isn't separate from the calling — prayer and Scripture are carrying the work, not decorating it.`,
+    `It sounds like Scripture and prayer aren't an afterthought — they're how the day begins. That order matters.`,
 ];
 
+/** Only when Christ-centered work is already established in transcript/history. */
+const DESCRIPTIVE_FAITH_TEMPLATES_CHRIST_WORK = [
+  () =>
+    `There's a steadiness in keeping Scripture and prayer like that — especially when the work itself is aimed toward Christ.`,
+  () =>
+    `Keeping the Word and prayer as anchors through the day is no small discipline when the work points people toward Christ.`,
+  () =>
+    `It sounds like the routine isn't separate from the calling — prayer and Scripture are carrying faith-shaped work, not decorating it.`,
+];
+
+export function historyHasChristCenteredWork(state, transcript = "") {
+  const blob = [
+    String(transcript || ""),
+    ...((state?.history || []).map((h) => String(h.content || ""))),
+  ].join(" ");
+  return /\b(lead(ing)? people to christ|connect(ing)? people to christ|ministry|witness(?:ing)?|faith-?based (work|app|project|business)|points? people toward christ|bring(?:ing)? .{0,40}to christ|for christ|toward christ)\b/i.test(
+    blob,
+  );
+}
+
+function composeDescriptiveFaithReply(transcript, state) {
+  const list = historyHasChristCenteredWork(state, transcript)
+    ? DESCRIPTIVE_FAITH_TEMPLATES_CHRIST_WORK
+    : DESCRIPTIVE_FAITH_TEMPLATES_GROUNDED;
+  return pick(list, state.turnCount || 0)();
+}
+
 const GRATITUDE_TEMPLATES = [
-  (n) => `Glad that landed${n ? ", " + n : ""}. What's it been like for you?`,
-  () => `Glad that landed. Tell me a little about how it feels.`,
-  () => `That's worth noticing. What made it land for you?`,
+  () => `You're welcome.`,
+  () => `Of course.`,
+  (n) => (n ? `I'm glad that helped, ${n}.` : `I'm glad that helped.`),
 ];
 
 const CLOSING_TEMPLATES = [
@@ -1065,6 +1432,12 @@ const CLOSING_AGAIN_TEMPLATES = [
   () => `Alright — take care.`,
 ];
 
+const SOCIAL_FAREWELL_TEMPLATES = [
+  () => `You too.`,
+  () => `Alright.`,
+  () => `Take care.`,
+];
+
 /** Soft reciprocal return — no invented human day or schedule. */
 const RECIPROCAL_TEMPLATES = [
   () => `I'm glad you're here. What's been going on with you?`,
@@ -1075,6 +1448,11 @@ const RECIPROCAL_TEMPLATES = [
 const FRAGMENT_REPAIR_TEMPLATES = [
   () => `I may not have caught all of that — could you say that part again?`,
   () => `I might have missed the full thought there. What were you saying?`,
+];
+
+const INCOMPLETE_SPEECH_TEMPLATES = [
+  () => `I may have missed the rest of that — what were you going to say?`,
+  () => `I think the last part got cut off. What were you about to say?`,
 ];
 
 function recentUserTopics(state) {
@@ -1089,7 +1467,15 @@ function recentUserTopics(state) {
 
 function composeClosingResponse(state, transcript) {
   const name = maybeName(state);
-  const repeated = Boolean(state.sentOff);
+  if (isSocialFarewellReciprocal(transcript, state)) {
+    return {
+      text: pick(SOCIAL_FAREWELL_TEMPLATES, state.turnCount)(),
+      engine: "front_door",
+      lane: "closing_again",
+      repeatedFarewell: true,
+    };
+  }
+  const repeated = Boolean(state.sentOff) || state.lastIntent === INTENT.CLOSING;
   if (repeated) {
     return {
       text: pick(CLOSING_AGAIN_TEMPLATES, state.turnCount)(),
@@ -1318,7 +1704,8 @@ export function isLikelyFragmentTranscript(rawText, state) {
 
   // Never interrupt safety, farewells, greetings, asks, or reciprocal small talk.
   if (matchesAny(t, CRISIS_PATTERNS)) return false;
-  if (isClosingTurn(t)) return false;
+  if (isClosingTurn(original, state)) return false;
+  if (isBareGratitude(original) || isSocialFarewellReciprocal(original, state)) return false;
   if (matchesAny(t, GREETING_PATTERNS)) return false;
   if (matchesAny(t, PRAYER_REQUEST_PATTERNS)) return false;
   if (matchesAny(t, PRACTICAL_PATTERNS)) return false;
@@ -1344,9 +1731,49 @@ export function isLikelyFragmentTranscript(rawText, state) {
   return true;
 }
 
-export function composeFragmentRepair(state) {
+/**
+ * Explicit incomplete/cutoff speech — ellipsis or unfinished connector — without
+ * broadening the conjunction false-positive path.
+ */
+export function isHighConfidenceIncompleteSpeech(rawText, state) {
+  if ((state?.turnCount ?? 0) < 1) return false;
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const t = norm(original);
+  const words = wordCount(t);
+  if (words < 2 || words > 14) return false;
+  if (matchesAny(t, CRISIS_PATTERNS)) return false;
+  if (isClosingTurn(original, state)) return false;
+  if (isBareGratitude(original) || isSocialFarewellReciprocal(original, state)) return false;
+  if (matchesAny(t, PRAYER_REQUEST_PATTERNS) || matchesAny(t, PRACTICAL_PATTERNS)) return false;
+  if (isHybridGreetingReciprocal(original) || isReciprocalSmallTalk(original)) return false;
+
+  const endsEllipsis = /\.\.\.\s*$|…\s*$/.test(original);
+  const stripped = original.replace(/\s*(\.\.\.|…)\s*$/g, "").trim();
+  const endsUnfinished =
+    /\b(and|but|so|or|if|when|because|that|that's|thats|the|a|an|to|for|with|my)\s*$/i.test(stripped);
+
+  // Completed proposition already present → not incomplete.
+  if (hasUsableSpokenClause(stripped) && !/\b(i thought|i was going to|i mean)\b/i.test(stripped)) {
+    // "I thought that's" is unfinished even if "I thought" matches poorly; treat specially.
+    if (!/\b(i thought|i was (going to|saying)|i mean)\b.{0,12}$/i.test(stripped)) {
+      return false;
+    }
+  }
+
+  if (endsEllipsis) {
+    if (/\b(i thought|i was going to|i mean|that's|that is)\b/i.test(stripped)) return true;
+    if (!hasUsableSpokenClause(stripped)) return true;
+  }
+  if (endsUnfinished && words <= 8 && !hasUsableSpokenClause(stripped)) return true;
+  return false;
+}
+
+export function composeFragmentRepair(state, { incomplete = false } = {}) {
   return {
-    text: pick(FRAGMENT_REPAIR_TEMPLATES, state.turnCount)(),
+    text: incomplete
+      ? pick(INCOMPLETE_SPEECH_TEMPLATES, state.turnCount)()
+      : pick(FRAGMENT_REPAIR_TEMPLATES, state.turnCount)(),
     engine: "front_door",
     intent: INTENT.CASUAL,
     lane: "fragment_repair",
@@ -1455,11 +1882,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
         let text = pick(HYBRID_GREETING_TEMPLATES, seed)(status, name);
         // Never re-ask how they are when they already said.
         if (status) text = text.replace(/\bhow are you( doing| today)?\??/gi, "").replace(/\s+/g, " ").trim();
-        if (!/[.!?]$/.test(text)) text = `${text}.`;
-        // Prefer presence over stacking another how-are-you style probe when status present.
-        if (status && /\?\s*$/.test(text) && seed % 3 === 2) {
-          text = text.replace(/\?\s*$/, ".");
+        // Always answer the reciprocal from relational presence (no invented human life).
+        if (!/\b(i'?m here|i am here|i'?m with you|glad (we'?re|to be) (talking|here))\b/i.test(text)) {
+          text = status
+            ? `Good to hear ${status}. I'm here and glad we're talking. What's been good about today?`
+            : `I'm here and glad we're talking. What's been going on?`;
         }
+        if (!/[.!?]$/.test(text)) text = `${text}.`;
         return { text, engine: "front_door", lane: "hybrid_greeting" };
       }
       const name = maybeName(state, { force: !state.greeted });
@@ -1475,7 +1904,7 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
       }
       if (isDescriptiveFaithPractice(transcript)) {
         return {
-          text: pick(DESCRIPTIVE_FAITH_TEMPLATES, seed)(),
+          text: composeDescriptiveFaithReply(transcript, state),
           engine: "front_door",
           lane: "descriptive_faith",
         };
@@ -1507,7 +1936,7 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
     case INTENT.SPIRITUAL: {
       if (isDescriptiveFaithPractice(transcript)) {
         return {
-          text: pick(DESCRIPTIVE_FAITH_TEMPLATES, seed)(),
+          text: composeDescriptiveFaithReply(transcript, state),
           engine: "front_door",
           lane: "descriptive_faith",
         };
@@ -1860,9 +2289,11 @@ export async function runFrontDoorTurn(input) {
     };
   }
 
-  // Mid-conversation fragmentary STT — invite a repeat rather than invent continuity.
-  if (isLikelyFragmentTranscript(transcript, state)) {
-    const composed = composeFragmentRepair(state);
+  // Mid-conversation fragmentary / incomplete STT — invite a repeat rather than invent continuity.
+  const incompleteSpeech = isHighConfidenceIncompleteSpeech(transcript, state);
+  const danglingFragment = isLikelyFragmentTranscript(transcript, state);
+  if (incompleteSpeech || danglingFragment) {
+    const composed = composeFragmentRepair(state, { incomplete: incompleteSpeech });
     const nextState = advanceState(state, {
       intent: composed.intent,
       conduct: null,
@@ -1891,6 +2322,7 @@ export async function runFrontDoorTurn(input) {
         sentenceCount: sentenceCount(composed.text),
         usedName: false,
         sentOff: nextState.sentOff,
+        sentOffBefore: Boolean(state.sentOff),
         turnCount: nextState.turnCount,
         offeredFaith: false,
         conduct: null,
@@ -1899,6 +2331,7 @@ export async function runFrontDoorTurn(input) {
         prayerDecision: null,
         openingRepair: false,
         fragmentRepair: true,
+        incompleteSpeechRepair: Boolean(incompleteSpeech),
         consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
       },
     };
@@ -1917,10 +2350,15 @@ export async function runFrontDoorTurn(input) {
     (intent === INTENT.CASUAL || resolved.meaningfulOrdinary) &&
     detectPersonalMeaning(resolved.classifyText);
 
-  // Re-entry: user had said goodbye, now returns with real content or a question.
+  // Re-entry after a completed close. Same-turn farewell→substance is handled by
+  // classifyText (no sentOff required for routing); reopenPrefix only when already sentOff.
   const wasSentOff = Boolean(state.sentOff);
-  const reopened = wasSentOff && intent !== INTENT.CLOSING && isSubstantive(transcript);
-  const repeatedFarewell = wasSentOff && intent === INTENT.CLOSING;
+  const closingThenSubstance = Boolean(resolved.closingFollowedBySubstance);
+  const reopened =
+    wasSentOff && intent !== INTENT.CLOSING && isSubstantive(resolved.classifyText);
+  const repeatedFarewell =
+    intent === INTENT.CLOSING &&
+    (wasSentOff || resolved.socialFarewellReciprocal || recentClosingContext(state));
 
   const isDeep = !conduct && resolved.routeDeep && !reciprocalCasual;
   const preferStatement = shouldPreferStatementReply(state, { intent, conduct });
@@ -2111,7 +2549,7 @@ export async function runFrontDoorTurn(input) {
 
   const sentOffTransition =
     intent === INTENT.CLOSING
-      ? wasSentOff
+      ? wasSentOff || resolved.socialFarewellReciprocal
         ? "sentOff:already"
         : "sentOff:latched"
       : reopened
@@ -2155,11 +2593,19 @@ export async function runFrontDoorTurn(input) {
       hybridGreeting: isHybridGreetingReciprocal(resolved.classifyText),
       descriptiveFaith: isDescriptiveFaithPractice(resolved.classifyText),
       fragmentRepair: false,
+      incompleteSpeechRepair: false,
       consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
       preferStatement,
       cadenceForcedStatement,
       genericPraiseRisk: detectGenericPraiseRisk(text),
       praiseSoftened,
+      orderMode: resolved.orderMode || null,
+      conversationalActs: (resolved.conversationalActs || []).map((a) => a.type),
+      closingFollowedBySubstance: Boolean(resolved.closingFollowedBySubstance),
+      substanceFollowedByClosing: Boolean(resolved.substanceFollowedByClosing),
+      bareGratitude: Boolean(resolved.bareGratitude),
+      socialFarewellReciprocal: Boolean(resolved.socialFarewellReciprocal),
+      closingThenSubstance,
     },
   };
 }
