@@ -73,11 +73,13 @@ function guidanceInstruction({
   gratitudePreserved,
   recentAssistantReplies,
   firstName,
+  preferStatement,
+  descriptiveFaith,
 }) {
   const lines = [];
   if (reopened) {
     lines.push(
-      "The person said goodbye a moment ago but has come back with something real. Reopen warmly and respond directly — do not treat the earlier goodbye as an ending.",
+      "The person said goodbye a moment ago but has come back with something real. Acknowledge you're still here and answer their substance immediately — do not say 'go ahead' or treat their question as needing permission.",
     );
   }
   if (conduct === "profanity_pain") {
@@ -102,7 +104,20 @@ function guidanceInstruction({
       "This is meaningful ordinary conversation. Acknowledge at least one concrete detail they actually said before any advice or follow-up question. Do not turn ordinary life into emotional intake. Do not force faith. Light warmth or curiosity is welcome.",
     );
     lines.push(
-      "AUTHENTICITY: Do not invent a human day, schedule, errands, work, exercise, meals, sleep, family, travel, or 'I've been busy too.' Respond with presence and interest — not a fabricated parallel life. Avoid reflexive praise like 'That's fantastic / wonderful / a great approach / impressive' or 'I love that'; prefer specific recognition.",
+      "AUTHENTICITY: Do not invent a human day, schedule, errands, work, exercise, meals, sleep, family, travel, or 'I've been busy too.' Respond with presence and interest — not a fabricated parallel life.",
+    );
+    lines.push(
+      "ANTI-PRAISE: Do not open with 'That's wonderful/beautiful/great/fantastic', 'I love that', 'Great choice', 'Thoughtful approach', or 'That makes a lot of sense'. Prefer specific recognition or a grounded observation.",
+    );
+  }
+  if (descriptiveFaith) {
+    lines.push(
+      "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about the discipline — do not recommend a passage or ask which verse is resonating.",
+    );
+  }
+  if (preferStatement) {
+    lines.push(
+      "CADENCE: Your recent replies already ended in questions. This turn must NOT end with a question. Contribute an observation, perspective, or direct answer instead.",
     );
   }
   if (conversationalRepair) {
@@ -150,6 +165,9 @@ function guidanceInstruction({
         recent.map((r) => `"${String(r).slice(0, 120)}"`).join(" | "),
     );
   }
+  lines.push(
+    "Do not ask for information they clearly already stated in the current or immediately previous user turn.",
+  );
   return lines.join(" ");
 }
 
