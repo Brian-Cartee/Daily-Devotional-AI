@@ -29,6 +29,8 @@ import {
   resolveFrontDoorClassification,
   isNearRepeat,
   composeRepeatRepair,
+  isClosingTurn,
+  isReciprocalSmallTalk,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
 import {
   PHILIP_VOICE_GENOME_VERSION,
@@ -211,6 +213,13 @@ const SCENARIOS = [
   // Goodbyes
   { label: "closing: gotta go bye", text: "Okay, I've gotta go. Bye.", intent: INTENT.CLOSING },
   { label: "closing: goodnight", text: "Goodnight.", intent: INTENT.CLOSING },
+  { label: "closing: have a good day", text: "All right, thank you, you have a good day.", intent: INTENT.CLOSING },
+  { label: "closing: talk again later", text: "I look forward to speaking to you again tomorrow or later today.", intent: INTENT.CLOSING },
+  { label: "closing: take care", text: "Take care.", intent: INTENT.CLOSING },
+  // Reciprocal small talk (not practical)
+  { label: "reciprocal: how about yourself", text: "I'm pretty good. How about yourself?", intent: INTENT.CASUAL },
+  { label: "reciprocal: how about you", text: "How about you?", intent: INTENT.CASUAL },
+  { label: "reciprocal: what about you", text: "What about you?", intent: INTENT.CASUAL },
   // Crisis
   { label: "crisis: don't want to live", text: "I don't want to live anymore.", intent: INTENT.CRISIS },
 ];
@@ -925,6 +934,171 @@ check("sole thank-you stays gratitude deterministic candidate", () => {
   });
   void sawInstruction;
 }
+
+{
+  // World Cup phone session (philip-lab-mrjs2inh-va4-39003020) — closing,
+  // reciprocal, authenticity, and anti-praise regression fixture.
+  const GENERIC_PRAISE =
+    /\b(that'?s fantastic|that'?s wonderful|that'?s a great approach|that'?s impressive|i love that)\b/i;
+  const FAKE_HUMAN_LIFE =
+    /\b(i'?ve been (keeping )?busy|i'?m doing well|i had a (busy|long) day|my (day|schedule|workout|errands))\b/i;
+  const ROBOTIC_AI = /\b(i'?m (just )?(an )?ai|as an ai|i'?m a (language )?model)\b/i;
+
+  async function deepStubWorldCup(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/working and taking care of my mom|watching some world cup/i.test(t)) {
+      return {
+        text:
+          "Work, caring for your mom, the World Cup, and still getting a workout in — that's a full stretch. Which of those has been most present today?",
+        engine: "stub-worldcup",
+      };
+    }
+    if (/enjoying america|american culture|love watching the world cup/i.test(t)) {
+      return {
+        text:
+          "There's something honest in watching the World Cup and noticing how people respond to American culture too. What about that has stuck with you most?",
+        engine: "stub-worldcup",
+      };
+    }
+    if (/watch party|brother|watching it right now|semifinal/i.test(t)) {
+      return {
+        text:
+          "A watch party with your brother, then the local spot after the USA went out — and you're still in the middle of a match now. How's this half feeling?",
+        engine: "stub-worldcup",
+      };
+    }
+    if (/argentina|messi|suspenseful|preference/i.test(t)) {
+      return {
+        text:
+          "Wanting close, suspenseful games more than a hard allegiance — that puts the soccer itself first. Hope this half and tomorrow's semi deliver that.",
+        engine: "stub-worldcup",
+      };
+    }
+    if (/mother|job|app|world cup|exercise|priorit/i.test(t)) {
+      return deepStub(ctx);
+    }
+    return {
+      text: "I'm with you on that — say more about what stands out.",
+      engine: "stub-worldcup",
+    };
+  }
+
+  const WORLD_CUP_TURNS = [
+    "Hey Phillip, how are you?",
+    "I'm pretty good. How about yourself?",
+    "Just really working and taking care of my mom and watching some World Cup, just going to work out and things like that. So just keeping busy. How about you?",
+    "Absolutely. I think I've been enjoying the matches just as much as I have seen how many people from around the world are enjoying America. I love watching the World Cup. It's been wonderful, but it's also been really wonderful to see how people are responding to America food and everything that, you know, American culture and everything that we have that we don't, that we kind of take for granted.",
+    "No, we went to a watch party and had a good time with my brother when the USA was playing. But other than that, it was just pretty much go to a local establishment for a pub and different food and different drinks. But once they lost, then I've been watching, I'm actually watching it right now, it's and I plan to watch the second half and then the additional semifinal match tomorrow.",
+    "I don't really have a preference, maybe Argentina with Messi maybe, but I'm really just wanting to see good games and really close games and kind of suspenseful stuff, not necessarily have a pick winner that I have partiality to.",
+    "Oh, thank you very much. Well, I look forward to speaking to you again and we may, we can actually have some more interaction tomorrow or later on today.",
+    "All right, thank you, you have a good day.",
+  ];
+
+  let state = createFrontDoorState("Brian");
+  const results = [];
+  for (const t of WORLD_CUP_TURNS) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state,
+      deepGenerate: deepStubWorldCup,
+    });
+    results.push(r);
+    state = r.state;
+  }
+
+  check("World Cup T1 greeting stays greeting (not swallowed by reciprocal)", () => {
+    assert.equal(results[0].intent, INTENT.GREETING);
+    assert.equal(results[0].meta.routedDeep, false);
+  });
+
+  check("World Cup T2 how about yourself → reciprocal casual, not practical", () => {
+    assert.equal(results[1].intent, INTENT.CASUAL);
+    assert.equal(results[1].lane, "reciprocal_casual");
+    assert.equal(results[1].meta.reciprocalCasual, true);
+    assert.equal(results[1].meta.routedDeep, false);
+    assert.equal(results[1].engine, "front_door");
+    assert.ok(isReciprocalSmallTalk(WORLD_CUP_TURNS[1]));
+    assert.ok(!FAKE_HUMAN_LIFE.test(results[1].text), results[1].text);
+    assert.ok(!ROBOTIC_AI.test(results[1].text), results[1].text);
+  });
+
+  check("World Cup T3 mom/work/World Cup recognized without invented busy life", () => {
+    assert.equal(results[2].meta.routedDeep, true);
+    assert.ok(/mom|mother|World Cup|work|workout/i.test(results[2].text), results[2].text);
+    assert.ok(!FAKE_HUMAN_LIFE.test(results[2].text), results[2].text);
+    assert.ok(!GENERIC_PRAISE.test(results[2].text), results[2].text);
+  });
+
+  check("World Cup T4–T6 specific recognition, no repeated generic praise", () => {
+    for (const r of results.slice(3, 6)) {
+      assert.ok(!GENERIC_PRAISE.test(r.text), r.text);
+      assert.ok(!FAKE_HUMAN_LIFE.test(r.text), r.text);
+    }
+    assert.ok(/World Cup|America|culture/i.test(results[3].text), results[3].text);
+    assert.ok(/brother|watch party|match|semi/i.test(results[4].text), results[4].text);
+    assert.ok(/suspense|close|Argentina|Messi|game/i.test(results[5].text), results[5].text);
+  });
+
+  check("World Cup T7 talk-again → closing + sentOff latch", () => {
+    assert.equal(results[6].intent, INTENT.CLOSING);
+    assert.equal(results[6].lane, "closing");
+    assert.equal(results[6].state.sentOff, true);
+    assert.equal(results[6].meta.sentOffTransition, "sentOff:latched");
+    assert.equal(results[6].meta.routedDeep, false);
+    assert.ok(!/[?]/.test(results[6].text), `closing asked a question: ${results[6].text}`);
+    assert.ok(!GENERIC_PRAISE.test(results[6].text), results[6].text);
+    assert.ok(isClosingTurn(WORLD_CUP_TURNS[6]));
+  });
+
+  check("World Cup T8 thank you + good day → short final closing, no question", () => {
+    assert.equal(results[7].intent, INTENT.CLOSING);
+    assert.equal(results[7].lane, "closing_again");
+    assert.equal(results[7].state.sentOff, true);
+    assert.equal(results[7].meta.repeatedFarewell, true);
+    assert.ok(!/[?]/.test(results[7].text), results[7].text);
+    assert.ok(sentenceCount(results[7].text) <= 2, results[7].text);
+    assert.ok(!/real part of your days/i.test(results[7].text), results[7].text);
+    assert.ok(!INTAKE_PHRASES.some((p) => p.test(results[7].text)), results[7].text);
+  });
+
+  check("World Cup: sole thanks is not closing; genome authenticity/praise rules present", () => {
+    assert.equal(isClosingTurn("Thank you."), false);
+    assert.equal(isClosingTurn("Thanks so much."), false);
+    assert.match(COMPACT_PHILIP_GENOME, /AUTHENTIC PRESENCE/);
+    assert.match(COMPACT_PHILIP_GENOME, /ENGAGEMENT WITHOUT GENERIC PRAISE/);
+    assert.match(COMPACT_PHILIP_GENOME, /I'?ve been busy too/);
+  });
+
+  // Substantive re-entry after the farewell latch.
+  const reentry = await runFrontDoorTurn({
+    transcript:
+      "Actually one more thing — how should I prioritize caring for my mother, the job search, the app, exercise, and the World Cup?",
+    firstName: "Brian",
+    state,
+    deepGenerate: deepStub,
+  });
+  check("World Cup re-entry after closing clears sentOff and answers substance", () => {
+    assert.equal(reentry.reopened, true);
+    assert.equal(reentry.state.sentOff, false);
+    assert.equal(reentry.meta.sentOffTransition, "sentOff:cleared");
+    assert.equal(reentry.intent, INTENT.PRACTICAL);
+    assert.ok(/mother|job|app|World Cup/i.test(reentry.text), reentry.text);
+  });
+}
+
+check("reciprocal helper: how about yourself", () => {
+  assert.equal(isReciprocalSmallTalk("I'm pretty good. How about yourself?"), true);
+  assert.equal(isReciprocalSmallTalk("What have you been up to?"), true);
+  assert.equal(classifyIntent("I'm pretty good. How about yourself?"), INTENT.CASUAL);
+  assert.notEqual(classifyIntent("I'm pretty good. How about yourself?"), INTENT.PRACTICAL);
+});
+
+check("closing helper: gratitude alone is not closing", () => {
+  assert.equal(isClosingTurn("Thank you, that really helped."), false);
+  assert.equal(isClosingTurn("All right, thank you, you have a good day."), true);
+  assert.equal(isClosingTurn("Take care — I'm going to watch the game now."), true);
+});
 
 // ---------------------------------------------------------------------------
 console.log(`\nFront Door: ${passed} passed, ${failed} failed`);
