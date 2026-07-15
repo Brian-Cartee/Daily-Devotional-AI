@@ -86,10 +86,12 @@ function guidanceInstruction({
   firstName,
   preferStatement,
   descriptiveFaith,
+  weightyDescriptiveFaith,
   reciprocalAsk,
   caregivingDetected,
   relationalDetailDetected,
   relationalHint,
+  lightOrdinaryTopic,
 }) {
   const lines = [];
   if (reopened) {
@@ -137,7 +139,14 @@ function guidanceInstruction({
   }
   if (descriptiveFaith) {
     lines.push(
-      "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about what they actually named — do not praise spirituality, recommend a passage, or ask which verse is resonating.",
+      ctx.weightyDescriptiveFaith
+        ? "They tied Scripture/prayer to caregiving, recovery, answered prayer, or a sustained ordeal. Contribute a grounded insight connecting the practice to that accompaniment — not a generic morning-rhythm line, not spiritual-performance praise, not a verse ask or forced prayer."
+        : "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about what they actually named — do not praise spirituality, recommend a passage, or ask which verse is resonating.",
+    );
+  }
+  if (ctx.lightOrdinaryTopic) {
+    lines.push(
+      "LIGHT ORDINARY: One specific light observation or quiet presence. Do not ask friends/family/tradition interview questions. Do not open with 'exciting/amazing'.",
     );
   }
   if (preferStatement) {
