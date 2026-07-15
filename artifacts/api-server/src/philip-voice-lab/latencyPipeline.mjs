@@ -34,6 +34,10 @@ export function buildLatencyStages(t = {}) {
       (t.modelFirstTokenAt != null && (t.guidanceStartAt ?? t.modelRequestStartAt) != null
         ? Math.max(0, t.modelFirstTokenAt - (t.guidanceStartAt ?? t.modelRequestStartAt))
         : null),
+    // Non-streaming chat.completions has no mid-generation token event.
+    unavailableReason:
+      t.unavailableReason ??
+      (t.modelFirstTokenAt == null && t.guidanceMs != null ? "non_streaming_generation" : null),
     ttsRequestStartAt: t.ttsStartAt ?? t.ttsRequestStartAt ?? null,
     ttsFirstAudioAt: t.ttsFirstAudioAt ?? t.firstAudioAt ?? null,
     ttsEndAt: t.ttsEndAt ?? null,
