@@ -56,8 +56,13 @@ import {
   evaluateContributionQuality,
   CONTRIBUTION_CONTRACT_VERSION,
   contributionRegenEnabled,
+  isLightOrdinaryTopic,
 } from "../artifacts/api-server/src/philip-voice-lab/contributionContract.mjs";
-import { detectRelationalWeight } from "../artifacts/api-server/src/philip-voice-lab/relationalWeight.mjs";
+import {
+  detectRelationalWeight,
+  isWeightyDescriptiveFaithContext,
+  mergeRelationalAnchors,
+} from "../artifacts/api-server/src/philip-voice-lab/relationalWeight.mjs";
 import { buildLatencyStages, LATENCY_PIPELINE_SCHEMA_VERSION } from "../artifacts/api-server/src/philip-voice-lab/latencyPipeline.mjs";
 
 let passed = 0;
@@ -768,7 +773,7 @@ check("Hello Philip / Hey greetings stay greeting", () => {
 console.log("Meaningful ordinary + compact genome — phone session replay");
 
 check("compact genome versioned and sized", () => {
-  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3");
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3.1");
   assert.ok(COMPACT_PHILIP_GENOME.length > 400);
   const tokens = estimateGenomeTokens();
   assert.ok(tokens >= 200 && tokens <= 2200, `unexpected token estimate: ${tokens}`);
@@ -1654,12 +1659,13 @@ check("activity completion is not session closing", () => {
     const r = await contribTurn(
       t,
       createFrontDoorState("Brian"),
-      "I'm here with you. Watching the Cup while still showing up for your mom and the rest of the day — those aren't the same kind of weight. The match is joy; she is the commitment that stays.",
+      "I'm here with you. Watching the Cup while still showing up for your mom and the rest of the day — those aren't the same kind of weight, because the match is joy and she is the commitment that stays.",
     );
     assert.ok(r.meta.routedDeep || r.engine === "stub-contribution", r.lane);
     assert.ok(!PRAISE_OPEN.test(r.text), r.text);
     assert.ok(/\bmom|mother\b/i.test(r.text), r.text);
     assert.ok(/\b(i'?m here|glad|with you)\b/i.test(r.text), r.text);
+    assert.ok(r.meta.contributionQualityPassed !== false, r.meta.contributionFailReasons);
   });
 
   check("contribution: hospitality observation without soft applause opening", async () => {
@@ -1772,7 +1778,7 @@ check("activity completion is not session closing", () => {
     if (/taking care of my mom/i.test(t)) {
       return {
         text:
-          "I'm here with you. The Cup and the gym and work are motion — your mom is the relationship those hours rearrange around.",
+          "I'm here with you. The Cup and the gym and work are motion — your mom is the relationship those hours rearrange around, because caregiving is not the same kind of weight as the rest of the list.",
         engine: "stub-75",
       };
     }
@@ -1823,8 +1829,8 @@ check("activity completion is not session closing", () => {
   });
 }
 
-check("genome v3 exports contribution contract", () => {
-  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3");
+check("genome v3.1 exports hardened contribution contract", () => {
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3.1");
   assert.match(COMPACT_PHILIP_GENOME, /CONTRIBUTION CONTRACT/);
   assert.match(COMPACT_PHILIP_GENOME, /CAREGIVING AND RELATIONAL WEIGHT/);
   assert.match(COMPACT_PHILIP_GENOME, /MEANINGFUL DETAIL/);
@@ -1832,8 +1838,77 @@ check("genome v3 exports contribution contract", () => {
   assert.match(COMPACT_PHILIP_GENOME, /doing my thing with mom/);
   assert.equal(typeof estimateGenomeTokens(), "number");
   assert.ok(estimateGenomeTokens() > 200);
-  assert.equal(CONTRIBUTION_CONTRACT_VERSION, "philip-contribution-contract-v1");
+  assert.equal(CONTRIBUTION_CONTRACT_VERSION, "philip-contribution-contract-v1.1");
   assert.equal(contributionRegenEnabled(), false);
+});
+
+check("ddd033a1 false-negative GPT replies fail quality gate", () => {
+  const fail1 = evaluateContributionQuality(
+    "Sounds like an exciting match! Do you often watch the games with friends or family, or is it more of a personal tradition for you?",
+    {
+      transcript:
+        "Oh, just just got done with the World Cup game. Argentina won against England, so that was pretty entertaining.",
+      lightOrdinaryTopic: true,
+      requireContribution: true,
+    },
+  );
+  assert.equal(fail1.passed, false, fail1.failReasons?.join(","));
+  assert.ok(fail1.appraisalOnlyRisk || fail1.genericPraiseRisk || fail1.interviewQuestionRisk);
+
+  const fail2 = evaluateContributionQuality(
+    "Spending that time with your mom during the World Cup sounds really special, especially given her recent recovery from leukemia. It's great to share those moments and enjoy each other's company in a new way.",
+    {
+      transcript:
+        "I watched it with my mom. My mom recently in the last eight months recovered from leukemia.",
+      caregivingDetected: true,
+      relationalDetailDetected: true,
+      requireContribution: true,
+    },
+  );
+  assert.equal(fail2.passed, false, fail2.failReasons?.join(","));
+  assert.ok(fail2.appraisalOnlyRisk || fail2.genericRelationalSentimentRisk || fail2.genericPraiseRisk);
+
+  const fail3 = evaluateContributionQuality(
+    "It's amazing how hosting such a global event can bring people together and spark new interests. Sharing that experience with your mom, especially this year, seems to add a layer of connection and joy to it all.",
+    {
+      transcript: "because we're the host country… sharing with my mom… not usually a huge soccer fan",
+      caregivingDetected: true,
+      relationalDetailDetected: true,
+      priorRelationalHints: ["relationship:parent; event:serious illness and recovery"],
+      requireContribution: true,
+    },
+  );
+  assert.equal(fail3.passed, false, fail3.failReasons?.join(","));
+  assert.ok(fail3.appraisalOnlyRisk || fail3.genericPraiseRisk || fail3.genericRelationalSentimentRisk);
+});
+
+check("weighty descriptive faith routes deep; lightweight stays template", () => {
+  const light = "Most mornings I read Scripture and pray before work. It helps me stay grounded.";
+  assert.equal(isDescriptiveFaithPractice(light), true);
+  assert.equal(isWeightyDescriptiveFaithContext(light), false);
+  const lightR = resolveFrontDoorClassification(light, createFrontDoorState("Brian"));
+  assert.equal(lightR.descriptiveFaithNeedsContribution, false);
+
+  const heavy =
+    "Yeah, in the mornings, I do some prayer and God answered our prayers a lot. I read scripture and say a prayer, and that gave me peace and her strength through this whole ordeal, because I've been with her step-by-step throughout the whole process.";
+  const st = createFrontDoorState("Brian");
+  st.relationalAnchors = mergeRelationalAnchors(
+    [],
+    detectRelationalWeight("I watched with my mom. My mom recently recovered from leukemia.").anchors,
+    1,
+  );
+  assert.equal(isWeightyDescriptiveFaithContext(heavy, st), true);
+  const heavyR = resolveFrontDoorClassification(heavy, st);
+  assert.equal(heavyR.descriptiveFaithNeedsContribution, true);
+  assert.equal(heavyR.routeDeep, true);
+  assert.equal(heavyR.deepRoutingReason, "weighty_descriptive_faith");
+});
+
+check("narrow farewell latch: I've got to go + talk later", () => {
+  const t =
+    "Yes, it sure does. Well, for now I've got to go and maybe I look forward to if we could talk a little bit later.";
+  assert.equal(isClosingTurn(t), true);
+  assert.equal(isActivityCompletionNotSessionEnd(t), false);
 });
 
 check("relational: doing my thing with mom + appointments is caregiving", () => {
@@ -1880,11 +1955,12 @@ check("quality gate: schedule inventory + managing question fails", () => {
 });
 
 check("latency pipeline schema builds without inventing values", () => {
-  const stages = buildLatencyStages({ vadCloseAt: 1, sttMs: 10, speechEndToFirstAudioMs: 100 });
+  const stages = buildLatencyStages({ vadCloseAt: 1, sttMs: 10, speechEndToFirstAudioMs: 100, guidanceMs: 50 });
   assert.equal(stages.schemaVersion, LATENCY_PIPELINE_SCHEMA_VERSION);
   assert.equal(stages.vadCloseAt, 1);
   assert.equal(stages.uploadStartAt, null);
   assert.equal(stages.firstAudioMeans, "agent_publish_start_not_proven_ear");
+  assert.equal(stages.unavailableReason, "non_streaming_generation");
 });
 
 {
@@ -1903,7 +1979,7 @@ check("latency pipeline schema builds without inventing values", () => {
     if (/doing my thing with mom/i.test(t)) {
       return {
         text:
-          "I'm with you. The Cup and the gym are motion — your mom and those appointments are the relationship the day keeps making room for.",
+          "I'm with you. The Cup and the gym are motion — your mom and those appointments are the relationship the day keeps making room for, because those hours are commitment rather than just another item on the list.",
         engine: "stub-4e",
       };
     }
@@ -1981,6 +2057,97 @@ check("75e1097c T2 personalMeaning stays true for taking care of mom", () => {
   assert.equal(detectPersonalMeaning(t), true);
   assert.equal(detectRelationalWeight(t).caregivingDetected, true);
 });
+
+{
+  // Full seven-turn ddd033a1 phone-session replay (genome-v3 lived call)
+  const SESSION_DDD = [
+    "Hello, Philip, how are you today?",
+    "Oh, just just got done with the World Cup game. Argentina won against England, so that was pretty entertaining.",
+    "You know, this time I watched it with my mom. My mom does not typically watch it, but you know, it was a pretty, since it's the World Cup and it's hosted in America, she felt, you know, the need to watch it since it's been on a lot lately. So it was a nice time just watching it and hanging out with my mom. I don't know if you know this or not, but my mom recently in the last eight months recovered from leukemia.",
+    "Yeah, in the mornings, I do some prayer and I can definitely tell that praying and making sure that my mom is taken care of and looked after and God answered our prayers a lot. But I definitely have gotten into a routine being here where I read some scripture in the morning and say a prayer and make it part of my daily life. And that seemed to give me peace and her strength through this whole thing, that whole ordeal, because I've been with her step-by-step throughout the whole process.",
+    "Yes, it's been wonderful. And, you know, soccer is such a, well, football is what they call it, but the World Cup has been such an important thing to America and just seeing how, you know, because we're the host country, seeing how everybody from all over the world reacts has been special. And I think that kind of has been enduring to, you know, me and my mom and just, because I'm not usually a huge soccer fan. It's been something that's kind of new this year because of, you know, us being the host country.",
+    "Yes, it sure does. Well, for now I've got to go and maybe I look forward to if we could talk a little bit later.",
+    "You do this something. Thank you so much.",
+  ];
+
+  async function deepDdd(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/Argentina won against England/i.test(t)) {
+      assert.equal(ctx.lightOrdinaryTopic, true);
+      return {
+        text:
+          "Argentina over England is its own kind of drama — even a casual watch can carry that.",
+        engine: "stub-ddd",
+      };
+    }
+    if (/recovered from leukemia/i.test(t)) {
+      assert.equal(ctx.caregivingDetected || ctx.relationalDetailDetected, true);
+      return {
+        text:
+          "I'm with you. An ordinary match can become newly valuable when you are sitting beside your mom after a recovery like that — shared time is doing more than entertainment.",
+        engine: "stub-ddd",
+      };
+    }
+    if (/God answered our prayers|step-by-step/i.test(t)) {
+      assert.equal(ctx.weightyDescriptiveFaith || ctx.descriptiveFaith, true);
+      assert.ok(ctx.requireContribution);
+      return {
+        text:
+          "What I'm noticing is that the morning Scripture and prayer were not only private discipline — they walked with you while you stayed beside her through that ordeal, and the peace you name sits next to the strength you hoped for her.",
+        engine: "stub-ddd",
+      };
+    }
+    if (/host country/i.test(t)) {
+      return {
+        text:
+          "A tournament you would not normally follow can stick when it is shared beside your mom in a host-country year — the novelty is less about soccer and more about who you watched with.",
+        engine: "stub-ddd",
+      };
+    }
+    return { text: "I'm with you on that.", engine: "stub-ddd" };
+  }
+
+  let stDdd = createFrontDoorState("Brian");
+  const outDdd = [];
+  for (const t of SESSION_DDD) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state: stDdd,
+      deepGenerate: deepDdd,
+    });
+    outDdd.push(r);
+    stDdd = r.state;
+  }
+
+  check("ddd033a1 replay: contract, weighty faith, closing latch", () => {
+    assert.equal(outDdd[0].lane, "hybrid_greeting");
+    assert.equal(outDdd[0].meta.reciprocalDetected, true);
+    assert.equal(outDdd[0].meta.reciprocalAnswered, true);
+    assert.ok(!/exciting|amazing|tradition|friends or family/i.test(outDdd[1].text), outDdd[1].text);
+    assert.ok(!/[?]\s*$/.test(outDdd[1].text), outDdd[1].text);
+    assert.ok(/\bmom|mother\b/i.test(outDdd[2].text), outDdd[2].text);
+    assert.ok(!/really special|it'?s great to share/i.test(outDdd[2].text), outDdd[2].text);
+    assert.ok(
+      (stDdd.relationalAnchors || []).some((a) => /illness|recovery|parent/i.test(JSON.stringify(a))),
+      JSON.stringify(stDdd.relationalAnchors),
+    );
+    assert.equal(outDdd[3].meta.routedDeep, true);
+    assert.ok(outDdd[3].meta.weightyDescriptiveFaith || outDdd[3].meta.deepRoutingReason === "weighty_descriptive_faith");
+    assert.ok(!/steadiness in keeping scripture and prayer before the day starts/i.test(outDdd[3].text), outDdd[3].text);
+    assert.ok(/ordeal|beside her|answered|accompan|walked with you/i.test(outDdd[3].text), outDdd[3].text);
+    assert.ok(!/what verse|shall we pray|wonderful spiritual/i.test(outDdd[3].text), outDdd[3].text);
+    assert.ok(/\bmom|mother\b/i.test(outDdd[4].text), outDdd[4].text);
+    assert.ok(!/amazing|layer of connection and joy|really special/i.test(outDdd[4].text), outDdd[4].text);
+    assert.ok(!/leukemia/i.test(outDdd[4].text), outDdd[4].text);
+    assert.equal(outDdd[5].intent, INTENT.CLOSING);
+    assert.equal(outDdd[5].state.sentOff, true);
+    assert.ok(!/[?]/.test(outDdd[5].text), outDdd[5].text);
+    assert.ok(outDdd[6].intent === INTENT.CLOSING || outDdd[6].lane === "closing_again" || outDdd[6].state.sentOff);
+    assert.ok(/welcome|here|care/i.test(outDdd[6].text), outDdd[6].text);
+    assert.ok(!/leukemia|ordeal|scripture/i.test(outDdd[6].text), outDdd[6].text);
+  });
+}
 
 // ---------------------------------------------------------------------------
 console.log(`\nFront Door: ${passed} passed, ${failed} failed`);
