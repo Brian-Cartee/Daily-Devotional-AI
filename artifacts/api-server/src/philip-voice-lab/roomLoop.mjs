@@ -26,14 +26,17 @@ import {
 } from "./labIdentity.mjs";
 import { SessionTimeline, publishTimelineToRoom } from "./sessionTimeline.mjs";
 import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
-import { recordTurnObservation } from "./turnObservability.mjs";
+import { recordTurnObservation, recordFailedTurnObservation } from "./turnObservability.mjs";
 import { awaitingConstrainedShortAnswer } from "./frontDoor.mjs";
 import { PHILIP_VOICE_GENOME_VERSION } from "./compactGenome.mjs";
+import { CONTRIBUTION_CONTRACT_VERSION } from "./contributionContract.mjs";
 import { buildLatencyStages } from "./latencyPipeline.mjs";
 
 /** Candidate genome honesty marker — compact live-voice genome + Front Door routing. */
 export const CANDIDATE_GENOME_VERSION = PHILIP_VOICE_GENOME_VERSION;
 export const CANDIDATE_RUNTIME_LABEL = "Philip Voice Lab Candidate";
+/** Narrow runtime identifier for reliability hotfixes (genome/contract unchanged). */
+export const CANDIDATE_RUNTIME_VERSION = "candidate-front-door-1.1";
 
 function log(...args) {
   console.log("[philip-voice-agent]", ...args);
@@ -157,13 +160,19 @@ export async function runPhilipLabTurn(job) {
   let ttsEndAt = 0;
   let firstAudioAt = null;
   let playbackCompleteAt = null;
+  let transcript = "";
+  let failureStage = "turn_start";
+  let ttsStarted = false;
+  let audioPublished = false;
 
   const pendingBefore = Boolean(state.brainState?.pendingPrayerOffer);
+  const sentOffBefore = Boolean(state.brainState?.sentOff);
 
   try {
     job.timeline.mark("stt_start");
+    failureStage = "stt";
     sttStartAt = Date.now();
-    const transcript = await callTranscribe(
+    transcript = await callTranscribe(
       job.utterance,
       sessionId,
       DEFAULT_SAMPLE_RATE,
@@ -189,6 +198,7 @@ export async function runPhilipLabTurn(job) {
       state.completedTurns === 0 ? "Front Door Opening" : "Front Door Follow-up";
 
     job.timeline.mark("guidance_start", { voiceTurnNumber, completedTurns: state.completedTurns });
+    failureStage = "guidance";
     guidanceStartAt = Date.now();
 
     const stateBefore = state.brainState;
@@ -212,7 +222,7 @@ export async function runPhilipLabTurn(job) {
     // Synthesized headers — honest about candidate Front Door (no production Mind).
     const runtimeHeaders = {
       lane: brain.lane ?? null,
-      runtimeVersion: "candidate-front-door-1",
+      runtimeVersion: CANDIDATE_RUNTIME_VERSION,
       conversationId: state.conversationId,
       plannerSource: null,
       identityKernelMode: null,
@@ -259,6 +269,8 @@ export async function runPhilipLabTurn(job) {
     turn.phase1Preview = replyText.slice(0, 200);
 
     job.timeline.mark("tts_start");
+    failureStage = "tts";
+    ttsStarted = true;
     ttsStartAt = Date.now();
     const audio = await callTts(replyText, sessionId);
     ttsEndAt = Date.now();
@@ -267,9 +279,11 @@ export async function runPhilipLabTurn(job) {
     job.timeline.metric("ttsCompleteAt");
 
     job.timeline.mark("playback_publish_start");
+    failureStage = "playback";
     job.timeline.metric("playbackPublishStartAt");
     const playbackStartAt = Date.now();
     firstAudioAt = playbackStartAt;
+    audioPublished = true;
 
     await job.playbackQueue.pending.catch(() => {});
     const { pcmDurationMs: pcmMs, framePublished } =
@@ -353,6 +367,8 @@ export async function runPhilipLabTurn(job) {
       conversationId: state.conversationId,
       sessionId,
       voiceTurnNumber,
+      turnAttemptId: voiceTurnNumber,
+      turnOutcome: "turn_complete",
       transcript,
       responseText: replyText,
       intent: brain.intent,
@@ -454,8 +470,69 @@ export async function runPhilipLabTurn(job) {
       metrics: turn.metrics,
     };
   } catch (err) {
-    job.timeline.mark("turn_error", { error: String(err) });
-    job.timeline.endTurn({ ok: false, error: String(err) });
+    if (guidanceStartAt && !guidanceEndAt) guidanceEndAt = Date.now();
+    if (guidanceStartAt && guidanceEndAt) guidanceMs = Math.max(0, guidanceEndAt - guidanceStartAt);
+    const totalTurnMs = Date.now() - turnStartAt;
+    const failure = {
+      name: err && typeof err === "object" && "name" in err ? String(err.name) : "Error",
+      message: String(err?.message || err).slice(0, 400),
+    };
+    job.timeline.mark("turn_error", {
+      error: failure.message,
+      failureStage,
+      ttsStarted,
+      audioPublished,
+    });
+    console.error("[philip-voice-agent] turn_failed", {
+      conversationId: state.conversationId,
+      sessionId,
+      voiceTurnNumber,
+      failureStage,
+      error: failure.message,
+    });
+    await recordFailedTurnObservation({
+      conversationId: state.conversationId,
+      sessionId,
+      voiceTurnNumber,
+      turnAttemptId: voiceTurnNumber,
+      transcript: transcript || null,
+      transcriptChars: transcript ? transcript.length : null,
+      utteranceMs,
+      vadReason: job.vadReason ?? "vad_silence",
+      userSpeechEndAt,
+      vadCloseAt,
+      sttStartAt: sttStartAt || null,
+      sttEndAt: sttEndAt || null,
+      sttMs: sttMs || null,
+      guidanceStartAt: guidanceStartAt || null,
+      guidanceEndAt: guidanceEndAt || null,
+      guidanceMs: guidanceMs || null,
+      totalTurnMs,
+      audioBytes: job.audioBytes ?? job.pcmBytes ?? null,
+      failureStage,
+      error: err,
+      genomeVersion: CANDIDATE_GENOME_VERSION,
+      contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
+      runtimeVersion: CANDIDATE_RUNTIME_VERSION,
+      relationalAnchorsUsed: state.brainState?.relationalAnchors ?? null,
+      relationalAnchors: state.brainState?.relationalAnchors ?? null,
+      sentOffBefore,
+      sentOffAfter: Boolean(state.brainState?.sentOff),
+      overlapOrInterruption: Boolean(job.overlapOrInterruption),
+      interruptionKind: job.interruptionKind ?? null,
+      discardReason: job.discardReason ?? null,
+      // mic resume happens in the outer finally; stamp approximately here for persistence
+      micResumeAt: Date.now(),
+    });
+    job.timeline.endTurn({
+      ok: false,
+      turnOutcome: "turn_failed",
+      error: failure.message,
+      failureStage,
+      ttsStarted,
+      audioPublished,
+    });
+    // Re-throw so the outer mic loop logs and resumes the microphone — do not crash the process.
     throw err;
   }
 }

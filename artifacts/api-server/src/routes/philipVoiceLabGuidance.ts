@@ -83,13 +83,22 @@ export function registerPhilipVoiceLabGuidanceRoutes(app: Express): void {
     }
 
     try {
+      const hooks = globalThis as {
+        __PHILIP_LAB_TEST_DEEP_GENERATE__?: (ctx: Record<string, unknown>) => Promise<unknown>;
+      };
+      const testDeep =
+        process.env.PHILIP_VOICE_LAB_TEST_HOOKS === "1" &&
+        typeof hooks.__PHILIP_LAB_TEST_DEEP_GENERATE__ === "function"
+          ? hooks.__PHILIP_LAB_TEST_DEEP_GENERATE__
+          : undefined;
       const result = await runCandidateGuidanceTurn({
         transcript,
         firstName: body.firstName,
         state: body.state ?? undefined,
+        ...(testDeep ? { deepGenerate: testDeep as never } : {}),
       });
 
-      res.setHeader("X-Philip-Runtime-Version", "candidate-front-door-1");
+      res.setHeader("X-Philip-Runtime-Version", "candidate-front-door-1.1");
       res.setHeader("X-Philip-Lane", String(result.lane ?? ""));
       res.setHeader("X-Philip-Engine", String(result.engine ?? ""));
       res.setHeader("X-Philip-Intent", String(result.intent ?? ""));

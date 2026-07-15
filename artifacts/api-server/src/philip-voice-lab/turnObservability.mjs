@@ -12,7 +12,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildLatencyStages } from "./latencyPipeline.mjs";
+import { buildLatencyStages, LATENCY_PIPELINE_SCHEMA_VERSION } from "./latencyPipeline.mjs";
+import { PHILIP_VOICE_GENOME_VERSION } from "./compactGenome.mjs";
+import { CONTRIBUTION_CONTRACT_VERSION } from "./contributionContract.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +32,57 @@ function turnLogFile(conversationId) {
 }
 
 /**
+ * Scrub secrets from error messages. Never include stacks with env dumps.
+ * @param {unknown} err
+ * @param {{ httpStatus?: number|null }} [hints]
+ */
+export function normalizeTurnFailureError(err, hints = {}) {
+  const name = err && typeof err === "object" && "name" in err ? String(err.name || "Error") : "Error";
+  let message = err && typeof err === "object" && "message" in err
+    ? String(err.message || "")
+    : String(err || "unknown error");
+  message = message
+    .replace(/sk-[a-zA-Z0-9_-]+/g, "[redacted]")
+    .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/api[_-]?key["']?\s*[:=]\s*["']?[^"'\\s]+/gi, "api_key=[redacted]")
+    .replace(/x-philip-lab-secret["']?\s*[:=]\s*["']?[^"'\\s]+/gi, "x-philip-lab-secret=[redacted]")
+    .slice(0, 400);
+
+  let httpStatus = hints.httpStatus ?? null;
+  const statusMatch = message.match(/\b(?:turn|guidance|tts|transcribe)\s+(\d{3})\b/i)
+    || message.match(/\b(\d{3}):\s/);
+  if (httpStatus == null && statusMatch) {
+    httpStatus = Number(statusMatch[1]);
+  }
+
+  let code = null;
+  if (err && typeof err === "object" && "code" in err && err.code != null) {
+    code = String(err.code).slice(0, 64);
+  } else if (/ctx is not defined/i.test(message)) {
+    code = "ReferenceError_ctx_undefined";
+  } else if (httpStatus != null) {
+    code = `http_${httpStatus}`;
+  }
+
+  return {
+    name: name.slice(0, 64),
+    code,
+    message,
+    httpStatus: Number.isFinite(httpStatus) ? httpStatus : null,
+  };
+}
+
+async function appendTurnRecord(conversationId, record) {
+  try {
+    const dir = logDir();
+    await fs.mkdir(dir, { recursive: true });
+    await fs.appendFile(turnLogFile(conversationId), JSON.stringify(record) + "\n", "utf8");
+  } catch (err) {
+    console.error("[philip-voice-lab] turn observation write failed:", err);
+  }
+}
+
+/**
  * Persist turn observation. Accepts legacy fields plus optional `decision` /
  * `contribution` / `latencyStages` blobs.
  */
@@ -40,9 +93,11 @@ export async function recordTurnObservation(obs) {
 
   const record = {
     ts: new Date().toISOString(),
+    turnOutcome: obs.turnOutcome || "turn_complete",
     conversationId: obs.conversationId,
     sessionId: obs.sessionId,
     voiceTurnNumber: obs.voiceTurnNumber,
+    turnAttemptId: obs.turnAttemptId ?? obs.voiceTurnNumber ?? null,
     transcript: obs.transcript,
     responseText: obs.responseText,
     intent: obs.intent,
@@ -100,12 +155,85 @@ export async function recordTurnObservation(obs) {
     routedDeep: merged.routedDeep ?? null,
     relationalAnchors: merged.relationalAnchors ?? null,
   };
-  try {
-    const dir = logDir();
-    await fs.mkdir(dir, { recursive: true });
-    await fs.appendFile(turnLogFile(obs.conversationId), JSON.stringify(record) + "\n", "utf8");
-  } catch (err) {
-    console.error("[philip-voice-lab] turn observation write failed:", err);
-  }
+  await appendTurnRecord(obs.conversationId, record);
+  return record;
+}
+
+/**
+ * Persist a failed turn attempt. Distinct from turn_complete — never invents
+ * response/TTS/playback success fields.
+ *
+ * @param {object} obs
+ */
+export async function recordFailedTurnObservation(obs) {
+  const failure = normalizeTurnFailureError(obs.error, { httpStatus: obs.httpStatus });
+  const transcript = obs.transcript != null ? String(obs.transcript) : null;
+  const micResumeAt = obs.micResumeAt ?? null;
+  const latency = {
+    sttMs: obs.sttMs ?? null,
+    guidanceMs: obs.guidanceMs ?? null,
+    ttsMs: null,
+    playbackMs: null,
+    totalTurnMs: obs.totalTurnMs ?? null,
+    utteranceMs: obs.utteranceMs ?? null,
+    audioBytes: obs.audioBytes ?? null,
+    userSpeechEndAt: obs.userSpeechEndAt ?? null,
+    vadCloseAt: obs.vadCloseAt ?? null,
+    sttStartAt: obs.sttStartAt ?? null,
+    sttEndAt: obs.sttEndAt ?? null,
+    guidanceStartAt: obs.guidanceStartAt ?? null,
+    guidanceEndAt: obs.guidanceEndAt ?? null,
+    modelFirstTokenAt: null,
+    ttsStartAt: null,
+    ttsEndAt: null,
+    firstAudioAt: null,
+    playbackCompleteAt: null,
+    pcmDurationMs: null,
+    speechEndToFirstAudioMs: null,
+    nextUserSpeechStartAt: null,
+    overlapOrInterruption: Boolean(obs.overlapOrInterruption),
+    interruptionKind: obs.interruptionKind ?? null,
+    discardReason: obs.discardReason ?? null,
+    micResumeAt,
+  };
+
+  const record = {
+    ts: new Date().toISOString(),
+    turnOutcome: "turn_failed",
+    conversationId: obs.conversationId,
+    sessionId: obs.sessionId,
+    voiceTurnNumber: obs.voiceTurnNumber ?? null,
+    turnAttemptId: obs.turnAttemptId ?? obs.voiceTurnNumber ?? null,
+    transcript,
+    transcriptChars: transcript != null ? transcript.length : obs.transcriptChars ?? null,
+    utteranceMs: obs.utteranceMs ?? null,
+    vadReason: obs.vadReason ?? null,
+    failureStage: obs.failureStage || "unknown",
+    error: failure,
+    httpStatus: failure.httpStatus,
+    intent: obs.intent ?? null,
+    lane: obs.lane ?? null,
+    engine: obs.engine ?? null,
+    runtimeVersion: obs.runtimeVersion ?? "candidate-front-door-1.1",
+    genomeVersion: obs.genomeVersion ?? PHILIP_VOICE_GENOME_VERSION,
+    contributionContractVersion: obs.contributionContractVersion ?? CONTRIBUTION_CONTRACT_VERSION,
+    relationalAnchorsUsed: obs.relationalAnchorsUsed ?? null,
+    relationalAnchors: obs.relationalAnchors ?? null,
+    sentOffBefore: obs.sentOffBefore ?? null,
+    sentOffAfter: obs.sentOffAfter ?? null,
+    ttsStarted: false,
+    audioPublished: false,
+    responseText: null,
+    micResumeAt,
+    latency,
+    latencyStages: {
+      ...buildLatencyStages(latency),
+      schemaVersion: LATENCY_PIPELINE_SCHEMA_VERSION,
+      micResumeAt,
+      failureStage: obs.failureStage || "unknown",
+    },
+  };
+
+  await appendTurnRecord(obs.conversationId, record);
   return record;
 }
