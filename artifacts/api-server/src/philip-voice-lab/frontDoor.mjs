@@ -105,7 +105,7 @@ function clauseLooksClosing(text) {
   if (isActivityCompletionNotSessionEnd(t) && !hasSessionEndingFarewellCue(t)) {
     return false;
   }
-  return matchesAny(t, CLOSING_PATTERNS);
+  return matchesClosingEvidence(t);
 }
 
 function clauseLooksGratitudeOnly(text) {
@@ -713,18 +713,13 @@ const CLOSING_PATTERNS = [
   /\b(we can|we'?ll|i'?ll) (talk|speak|chat) (again|later|soon|tomorrow)\b/,
   /\bsee (you|ya) (tomorrow|later|soon)?\b/,
   /\btake care\b/,
-  /\bgotta (go|run)\b/,
-  /\bi(?:'| a)?ve got to go\b/,
-  /\bi have to go\b/,
-  /\bgot to go\b/,
   // Session-ending "done" only — NOT "I'm done with breakfast/scripture/…"
   /^\s*i(?:'| a)?m done[.!]?\s*$/,
   /\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/,
   /\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/,
   /\bi(?:'| a)?m finished for now\b/,
   /\bthat'?s all( for now| i wanted to say)?\b/,
-  /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off|leave)\b/,
-  /\bi need to go\b/,
+  /\bi(?:'| a)?m going to leave it there\b/,
   /\btalk(?:\s+\w+){0,4}\s+later\b/,
   /\bspeak(?:\s+\w+){0,4}\s+later\b/,
   /\bhave a (good|great|wonderful|nice) (day|night|one|evening|afternoon)\b/,
@@ -733,6 +728,86 @@ const CLOSING_PATTERNS = [
   /\ball right[,.]?\s*(thank(s| you)|thanks)\b/,
   /\b(thank(s| you)|thanks).{0,40}\b(have a good|take care|goodbye|bye|talk later|talk soon)\b/,
 ];
+
+/**
+ * Remainder after a leave-taking "go" cue that indicates destination/purpose/activity,
+ * not conversational hang-up.
+ */
+function goRemainderIsActivityPurpose(after) {
+  let r = String(after || "").trim().replace(/^[\s,;:.—–\-]+/, "");
+  if (!r) return false;
+
+  // Explicit leave-taking tails.
+  if (/^(for now|for today)[.!]?\s*$/i.test(r)) return false;
+  if (/^(now|then)[.!]?\s*$/i.test(r)) return false;
+
+  if (/^(now|then)\b/i.test(r)) {
+    // Peel "now"/"then" plus separators (space or dash/punct). Require progress
+    // so "now—hiking" does not recurse forever when whitespace-only strip fails.
+    const peeled = r.replace(/^(now|then)(?:[\s,;:.—–\-]+|$)/i, "");
+    if (peeled === r) return false;
+    const afterNow = peeled.trim().replace(/^[\s,;:.—–\-]+/, "");
+    if (!afterNow || /^(for now|for today)[.!]?\s*$/i.test(afterNow)) return false;
+    if (/^(to|for|and|with|over|into|onto)\b/i.test(afterNow)) return true;
+    if (goRemainderIsActivityPurpose(afterNow)) return true;
+    // "now — talk later" is still leave-taking (handled by talk-later elsewhere).
+    return false;
+  }
+
+  // Purpose / destination / accompaniment / forthcoming activity.
+  if (
+    /^(for|to|with|over|into|onto|toward|towards|and|do|make|watch|pick|get|see|meet|run|grab|check|help|visit|buy|take|join)\b/i.test(
+      r,
+    )
+  ) {
+    return true;
+  }
+  // Bare activity gerunds: "going to go hiking"
+  if (/^(hiking|walking|running|swimming|shopping|skiing|jogging|climbing)\b/i.test(r)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Leave-taking "go / heading out" cues that end the conversation — not travel plans.
+ * "I'm going to go for a hike" is activity purpose; "I'm going to go now" is farewell.
+ */
+export function isGoPhraseSessionFarewell(rawText) {
+  const t = norm(rawText);
+  if (!t) return false;
+
+  const patterns = [
+    /\bi(?:'| a)?m (?:gonna|going to) (?:go|head out|sign off|leave)\b/gi,
+    /\bi(?:'| a)?m heading out\b/gi,
+    /\bi (?:have to|need to|gotta|got to) go\b/gi,
+    /\bi(?:'| a)?ve (?:got to|gotta) go\b/gi,
+    /\bgotta (?:go|run)\b/gi,
+    /\bgot to go\b/gi,
+    /\bi should get going\b/gi,
+  ];
+
+  let sawLeaveTaking = false;
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(t)) !== null) {
+      const after = t.slice(m.index + m[0].length);
+      if (goRemainderIsActivityPurpose(after)) continue;
+      sawLeaveTaking = true;
+      break;
+    }
+    if (sawLeaveTaking) break;
+  }
+  return sawLeaveTaking;
+}
+
+/** Closing pattern match plus semantic go-phrase leave-taking. */
+function matchesClosingEvidence(text) {
+  const t = norm(text);
+  if (isGoPhraseSessionFarewell(t)) return true;
+  return matchesAny(t, CLOSING_PATTERNS);
+}
 
 /**
  * "I'm done with breakfast/scripture/work" = activity completion, not session end.
@@ -749,7 +824,9 @@ export function isActivityCompletionNotSessionEnd(rawText) {
   if (/\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t)) return false;
   // Task / routine completion.
   if (/\bi(?:'| a)?m done (with|watching|reading|eating|praying|working|after)\b/.test(t)) return true;
+  if (/\bi just got done\b/.test(t)) return true;
   if (/\bi (?:just )?finished (my|the|a|with)\b/.test(t)) return true;
+  if (/\bi finished (breakfast|lunch|dinner|work|practice|reading|scripture)\b/.test(t)) return true;
   if (/\bi(?:'| a)?m finished (with|watching|reading)\b/.test(t)) return true;
   return false;
 }
@@ -757,15 +834,22 @@ export function isActivityCompletionNotSessionEnd(rawText) {
 /** True session-closing cues independent of activity-completion language. */
 function hasSessionEndingFarewellCue(text) {
   const t = norm(text);
-  return (
-    /\b(good ?bye|goodbye|bye( now)?|good ?night|take care|gotta (go|run)|i(?:'| a)?ve got to go|i have to go|got to go|i need to go|talk (to you )?(later|soon|again)|talk(?:\s+\w+){0,4}\s+later|speak(?:\s+\w+){0,4}\s+later|look forward to (speaking|talking)|have a (good|great|wonderful|nice) (day|night|one))\b/.test(
+  if (
+    /\b(good ?bye|goodbye|bye( now)?|good ?night|take care|talk (to you )?(later|soon|again)|talk(?:\s+\w+){0,4}\s+later|speak(?:\s+\w+){0,4}\s+later|look forward to (speaking|talking)|have a (good|great|wonderful|nice) (day|night|one))\b/.test(
       t,
-    ) ||
-    /^\s*i(?:'| a)?m done[.!]?\s*$/.test(t) ||
-    /\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/.test(t) ||
-    /\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t) ||
-    /\bthat'?s all( for now| i wanted to say)?\b/.test(t)
-  );
+    )
+  ) {
+    return true;
+  }
+  if (/^\s*i(?:'| a)?m done[.!]?\s*$/.test(t)) return true;
+  if (/\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/.test(t)) {
+    return true;
+  }
+  if (/\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t)) return true;
+  if (/\bthat'?s all( for now| i wanted to say)?\b/.test(t)) return true;
+  if (/\bi(?:'| a)?m going to leave it there\b/.test(t)) return true;
+  if (isGoPhraseSessionFarewell(t)) return true;
+  return false;
 }
 
 /** Reciprocal small-talk — relational check-ins, not practical advice. */
@@ -855,9 +939,9 @@ export function isClosingTurn(rawText, state = null) {
   if (matchesAny(text, CRISIS_PATTERNS)) return false;
   if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return false;
   if (matchesAny(text, EMOTIONAL_PATTERNS) && wordCount(text) >= 14) return false;
-  if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesAny(text, CLOSING_PATTERNS)) return false;
+  if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesClosingEvidence(text)) return false;
 
-  const hasClosing = matchesAny(text, CLOSING_PATTERNS);
+  const hasClosing = matchesClosingEvidence(text);
   if (!hasClosing) return false;
 
   // Farewell can be longer when it's clearly a wrap-up ("look forward to talking again…").
@@ -1242,7 +1326,7 @@ export function isSubstantive(text) {
   if (wordCount(t) >= 5) return true;
   // Short but meaningful: a question, or non-closing/non-filler content.
   if (/[?]/.test(t)) return true;
-  if (matchesAny(t, CLOSING_PATTERNS)) return false;
+  if (matchesClosingEvidence(t)) return false;
   if (/^\s*(ok|okay|yeah|yep|nope|no|sure|thanks|thank you|cool|got it|mm+|uh+)\s*[.!]?$/.test(t)) {
     return false;
   }
@@ -1325,7 +1409,7 @@ export function classifyOpeningRepair(rawText, state) {
   const t = norm(rawText);
   if (!t) return "unclear";
   if (matchesAny(t, CRISIS_PATTERNS)) return false;
-  if (matchesAny(t, CLOSING_PATTERNS)) return false;
+  if (matchesClosingEvidence(t)) return false;
   if (matchesAny(t, GREETING_PATTERNS)) return false;
   if (matchesAny(t, EMOTIONAL_PATTERNS)) return false;
   if (matchesAny(t, PRACTICAL_PATTERNS)) return false;

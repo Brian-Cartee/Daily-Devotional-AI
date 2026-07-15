@@ -46,6 +46,7 @@ import {
   shouldPreferStatementReply,
   stripTrailingQuestion,
   replyEndsWithQuestion,
+  isGoPhraseSessionFarewell,
 } from "../artifacts/api-server/src/philip-voice-lab/frontDoor.mjs";
 import {
   PHILIP_VOICE_GENOME_VERSION,
@@ -2146,6 +2147,69 @@ check("75e1097c T2 personalMeaning stays true for taking care of mom", () => {
     assert.ok(outDdd[6].intent === INTENT.CLOSING || outDdd[6].lane === "closing_again" || outDdd[6].state.sentOff);
     assert.ok(/welcome|here|care/i.test(outDdd[6].text), outDdd[6].text);
     assert.ok(!/leukemia|ordeal|scripture/i.test(outDdd[6].text), outDdd[6].text);
+  });
+}
+
+{
+  // Live room philip-lab-mrjs2inh-va4-74eefef4 — false close + deep crash regressions.
+  const LIVE_T2 =
+    "I just got done watching the World Cup game and Argentina won and now I'm going to go for a hike in a little bit.";
+  const LIVE_T3 = "No, the match has already happened. That happened earlier today.";
+  const LIVE_T4 =
+    "What stood out most was how Argentina stayed patient and finished strong, and after that I just wanted some quiet outdoors before the next thing on my plate.";
+
+  check("74eefef4 semantic closing fixtures", () => {
+    assert.equal(isClosingTurn(LIVE_T2), false);
+    assert.equal(isActivityCompletionNotSessionEnd(LIVE_T2), true);
+    assert.equal(isGoPhraseSessionFarewell(LIVE_T2), false);
+    assert.equal(isClosingTurn("I'm going to go for a hike."), false);
+    assert.equal(isClosingTurn("I'm going to go now."), true);
+    assert.equal(isClosingTurn("I've got to go."), true);
+    assert.equal(isClosingTurn("I have to go to the doctor with Mom this afternoon."), false);
+    assert.equal(isClosingTurn("I need to go—talk later."), true);
+    assert.equal(isActivityCompletionNotSessionEnd("I just got done watching the match."), true);
+  });
+
+  async function deep74(ctx) {
+    assert.ok(ctx.lightOrdinaryTopic !== undefined || ctx.meaningfulOrdinary !== undefined);
+    return {
+      text:
+        "Argentina already settled that result earlier — heading out for a hike now is a clean reset after a finished match.",
+      engine: "stub-74eefef4",
+      contributionQuality: {
+        passed: true,
+        failReasons: [],
+        contributionPresent: true,
+        newPropositionDetected: true,
+        appraisalOnlyRisk: false,
+      },
+    };
+  }
+
+  let st74 = createFrontDoorState("Brian");
+  const out74 = [];
+  for (const t of ["Hey Philip, how are you?", LIVE_T2, LIVE_T3, LIVE_T4]) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state: st74,
+      deepGenerate: deep74,
+    });
+    out74.push(r);
+    st74 = r.state;
+  }
+
+  check("74eefef4 replay: no false close; deep path; no wrong match farewell", () => {
+    assert.ok(out74[0].lane === "hybrid_greeting" || out74[0].meta?.reciprocalDetected);
+    assert.notEqual(out74[1].intent, INTENT.CLOSING);
+    assert.equal(out74[1].state.sentOff, false);
+    assert.ok(out74[1].meta?.routedDeep || out74[1].engine === "stub-74eefef4");
+    assert.ok(!/enjoy the match|i'?ll be here when you'?re ready/i.test(out74[1].text), out74[1].text);
+    assert.ok(/argentina|hike|settled|reset|match/i.test(out74[1].text), out74[1].text);
+    assert.equal(out74[2].reopened, false);
+    assert.ok(!/^i'?m still with you/i.test(out74[2].text), out74[2].text);
+    assert.ok(out74[3].text);
+    assert.equal(out74[3].state.sentOff, false);
   });
 }
 
