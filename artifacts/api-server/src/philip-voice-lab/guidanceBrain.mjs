@@ -74,25 +74,31 @@ export function candidateGuidanceReadiness() {
   };
 }
 
-function guidanceInstruction({
-  intent,
-  reopened,
-  offerFaith,
-  conduct,
-  meaningfulOrdinary,
-  conversationalRepair,
-  gratitudePreserved,
-  recentAssistantReplies,
-  firstName,
-  preferStatement,
-  descriptiveFaith,
-  weightyDescriptiveFaith,
-  reciprocalAsk,
-  caregivingDetected,
-  relationalDetailDetected,
-  relationalHint,
-  lightOrdinaryTopic,
-}) {
+/**
+ * Build deep-path system instructions from a Front Door deep context object.
+ * Accepts either a destructured field bag or a full deepGenerate `ctx`.
+ * Must never reference an outer `ctx` binding — that caused live room 74eefef4's 500.
+ */
+export function guidanceInstruction(input = {}) {
+  const {
+    intent,
+    reopened,
+    offerFaith,
+    conduct,
+    meaningfulOrdinary,
+    conversationalRepair,
+    gratitudePreserved,
+    recentAssistantReplies,
+    firstName,
+    preferStatement,
+    descriptiveFaith,
+    weightyDescriptiveFaith,
+    reciprocalAsk,
+    caregivingDetected,
+    relationalDetailDetected,
+    relationalHint,
+    lightOrdinaryTopic,
+  } = input && typeof input === "object" ? input : {};
   const lines = [];
   if (reopened) {
     lines.push(
@@ -139,12 +145,12 @@ function guidanceInstruction({
   }
   if (descriptiveFaith) {
     lines.push(
-      ctx.weightyDescriptiveFaith
+      weightyDescriptiveFaith
         ? "They tied Scripture/prayer to caregiving, recovery, answered prayer, or a sustained ordeal. Contribute a grounded insight connecting the practice to that accompaniment — not a generic morning-rhythm line, not spiritual-performance praise, not a verse ask or forced prayer."
         : "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about what they actually named — do not praise spirituality, recommend a passage, or ask which verse is resonating.",
     );
   }
-  if (ctx.lightOrdinaryTopic) {
+  if (lightOrdinaryTopic) {
     lines.push(
       "LIGHT ORDINARY: One specific light observation or quiet presence. Do not ask friends/family/tradition interview questions. Do not open with 'exciting/amazing'.",
     );
@@ -220,8 +226,9 @@ function guidanceInstruction({
  */
 export function makeLlmDeepGenerator(opts = {}) {
   const model = opts.model || brainModel();
+  const resolveClient = opts.resolveClient || getOpenAI;
   return async function deepGenerate(ctx) {
-    const client = await getOpenAI();
+    const client = await resolveClient();
     if (!client) {
       if (deterministicModeAllowed(false)) return null; // diagnostics only
       throw new Error(
@@ -232,6 +239,8 @@ export function makeLlmDeepGenerator(opts = {}) {
       );
     }
 
+    // Build prompt instructions first so instruction bugs surface before the provider call.
+    const instruction = guidanceInstruction(ctx);
     const messages = [{ role: "system", content: COMPACT_PHILIP_GENOME }];
     messages.push({
       role: "system",
@@ -247,9 +256,8 @@ export function makeLlmDeepGenerator(opts = {}) {
         content: `The person's first name is ${ctx.firstName}. Use it naturally and sparingly — not every turn.`,
       });
     }
-    const instruction = guidanceInstruction(ctx);
     if (instruction) messages.push({ role: "system", content: instruction });
-    for (const turn of ctx.history.slice(-12)) {
+    for (const turn of (ctx.history || []).slice(-12)) {
       messages.push({
         role: turn.role === "assistant" ? "assistant" : "user",
         content: turn.content,
