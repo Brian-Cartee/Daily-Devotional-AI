@@ -39,6 +39,7 @@ import {
   isBareGratitude,
   isSocialFarewellReciprocal,
   historyHasChristCenteredWork,
+  isActivityCompletionNotSessionEnd,
   scrubReopenOpener,
   detectGenericPraiseRisk,
   softenGenericPraiseOpening,
@@ -760,10 +761,10 @@ check("Hello Philip / Hey greetings stay greeting", () => {
 console.log("Meaningful ordinary + compact genome — phone session replay");
 
 check("compact genome versioned and sized", () => {
-  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v1");
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v2");
   assert.ok(COMPACT_PHILIP_GENOME.length > 400);
   const tokens = estimateGenomeTokens();
-  assert.ok(tokens >= 200 && tokens <= 1600, `unexpected token estimate: ${tokens}`);
+  assert.ok(tokens >= 200 && tokens <= 2200, `unexpected token estimate: ${tokens}`);
   console.log(`    genome≈${tokens} tokens (${COMPACT_PHILIP_GENOME.length} chars)`);
 });
 
@@ -1564,6 +1565,263 @@ check("incomplete speech does not fire on natural conjunction speech", () => {
     assert.equal(isHighConfidenceIncompleteSpeech(t, mid), false, t);
     assert.equal(isLikelyFragmentTranscript(t, mid), false, t);
   }
+});
+
+check("activity completion is not session closing", () => {
+  const notClose = [
+    "I'm done with my morning Scripture.",
+    "I'm done with my prayer routine.",
+    "I'm done with breakfast.",
+    "I'm done with work for the day, and now I'm heading to the gym.",
+    "I finished my devotional and wanted to tell you about it.",
+    "I'm done watching the first match. What did you think?",
+    "I'm done with that part, but I still need help deciding what comes next.",
+  ];
+  for (const t of notClose) {
+    assert.equal(isActivityCompletionNotSessionEnd(t) || !isClosingTurn(t), true, t);
+    assert.equal(isClosingTurn(t), false, `should not close: ${t}`);
+  }
+  const stillClose = [
+    "I'm done.",
+    "I think I'm done for now.",
+    "I'm done talking for today.",
+    "That's all I wanted to say.",
+    "I need to go.",
+    "Talk to you later.",
+    "I'm finished for now—have a good day.",
+  ];
+  for (const t of stillClose) {
+    assert.equal(isClosingTurn(t), true, `should close: ${t}`);
+  }
+});
+
+{
+  // Failed phone turn from 75e1097c T4 — must not latch closing.
+  const FAILED_T4 =
+    "I'm very appreciative of that. Thank you so much for making it known that you appreciate it too. I just wanted to say a few things, ask how you're doing, and let you know that I'm done with my morning Scripture and prayer routine and ready to watch another World Cup match in a few hours.";
+
+  check("75e1097c T4 activity-done does not close; faith+reciprocal reach contribution", async () => {
+    assert.equal(isClosingTurn(FAILED_T4), false);
+    assert.equal(isDescriptiveFaithPractice(FAILED_T4), true);
+    const resolved = resolveFrontDoorClassification(FAILED_T4, createFrontDoorState("Brian"));
+    assert.notEqual(resolved.intent, INTENT.CLOSING);
+    assert.equal(resolved.routeDeep, true);
+    const r = await runFrontDoorTurn({
+      transcript: FAILED_T4,
+      firstName: "Brian",
+      deepGenerate: async (ctx) => {
+        assert.ok(ctx.preferStatement !== undefined);
+        return {
+          text:
+            "I'm here with you. Finishing Scripture and prayer before the match keeps the day ordered — that rhythm matters beside the tournament noise.",
+          engine: "stub-contribution",
+        };
+      },
+    });
+    assert.notEqual(r.intent, INTENT.CLOSING);
+    assert.equal(r.state.sentOff, false);
+    assert.ok(!/enjoy the match|i'?ll be here when you'?re ready/i.test(r.text), r.text);
+    assert.ok(/here|scripture|prayer|rhythm|match/i.test(r.text), r.text);
+    assert.ok(!/what verse|resonat/i.test(r.text), r.text);
+  });
+}
+
+{
+  // Contribution genome behavioral fixtures (stubbed GPT) — assert qualities, not exact marketing prose.
+  const PRAISE_OPEN =
+    /^(that sounds exciting|that'?s (wonderful|beautiful|great|fantastic)|it'?s great that|you'?re doing an amazing)/i;
+
+  async function contribTurn(transcript, state, stubText) {
+    return runFrontDoorTurn({
+      transcript,
+      firstName: "Brian",
+      state,
+      deepGenerate: async () => ({ text: stubText, engine: "stub-contribution" }),
+    });
+  }
+
+  check("contribution: World Cup + mom + work + gym + reciprocal", async () => {
+    const t =
+      "I'm just watching the World Cup and just taking care of my mom and then going to the gym along with work. How about yourself?";
+    assert.equal(detectPersonalMeaning(t), true);
+    const r = await contribTurn(
+      t,
+      createFrontDoorState("Brian"),
+      "I'm here with you. Watching the Cup while still showing up for your mom and the rest of the day — those aren't the same kind of weight. The match is joy; she is the commitment that stays.",
+    );
+    assert.ok(r.meta.routedDeep || r.engine === "stub-contribution", r.lane);
+    assert.ok(!PRAISE_OPEN.test(r.text), r.text);
+    assert.ok(/\bmom|mother\b/i.test(r.text), r.text);
+    assert.ok(/\b(i'?m here|glad|with you)\b/i.test(r.text), r.text);
+  });
+
+  check("contribution: hospitality observation without soft applause opening", async () => {
+    const r = await contribTurn(
+      "Watching visitors feel welcome here during the World Cup has been special to see.",
+      createFrontDoorState("Brian"),
+      "Welcome that is visible to guests says more about a place than the venues do. That warmth is worth noticing without dressing it up.",
+    );
+    assert.ok(!PRAISE_OPEN.test(r.text), r.text);
+    assert.ok(!/must be quite rewarding|sounds exciting/i.test(r.text), r.text);
+  });
+
+  check("contribution: caregiving going well stays positive", async () => {
+    const r = await contribTurn(
+      "Caring for my mother is going well and it means a lot to me.",
+      createFrontDoorState("Brian"),
+      "When caretaking is going well and still means something, that is steadiness — not a problem to diagnose.",
+    );
+    assert.ok(!/exhaust|overwhelm|burden|sacrific/i.test(r.text), r.text);
+    assert.ok(/mother|care/i.test(r.text), r.text);
+  });
+
+  check("contribution: caregiving wearing down can name the weight", async () => {
+    const r = await contribTurn(
+      "Caring for my mother is wearing me down lately.",
+      createFrontDoorState("Brian"),
+      "That kind of wearing down is real — loving someone and feeling the grind of it can sit in the same day.",
+      );
+    assert.ok(/wear|grind|mother|real/i.test(r.text), r.text);
+  });
+
+  check("contribution: descriptive faith morning rhythm no verse intake", async () => {
+    const r = await runFrontDoorTurn({
+      transcript: "Most mornings I read Scripture and pray before work. It helps me stay grounded.",
+    });
+    assert.equal(r.lane, "descriptive_faith");
+    assert.ok(!/what verse|resonat|particular (scripture|passage)/i.test(r.text), r.text);
+    assert.ok(!/points people toward christ/i.test(r.text), r.text);
+  });
+
+  check("contribution: faith app as product stays product-aware", async () => {
+    const r = await contribTurn(
+      "I'm building a faith app and deciding what to ship next.",
+      createFrontDoorState("Brian"),
+      "For a faith app the next ship decision should protect what is unique — not whatever is loudest on the roadmap.",
+    );
+    assert.ok(/app|ship|unique|roadmap/i.test(r.text), r.text);
+    assert.ok(!/let'?s pray|bible verse/i.test(r.text), r.text);
+  });
+
+  check("contribution: reciprocal inside multi-topic is not discarded", async () => {
+    const r = await contribTurn(
+      "I finished training and my job search is moving. How about yourself?",
+      createFrontDoorState("Brian"),
+      "I'm here and glad we're talking. Training done and the search still moving — two different kinds of progress in one day.",
+    );
+    assert.ok(/\b(i'?m here|glad we'?re talking)\b/i.test(r.text), r.text);
+  });
+
+  check("contribution: statement without question can be enough", async () => {
+    const r = await contribTurn(
+      "The app work felt clear today after weeks of fog.",
+      createFrontDoorState("Brian"),
+      "Clarity after fog is its own milestone — you don't have to turn it into a plan in the same breath.",
+    );
+    assert.ok(!/[?]\s*$/.test(r.text), r.text);
+  });
+
+  check("contribution: gentle challenge when warranted", async () => {
+    const r = await contribTurn(
+      "I keep saying the voice work can wait forever while I polish easier pieces.",
+      createFrontDoorState("Brian"),
+      "If the voice piece is the unique leverage, polishing easier parts forever may be avoidance dressed as thoroughness.",
+    );
+    assert.ok(/avoid|leverage|unique|forever/i.test(r.text), r.text);
+  });
+
+  check("contribution: follow-up remembers mother detail", async () => {
+    let st = createFrontDoorState("Brian");
+    const t1 = await contribTurn(
+      "I'm watching the World Cup and taking care of my mom this week.",
+      st,
+      "I'm with you. The Cup is on the screen, and your mom is still the person the week is organized around.",
+    );
+    st = t1.state;
+    const t2 = await contribTurn(
+      "Yeah the match was good.",
+      st,
+      "Glad the match was good — and your mom's still in the middle of the week either way.",
+    );
+    assert.ok(/\bmom|mother\b/i.test(t2.text), t2.text);
+  });
+}
+
+{
+  // Full five-turn 75e1097c phone-session replay
+  const SESSION_75 = [
+    "Hello, Philip, how are you today?",
+    "I'm just watching the World Cup and just taking care of my mom and then going to the gym along with work. How about yourself?",
+    "I would say watching America shine on a world stage as far as people enjoying themselves while they're visiting America and we're totally blown away by, you know, not only the World Cup and the venues, but also the, you know, just the way America is treating everybody so nice and being so welcoming and warm to all of the tourists. So that's been very special to watch.",
+    "Yes, I'm very appreciative of that. Thank you so much for making it known that you appreciate it too. So anyway, just wanted to say a few things and just kinda say how are you doing today and then just let you know that I'm done with my morning scripture and just my prayer routine and ready to watch another World Cup match here in a few hours.",
+    "Well, thank you very much, appreciate it, and look forward to speaking to you later on.",
+  ];
+
+  async function deep75(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/how are you today\??\s*$/i.test(t) && /hello/i.test(t)) {
+      return { text: "unused", engine: "stub" };
+    }
+    if (/taking care of my mom/i.test(t)) {
+      return {
+        text:
+          "I'm here with you. The Cup and the gym and work are motion — your mom is the relationship those hours rearrange around.",
+        engine: "stub-75",
+      };
+    }
+    if (/welcoming and warm to all of the tourists/i.test(t)) {
+      return {
+        text:
+          "Hospitality that visitors can feel is a different achievement than venues. That warmth is the part worth holding.",
+        engine: "stub-75",
+      };
+    }
+    if (/done with my morning scripture/i.test(t)) {
+      return {
+        text:
+          "I'm here. Ending Scripture and prayer before another match keeps the day from becoming only spectacle — that order says something about how you enter the afternoon.",
+        engine: "stub-75",
+      };
+    }
+    return { text: "I'm with you on that.", engine: "stub-75" };
+  }
+
+  let st75 = createFrontDoorState("Brian");
+  const out75 = [];
+  for (const t of SESSION_75) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state: st75,
+      deepGenerate: deep75,
+    });
+    out75.push(r);
+    st75 = r.state;
+  }
+
+  check("75e1097c replay: hybrid presence; T2 contribution; T4 not closing; T5 closes", () => {
+    assert.equal(out75[0].lane, "hybrid_greeting");
+    assert.ok(/\b(i'?m here|glad)\b/i.test(out75[0].text), out75[0].text);
+    assert.ok(/\bmom|mother\b/i.test(out75[1].text), out75[1].text);
+    assert.ok(!/sounds exciting/i.test(out75[1].text), out75[1].text);
+    assert.notEqual(out75[3].intent, INTENT.CLOSING);
+    assert.equal(out75[3].state.sentOff, false);
+    assert.ok(!/enjoy the match|i'?ll be here when you'?re ready/i.test(out75[3].text), out75[3].text);
+    assert.ok(/scripture|prayer|here/i.test(out75[3].text), out75[3].text);
+    assert.equal(out75[4].intent, INTENT.CLOSING);
+    // T4 no longer false-closes, so T5 is the first farewell latch (lane closing), not closing_again.
+    assert.ok(out75[4].lane === "closing" || out75[4].lane === "closing_again", out75[4].lane);
+    assert.equal(out75[4].state.sentOff, true);
+    assert.ok(!/[?]/.test(out75[4].text), out75[4].text);
+  });
+}
+
+check("genome v2 exports contribution pattern", () => {
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v2");
+  assert.match(COMPACT_PHILIP_GENOME, /CONTRIBUTION PATTERN/);
+  assert.match(COMPACT_PHILIP_GENOME, /CAREGIVING AND RELATIONAL WEIGHT/);
+  assert.match(COMPACT_PHILIP_GENOME, /Receive the most meaningful detail/);
+  assert.match(COMPACT_PHILIP_GENOME, /That sounds exciting/);
 });
 
 // ---------------------------------------------------------------------------
