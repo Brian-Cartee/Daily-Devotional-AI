@@ -21,6 +21,16 @@
  * never a canned, engine-less dead end.
  */
 
+import {
+  evaluateContributionQuality,
+  CONTRIBUTION_CONTRACT_VERSION,
+} from "./contributionContract.mjs";
+import {
+  detectRelationalWeight,
+  mergeRelationalAnchors,
+  relationalHintsFromState,
+} from "./relationalWeight.mjs";
+
 export const INTENT = Object.freeze({
   GREETING: "greeting",
   CASUAL: "casual",
@@ -462,8 +472,8 @@ export function resolveFrontDoorClassification(rawText, state) {
     /\bhow (are|about) (you|yourself)( doing| today)?\b/i.test(classifyText) ||
     /\bhow you(?:'| a)?re (doing|feeling|holding up)\b/i.test(classifyText);
   const descriptiveFaith = isDescriptiveFaithPractice(classifyText);
-  // Multi-topic turns that mix descriptive faith + reciprocal / long disclosure need
-  // contribution (deep), not a short faith-only template.
+  // Multi-topic turns that mix descriptive faith + reciprocal need contribution (deep),
+  // not a short faith-only template. Keep short routine descriptions on templates.
   const descriptiveFaithNeedsContribution =
     descriptiveFaith && reciprocalAsk && wordCount(classifyText) >= 18;
   const ordinarySubstance =
@@ -688,7 +698,7 @@ export function isActivityCompletionNotSessionEnd(rawText) {
   if (/\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t)) return false;
   // Task / routine completion.
   if (/\bi(?:'| a)?m done (with|watching|reading|eating|praying|working|after)\b/.test(t)) return true;
-  if (/\bi finished (my|the|a|with)\b/.test(t)) return true;
+  if (/\bi (?:just )?finished (my|the|a|with)\b/.test(t)) return true;
   if (/\bi(?:'| a)?m finished (with|watching|reading)\b/.test(t)) return true;
   return false;
 }
@@ -888,17 +898,21 @@ export function isDescriptiveFaithPractice(rawText) {
     );
   if (!hasFaithLex) return false;
   const routine =
-    /\b(every morning|every night|before bed|in the morning|in the evenings?|throughout the day|my (whole )?day|routine|habit)\b/.test(
+    /\b(every morning|every night|before bed|in the morning|this morning|in the evenings?|throughout the day|my (whole )?day|routine|habit|mornings)\b/.test(
       text,
     ) ||
     /\b(read|reading) (the )?(scripture|bible|word)\b/.test(text) ||
+    /\b(finished|finishing) (my )?(scripture|prayer|bible|devotion)\b/.test(text) ||
+    /\b(scripture|prayer) (and|&) (my )?(prayer|scripture)\b/.test(text) ||
     /\b(say|saying|said) a prayer\b/.test(text) ||
     /\bpray(er|ing)? before\b/.test(text) ||
     /\bstay(ing)? (in the word|grounded)\b/.test(text) ||
     /\bexposed to (different )?(scriptures?|the word)\b/.test(text) ||
     /\bfaith[-\s]?based (work|app|business|ministry)\b/.test(text) ||
     /\bministry in and of itself\b/.test(text) ||
-    /\bi pray every\b/.test(text);
+    /\bi pray every\b/.test(text) ||
+    /\bresonate in my (soul|heart)\b/.test(text) ||
+    /\bdedication to .{0,40}(mornings?|scripture|prayer)\b/.test(text);
   return Boolean(routine);
 }
 
@@ -1046,6 +1060,11 @@ const MEANING_MARKERS = [
   /\b(taking )?care (of|for)\b.{0,40}\b(mom|mother|dad|father|parent|wife|husband|kids?|child|friend)\b/,
   /\bcaring for\b/,
   /\bmy (mom|mother|dad|father)\b/,
+  // Natural spoken forms from real sessions (not only "my mom").
+  /\b(with|for)\s+(my\s+)?(mom|mother|dad|father)\b/,
+  /\bdoing my thing with (mom|mother|dad|father)\b/,
+  /\b(mom|mother|dad|father).{0,40}\b(doctor|appointment|appt)\b/,
+  /\b(doctor|appointment|appt).{0,40}\b(mom|mother|dad|father)\b/,
 ];
 
 // --- Conduct detection ------------------------------------------------------
@@ -1180,7 +1199,13 @@ export function isSubstantive(text) {
 }
 
 export function detectPersonalMeaning(text) {
-  return matchesAny(norm(text), MEANING_MARKERS);
+  if (matchesAny(norm(text), MEANING_MARKERS)) return true;
+  return detectRelationalWeight(text).detected;
+}
+
+/** @deprecated Prefer detectRelationalWeight; kept for test imports. */
+export function detectCaregivingOrRelational(text) {
+  return detectRelationalWeight(text);
 }
 
 /** True when faith/church vocabulary is describing product/work, not a spiritual ask. */
@@ -1410,6 +1435,8 @@ export function createFrontDoorState(firstName = "") {
     personalMeaningSeen: false,
     /** Consecutive Philip replies that ended in a question (ordinary cadence). */
     consecutiveAssistantQuestions: 0,
+    /** Stable relational anchors across turns (labels only — not free-form diaries). */
+    relationalAnchors: [],
     history: [], // [{ role: "user"|"assistant", content }]
   };
 }
@@ -1428,6 +1455,7 @@ export function hydrateFrontDoorState(raw, firstName = "") {
       raw.prayerOfferedAtTurn == null ? null : Number(raw.prayerOfferedAtTurn),
     prayerCompleted: Boolean(raw.prayerCompleted),
     consecutiveAssistantQuestions: Number(raw.consecutiveAssistantQuestions || 0) || 0,
+    relationalAnchors: Array.isArray(raw.relationalAnchors) ? raw.relationalAnchors : [],
     history: Array.isArray(raw.history) ? raw.history : [],
   };
 }
@@ -1545,11 +1573,11 @@ const SOCIAL_FAREWELL_TEMPLATES = [
   () => `Take care.`,
 ];
 
-/** Soft reciprocal return — no invented human day or schedule. */
+/** Soft reciprocal return — answer Philip-presence first, then open; no invented human day. */
 const RECIPROCAL_TEMPLATES = [
-  () => `I'm glad you're here. What's been going on with you?`,
-  () => `I'm right here with you — what's on your mind?`,
-  () => `I'm glad to talk. What's been going on?`,
+  () => `I'm here and glad we're talking. What's been going on with you?`,
+  () => `I'm with you — present and ready to think it through. What's on your mind?`,
+  () => `I'm here, paying attention. What's been going on?`,
 ];
 
 const FRAGMENT_REPAIR_TEMPLATES = [
@@ -1728,13 +1756,13 @@ export function scrubReopenOpener(rawText) {
 }
 
 const GENERIC_PRAISE_OPENER =
-  /^(that'?s (a )?(wonderful|beautiful|great|fantastic|impressive)( question)?|it'?s (wonderful|beautiful)|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting)\b/i;
+  /^(that'?s (a )?(wonderful|beautiful|great|fantastic|impressive)( question)?|it'?s (wonderful|beautiful|great)( that| how)?|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting|that sounds (exciting|wonderful|great))\b/i;
 
 export function detectGenericPraiseRisk(rawText) {
   const t = String(rawText || "").trim();
   if (!t) return false;
   if (GENERIC_PRAISE_OPENER.test(t)) return true;
-  return /\b(that'?s (a )?(wonderful|beautiful|fantastic|great (question|approach)|impressive)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach)\b/i.test(
+  return /\b(that'?s (a )?(wonderful|beautiful|fantastic|great (question|approach)|impressive)|it'?s (great|wonderful) (that|how)|that sounds (exciting|wonderful|great)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach|must be (quite )?(rewarding|exciting))\b/i.test(
     t,
   );
 }
@@ -2155,6 +2183,7 @@ function advanceState(state, {
   prayerContext,
   prayerOfferedAtTurn,
   prayerCompleted,
+  relationalAnchors,
 }) {
   const next = { ...state, history: [...state.history] };
   next.turnCount = state.turnCount + 1;
@@ -2168,6 +2197,7 @@ function advanceState(state, {
   if (personalMeaning) next.personalMeaningSeen = true;
   if (faithOffered) next.faithOffered = true;
   if (usedName) next.lastNameTurn = next.turnCount;
+  if (relationalAnchors) next.relationalAnchors = relationalAnchors;
 
   if (typeof pendingPrayerOffer === "boolean") next.pendingPrayerOffer = pendingPrayerOffer;
   if (prayerContext != null) next.prayerContext = String(prayerContext).slice(0, 240);
@@ -2457,6 +2487,18 @@ export async function runFrontDoorTurn(input) {
     (intent === INTENT.CASUAL || resolved.meaningfulOrdinary) &&
     detectPersonalMeaning(resolved.classifyText);
 
+  const relational = detectRelationalWeight(resolved.classifyText);
+  const reciprocalAsk =
+    isHybridGreetingReciprocal(resolved.classifyText) ||
+    Boolean(extractTextBeforeTrailingReciprocal(resolved.classifyText)) ||
+    (/\bhow (are|about) (you|yourself)\b/i.test(resolved.classifyText) &&
+      !reciprocalCasual);
+  // Multi-topic substance + reciprocal: reciprocalCasual is false via isReciprocalSmallTalk;
+  // still require Philip to answer the ask inside deep generation.
+  const reciprocalEmbedded =
+    !reciprocalCasual &&
+    /\b(how (are|about) (you|yourself)|how'?s it going with you)\b/i.test(resolved.classifyText);
+
   // Re-entry after a completed close. Same-turn farewell→substance is handled by
   // classifyText (no sentOff required for routing); reopenPrefix only when already sentOff.
   const wasSentOff = Boolean(state.sentOff);
@@ -2472,6 +2514,9 @@ export async function runFrontDoorTurn(input) {
   const offerFaith = !conduct && shouldOfferFaith(state, intent);
   const recentAssistants = recentAssistantTexts(state, 4);
   const prevAssistant = lastAssistantText(state);
+  const descriptiveFaith = isDescriptiveFaithPractice(resolved.classifyText);
+  const activityCompletion = isActivityCompletionNotSessionEnd(transcript);
+  const priorRelationalHints = relationalHintsFromState(state);
 
   let text;
   let engine;
@@ -2480,6 +2525,7 @@ export async function runFrontDoorTurn(input) {
   let composedRepeatedFarewell = false;
   let praiseSoftened = false;
   let cadenceForcedStatement = false;
+  let contributionQuality = null;
 
   const deepCtx = {
     intent,
@@ -2496,7 +2542,14 @@ export async function runFrontDoorTurn(input) {
     multiIntent: resolved.multiIntent,
     recentAssistantReplies: recentAssistants,
     preferStatement,
-    descriptiveFaith: isDescriptiveFaithPractice(resolved.classifyText),
+    descriptiveFaith,
+    reciprocalAsk: reciprocalEmbedded || reciprocalAsk,
+    caregivingDetected: relational.caregivingDetected,
+    relationalDetailDetected: relational.detected,
+    relationalHint: relational.primaryHint,
+    priorRelationalHints,
+    substantiveOrdinary: Boolean(resolved.meaningfulOrdinary || isDeep),
+    requireContribution: Boolean(isDeep),
   };
 
   if (conduct) {
@@ -2542,6 +2595,7 @@ export async function runFrontDoorTurn(input) {
     const result = await input.deepGenerate(deepCtx);
     text = String(result?.text || "").trim();
     engine = result?.engine || "candidate-brain";
+    if (result?.contributionQuality) contributionQuality = result.contributionQuality;
     if (!text && resolved.conversationalRepair) {
       const repair = composeConversationalRepair({ state });
       text = repair.text;
@@ -2611,6 +2665,17 @@ export async function runFrontDoorTurn(input) {
     text = `${text} ${faithInvitation(state)}`.trim();
   }
 
+  // Local quality gate for substantive deep turns (no silent canned replacement).
+  if (isDeep && text) {
+    contributionQuality = evaluateContributionQuality(text, deepCtx);
+    if (!contributionQuality.passed) {
+      console.warn(
+        "[philip-front-door] contribution quality failed:",
+        (contributionQuality.failReasons || []).join(","),
+      );
+    }
+  }
+
   const usedName = Boolean(state.firstName) && new RegExp(`\\b${state.firstName}\\b`).test(text);
 
   // Pending prayer only when Philip explicitly asks whether *he* should pray.
@@ -2625,12 +2690,18 @@ export async function runFrontDoorTurn(input) {
     prayerCompleted = false;
   }
 
+  const nextAnchors = mergeRelationalAnchors(
+    state.relationalAnchors,
+    relational.anchors,
+    (state.turnCount || 0) + 1,
+  );
+
   const nextState = advanceState(state, {
     intent,
     conduct,
     transcript,
     replyText: text,
-    personalMeaning,
+    personalMeaning: personalMeaning || relational.detected,
     reopened,
     faithOffered: offerFaith,
     usedName,
@@ -2638,6 +2709,7 @@ export async function runFrontDoorTurn(input) {
     prayerContext,
     prayerOfferedAtTurn,
     prayerCompleted,
+    relationalAnchors: nextAnchors,
   });
 
   const lane = conduct
@@ -2665,6 +2737,14 @@ export async function runFrontDoorTurn(input) {
           ? "sentOff:held"
           : "sentOff:off";
 
+  const reciprocalAnswered =
+    contributionQuality?.reciprocalAnswered ??
+    (reciprocalCasual || reciprocalEmbedded
+      ? /\b(i'?m here|i am here|i'?m with you|glad (we'?re|to be) (talking|here)|paying attention)\b/i.test(
+          text,
+        )
+      : null);
+
   return {
     text,
     intent,
@@ -2672,7 +2752,7 @@ export async function runFrontDoorTurn(input) {
     lane,
     engine,
     reopened,
-    personalMeaning,
+    personalMeaning: personalMeaning || relational.detected,
     faithOffered: offerFaith,
     state: nextState,
     meta: {
@@ -2680,9 +2760,12 @@ export async function runFrontDoorTurn(input) {
       usedName,
       sentOff: nextState.sentOff,
       sentOffBefore: wasSentOff,
+      sentOffAfter: nextState.sentOff,
       sentOffTransition,
       repeatedFarewell: repeatedFarewell || composedRepeatedFarewell,
       reciprocalCasual,
+      reciprocalDetected: Boolean(reciprocalCasual || reciprocalEmbedded || reciprocalAsk),
+      reciprocalAnswered,
       turnCount: nextState.turnCount,
       offeredFaith: offerFaith,
       conduct: conduct ?? null,
@@ -2698,13 +2781,15 @@ export async function runFrontDoorTurn(input) {
       repeatRepair,
       classifyText: resolved.classifyText,
       hybridGreeting: isHybridGreetingReciprocal(resolved.classifyText),
-      descriptiveFaith: isDescriptiveFaithPractice(resolved.classifyText),
+      descriptiveFaith,
+      activityCompletion,
       fragmentRepair: false,
       incompleteSpeechRepair: false,
       consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
       preferStatement,
       cadenceForcedStatement,
-      genericPraiseRisk: detectGenericPraiseRisk(text),
+      genericPraiseRisk:
+        contributionQuality?.genericPraiseRisk ?? detectGenericPraiseRisk(text),
       praiseSoftened,
       orderMode: resolved.orderMode || null,
       conversationalActs: (resolved.conversationalActs || []).map((a) => a.type),
@@ -2713,6 +2798,24 @@ export async function runFrontDoorTurn(input) {
       bareGratitude: Boolean(resolved.bareGratitude),
       socialFarewellReciprocal: Boolean(resolved.socialFarewellReciprocal),
       closingThenSubstance,
+      relationalDetailDetected: relational.detected,
+      caregivingDetected: relational.caregivingDetected,
+      relationalHint: relational.primaryHint,
+      relationalAnchors: nextAnchors.map((a) => ({ kind: a.kind, label: a.label })),
+      contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
+      contributionType: contributionQuality?.contributionTypeGuess ?? null,
+      meaningfulDetailSelected:
+        contributionQuality?.meaningfulDetailGuess ?? relational.primaryHint ?? null,
+      contextDetailUsed: priorRelationalHints[0] || null,
+      contributionPresent: contributionQuality?.contributionPresent ?? null,
+      paraphraseOnlyRisk: contributionQuality?.paraphraseOnlyRisk ?? null,
+      scheduleInventoryRisk: contributionQuality?.scheduleInventoryRisk ?? null,
+      unnecessaryQuestionRisk: contributionQuality?.unnecessaryQuestionRisk ?? null,
+      unsupportedStruggleRisk: contributionQuality?.unsupportedStruggleRisk ?? null,
+      forcedFaithRisk: contributionQuality?.forcedFaithRisk ?? null,
+      contributionQualityPassed: contributionQuality?.passed ?? null,
+      contributionFailReasons: contributionQuality?.failReasons ?? null,
+      promptVersion: `genome+${CONTRIBUTION_CONTRACT_VERSION}`,
     },
   };
 }

@@ -22,6 +22,13 @@ import {
   estimateGenomeTokens,
   genomeObservability,
 } from "./compactGenome.mjs";
+import {
+  buildContributionContractInstruction,
+  buildContributionRegenNudge,
+  contributionRegenEnabled,
+  evaluateContributionQuality,
+  CONTRIBUTION_CONTRACT_VERSION,
+} from "./contributionContract.mjs";
 
 /** The model that generates Philip's live substantive responses. */
 export function brainModel() {
@@ -54,6 +61,10 @@ export function candidateGuidanceReadiness() {
     configured,
     deterministicDiagnostics: deterministic,
     model: brainModel(),
+    contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
+    contributionRegenDefault: false,
+    contributionRegenNote:
+      "PHILIP_VOICE_LAB_CONTRIBUTION_REGEN=1 enables one bounded same-model retry on quality failure; roughly doubles guidance latency/cost on those turns. Default is log-only.",
     ...genome,
     reason: configured
       ? null
@@ -75,6 +86,10 @@ function guidanceInstruction({
   firstName,
   preferStatement,
   descriptiveFaith,
+  reciprocalAsk,
+  caregivingDetected,
+  relationalDetailDetected,
+  relationalHint,
 }) {
   const lines = [];
   if (reopened) {
@@ -101,18 +116,28 @@ function guidanceInstruction({
   }
   if (meaningfulOrdinary || intent === INTENT.CASUAL) {
     lines.push(
-      "This is meaningful ordinary conversation. Acknowledge at least one concrete detail they actually said before any advice or follow-up question. Do not turn ordinary life into emotional intake. Do not force faith. Light warmth or curiosity is welcome.",
+      "This is meaningful ordinary conversation. Lead with the most relationally weighted detail they named — not a schedule inventory. Contribute one new thought. Do not turn ordinary life into emotional intake. Do not force faith.",
     );
     lines.push(
       "AUTHENTICITY: Do not invent a human day, schedule, errands, work, exercise, meals, sleep, family, travel, or 'I've been busy too.' Respond with presence and interest — not a fabricated parallel life.",
     );
     lines.push(
-      "ANTI-PRAISE: Do not open with 'That's wonderful/beautiful/great/fantastic', 'I love that', 'Great choice', 'Thoughtful approach', or 'That makes a lot of sense'. Prefer specific recognition or a grounded observation.",
+      "ANTI-PRAISE: Do not open with 'That's wonderful/beautiful/great/fantastic', 'It's great that', 'That sounds exciting', 'I love that', or 'full schedule' framing. Prefer specific recognition or a grounded observation.",
+    );
+  }
+  if (caregivingDetected || relationalDetailDetected) {
+    lines.push(
+      `RELATIONAL: Treat ${relationalHint || "the relationship they named"} as commitment and relationship, not a calendar item. Do not invent hardship unless they named it.`,
+    );
+  }
+  if (reciprocalAsk) {
+    lines.push(
+      "They asked how you are / how about yourself. Answer first with honest Philip presence (here, attentive, glad to continue). Do not invent a human life. Then engage their substance.",
     );
   }
   if (descriptiveFaith) {
     lines.push(
-      "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about the discipline — do not recommend a passage or ask which verse is resonating.",
+      "They are describing a Scripture/prayer routine or faith-shaped day, not requesting a verse or prayer. Make one grounded observation about what they actually named — do not praise spirituality, recommend a passage, or ask which verse is resonating.",
     );
   }
   if (preferStatement) {
@@ -168,6 +193,7 @@ function guidanceInstruction({
   lines.push(
     "Do not ask for information they clearly already stated in the current or immediately previous user turn.",
   );
+  lines.push("Do not soft-close with 'Enjoy your day' unless they are clearly ending the conversation.");
   return lines.join(" ");
 }
 
@@ -178,6 +204,10 @@ function guidanceInstruction({
  * If the model key is missing: in live mode this THROWS (fail readiness clearly,
  * never canned); only when diagnostics are explicitly allowed does it return null
  * so the front door's reflective composer is used.
+ *
+ * Contribution regen: OFF by default. PHILIP_VOICE_LAB_CONTRIBUTION_REGEN=1 allows
+ * one bounded retry (same model), which roughly doubles guidance latency/cost on
+ * failing turns. Failed quality without regen is logged and returned as-is.
  */
 export function makeLlmDeepGenerator(opts = {}) {
   const model = opts.model || brainModel();
@@ -196,7 +226,11 @@ export function makeLlmDeepGenerator(opts = {}) {
     const messages = [{ role: "system", content: COMPACT_PHILIP_GENOME }];
     messages.push({
       role: "system",
-      content: `Genome version: ${PHILIP_VOICE_GENOME_VERSION}. Approx tokens: ${estimateGenomeTokens()}.`,
+      content: `Genome version: ${PHILIP_VOICE_GENOME_VERSION}. Contribution contract: ${CONTRIBUTION_CONTRACT_VERSION}. Approx genome tokens: ${estimateGenomeTokens()}.`,
+    });
+    messages.push({
+      role: "system",
+      content: buildContributionContractInstruction(ctx),
     });
     if (ctx.firstName) {
       messages.push({
@@ -214,16 +248,56 @@ export function makeLlmDeepGenerator(opts = {}) {
     }
     messages.push({ role: "user", content: ctx.rawTranscript || ctx.transcript });
 
-    try {
+    const modelRequestStartAt = Date.now();
+    let modelFirstTokenAt = null;
+    let text = "";
+    let usedRegen = false;
+
+    async function completeOnce(msgs) {
       const completion = await client.chat.completions.create({
         model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 160,
+        messages: msgs,
+        temperature: 0.65,
+        max_tokens: 220,
       });
-      const text = completion.choices?.[0]?.message?.content?.trim() || "";
+      if (modelFirstTokenAt == null) modelFirstTokenAt = Date.now();
+      return completion.choices?.[0]?.message?.content?.trim() || "";
+    }
+
+    try {
+      text = await completeOnce(messages);
       if (!text) return null;
-      return { text, engine: model, genomeVersion: PHILIP_VOICE_GENOME_VERSION };
+
+      let quality = evaluateContributionQuality(text, ctx);
+      if (!quality.passed && contributionRegenEnabled() && ctx.requireContribution !== false) {
+        usedRegen = true;
+        const regenMessages = [
+          ...messages,
+          { role: "assistant", content: text },
+          { role: "user", content: buildContributionRegenNudge(quality) },
+        ];
+        const regenerated = await completeOnce(regenMessages);
+        if (regenerated) {
+          text = regenerated;
+          quality = evaluateContributionQuality(text, ctx);
+        }
+      }
+
+      const modelCompletionAt = Date.now();
+      return {
+        text,
+        engine: model,
+        genomeVersion: PHILIP_VOICE_GENOME_VERSION,
+        contributionQuality: quality,
+        contributionRegenUsed: usedRegen,
+        timing: {
+          modelRequestStartAt,
+          modelFirstTokenAt,
+          modelCompletionAt,
+          timeToFirstTokenMs:
+            modelFirstTokenAt != null ? Math.max(0, modelFirstTokenAt - modelRequestStartAt) : null,
+        },
+      };
     } catch (err) {
       console.error("[philip-lab-brain] deep generation failed:", err);
       return null;
@@ -268,6 +342,8 @@ export async function runCandidateGuidanceTurn(input) {
       ...result.meta,
       genomeVersion: PHILIP_VOICE_GENOME_VERSION,
       genomeApproxTokens: estimateGenomeTokens(),
+      contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
+      promptVersion: `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}`,
     },
   };
 }
@@ -279,4 +355,5 @@ export {
   PHILIP_VOICE_GENOME_VERSION,
   COMPACT_PHILIP_GENOME,
   estimateGenomeTokens,
+  CONTRIBUTION_CONTRACT_VERSION,
 };
