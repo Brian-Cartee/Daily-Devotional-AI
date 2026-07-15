@@ -52,6 +52,13 @@ import {
   COMPACT_PHILIP_GENOME,
   estimateGenomeTokens,
 } from "../artifacts/api-server/src/philip-voice-lab/compactGenome.mjs";
+import {
+  evaluateContributionQuality,
+  CONTRIBUTION_CONTRACT_VERSION,
+  contributionRegenEnabled,
+} from "../artifacts/api-server/src/philip-voice-lab/contributionContract.mjs";
+import { detectRelationalWeight } from "../artifacts/api-server/src/philip-voice-lab/relationalWeight.mjs";
+import { buildLatencyStages, LATENCY_PIPELINE_SCHEMA_VERSION } from "../artifacts/api-server/src/philip-voice-lab/latencyPipeline.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -761,7 +768,7 @@ check("Hello Philip / Hey greetings stay greeting", () => {
 console.log("Meaningful ordinary + compact genome — phone session replay");
 
 check("compact genome versioned and sized", () => {
-  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v2");
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3");
   assert.ok(COMPACT_PHILIP_GENOME.length > 400);
   const tokens = estimateGenomeTokens();
   assert.ok(tokens >= 200 && tokens <= 2200, `unexpected token estimate: ${tokens}`);
@@ -1816,12 +1823,163 @@ check("activity completion is not session closing", () => {
   });
 }
 
-check("genome v2 exports contribution pattern", () => {
-  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v2");
-  assert.match(COMPACT_PHILIP_GENOME, /CONTRIBUTION PATTERN/);
+check("genome v3 exports contribution contract", () => {
+  assert.equal(PHILIP_VOICE_GENOME_VERSION, "philip-voice-genome-v3");
+  assert.match(COMPACT_PHILIP_GENOME, /CONTRIBUTION CONTRACT/);
   assert.match(COMPACT_PHILIP_GENOME, /CAREGIVING AND RELATIONAL WEIGHT/);
-  assert.match(COMPACT_PHILIP_GENOME, /Receive the most meaningful detail/);
+  assert.match(COMPACT_PHILIP_GENOME, /MEANINGFUL DETAIL/);
   assert.match(COMPACT_PHILIP_GENOME, /That sounds exciting/);
+  assert.match(COMPACT_PHILIP_GENOME, /doing my thing with mom/);
+  assert.equal(typeof estimateGenomeTokens(), "number");
+  assert.ok(estimateGenomeTokens() > 200);
+  assert.equal(CONTRIBUTION_CONTRACT_VERSION, "philip-contribution-contract-v1");
+  assert.equal(contributionRegenEnabled(), false);
+});
+
+check("relational: doing my thing with mom + appointments is caregiving", () => {
+  const t =
+    "Oh, just been busy watching the World Cup and then also just working out and doing my thing with mom, going to doctor's appointments.";
+  assert.equal(detectPersonalMeaning(t), true);
+  const rel = detectRelationalWeight(t);
+  assert.equal(rel.detected, true);
+  assert.equal(rel.caregivingDetected, true);
+  assert.ok(/parent|appointment/i.test(rel.primaryHint || ""));
+});
+
+check("adversarial: caregiving going well does not invent hardship in quality gate", () => {
+  const user = "Caring for my mother is going well and it means a lot to me.";
+  const good = evaluateContributionQuality(
+    "When caring for your mother is going well and still means something, that is steadiness — not a problem to diagnose.",
+    { transcript: user, caregivingDetected: true, relationalDetailDetected: true, relationalHint: "caring for a parent" },
+  );
+  assert.equal(good.unsupportedStruggleRisk, false);
+  assert.equal(good.caregivingTreatedRelationally, true);
+  assert.equal(good.passed, true, `failReasons=${(good.failReasons || []).join(",")}`);
+  const bad = evaluateContributionQuality(
+    "That must be so exhausting and overwhelming to carry.",
+    { transcript: user, caregivingDetected: true, relationalDetailDetected: true },
+  );
+  assert.equal(bad.unsupportedStruggleRisk, true, JSON.stringify(bad));
+  assert.equal(bad.passed, false);
+});
+
+check("quality gate: schedule inventory + managing question fails", () => {
+  const q = evaluateContributionQuality(
+    "It's great that you're able to keep up with the World Cup amidst everything else. Balancing work, fitness, and supporting your mom with her appointments sounds like quite a full schedule. How's it been managing all of that?",
+    {
+      transcript:
+        "busy watching the World Cup and working out and doing my thing with mom, going to doctor's appointments",
+      caregivingDetected: true,
+      relationalDetailDetected: true,
+      substantiveOrdinary: true,
+      requireContribution: true,
+    },
+  );
+  assert.equal(q.passed, false);
+  assert.ok(q.genericPraiseRisk || q.scheduleInventoryRisk || q.unnecessaryQuestionRisk);
+});
+
+check("latency pipeline schema builds without inventing values", () => {
+  const stages = buildLatencyStages({ vadCloseAt: 1, sttMs: 10, speechEndToFirstAudioMs: 100 });
+  assert.equal(stages.schemaVersion, LATENCY_PIPELINE_SCHEMA_VERSION);
+  assert.equal(stages.vadCloseAt, 1);
+  assert.equal(stages.uploadStartAt, null);
+  assert.equal(stages.firstAudioMeans, "agent_publish_start_not_proven_ear");
+});
+
+{
+  // Full six-turn 4e28a4a8 phone-session replay (post-genome-v2 call; behavior for v3)
+  const SESSION_4E = [
+    "Hello, Phillip, how are you today?",
+    "Oh, just been busy watching the World Cup and then also just working out and doing my thing with mom, going to doctor's appointments.",
+    "Uh, you know, just staying on top of everything's been good. You know, it hasn't been too, too difficult, just, uh, constantly always something to do and, uh, but you know, every time some one thing ends, it's time to do something else. So, um, today we have a world cup and about three hours, uh, for a semifinal matchup and, uh, after that back to work and then, uh, maybe the gym later on today.",
+    "Well, I'll do that, thank you very much. And just wanted to say to you that we would schedule something later on to connect again. Is that okay?",
+    "All right, thank you. Oh, by the way, I just finished my scripture and my prayer this morning, and everything went very well in that dedication to that part of my mornings.",
+    "Oh, not necessarily, just peace, just continued peace, just continued, you know, dedication to allowing the scripture to resonate in my soul. Not anything that actually comes to mind specifically.",
+  ];
+
+  async function deep4e(ctx) {
+    const t = String(ctx.rawTranscript || ctx.transcript || "");
+    if (/doing my thing with mom/i.test(t)) {
+      return {
+        text:
+          "I'm with you. The Cup and the gym are motion — your mom and those appointments are the relationship the day keeps making room for.",
+        engine: "stub-4e",
+      };
+    }
+    if (/semifinal matchup/i.test(t)) {
+      return {
+        text:
+          "You've got a day that keeps handing you the next thing — the match in a few hours can be real rest inside that rhythm, not another item to perform.",
+        engine: "stub-4e",
+      };
+    }
+    if (/schedule something later/i.test(t)) {
+      return {
+        text: "Yes — we can connect again later. I'll be here when you come back.",
+        engine: "stub-4e",
+      };
+    }
+    if (/finished my scripture/i.test(t)) {
+      return {
+        text:
+          "Finishing Scripture and prayer with that kind of dedication sets a quiet order under the rest of the morning — peace you're naming without needing a verse to prove it.",
+        engine: "stub-4e",
+      };
+    }
+    if (/continued peace/i.test(t)) {
+      return {
+        text:
+          "Peace that stays, and Scripture left to resonate — that is enough for the morning without hunting for a specific line.",
+        engine: "stub-4e",
+      };
+    }
+    return { text: "I'm with you on that.", engine: "stub-4e" };
+  }
+
+  let st4e = createFrontDoorState("Brian");
+  const out4e = [];
+  for (const t of SESSION_4E) {
+    const r = await runFrontDoorTurn({
+      transcript: t,
+      firstName: "Brian",
+      state: st4e,
+      deepGenerate: deep4e,
+    });
+    out4e.push(r);
+    st4e = r.state;
+  }
+
+  check("4e28a4a8 replay: mom relational; no false close; faith natural; contribution meta", () => {
+    assert.equal(out4e[0].lane, "hybrid_greeting");
+    assert.ok(/\b(i'?m here|glad)\b/i.test(out4e[0].text), out4e[0].text);
+    assert.ok(/\bmom|mother\b/i.test(out4e[1].text), out4e[1].text);
+    assert.ok(!/sounds exciting|full schedule|managing all/i.test(out4e[1].text), out4e[1].text);
+    assert.equal(out4e[1].personalMeaning, true);
+    assert.equal(out4e[1].meta.caregivingDetected, true);
+    assert.ok(out4e[1].meta.contributionQualityPassed !== false);
+    assert.ok(!/[?]\s*$/.test(out4e[2].text), out4e[2].text);
+    assert.notEqual(out4e[3].intent, INTENT.CLOSING);
+    assert.ok(!/enjoy your day/i.test(out4e[3].text), out4e[3].text);
+    assert.notEqual(out4e[4].intent, INTENT.CLOSING);
+    assert.equal(out4e[4].state.sentOff, false);
+    assert.equal(out4e[4].meta.activityCompletion, true);
+    assert.ok(out4e[4].meta.descriptiveFaith === true || /scripture|prayer/i.test(out4e[4].text));
+    assert.ok(!/what verse|resonat\w* with you\?/i.test(out4e[4].text), out4e[4].text);
+    assert.ok(!/wonderful how/i.test(out4e[5].text), out4e[5].text);
+    assert.ok(/peace|scripture|resonat|prayer|ground/i.test(out4e[5].text), out4e[5].text);
+    assert.ok(
+      (st4e.relationalAnchors || []).some((a) => /parent|appointment/i.test(a.label || "")),
+      JSON.stringify(st4e.relationalAnchors),
+    );
+  });
+}
+
+check("75e1097c T2 personalMeaning stays true for taking care of mom", () => {
+  const t =
+    "I'm just watching the World Cup and just taking care of my mom and then going to the gym along with work. How about yourself?";
+  assert.equal(detectPersonalMeaning(t), true);
+  assert.equal(detectRelationalWeight(t).caregivingDetected, true);
 });
 
 // ---------------------------------------------------------------------------
