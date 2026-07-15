@@ -3,14 +3,16 @@
  *
  * Persists one JSON line per conversational turn under the isolated lab log
  * directory. Captures transcript, response, intent, runtime/lane/engine, the
- * conversation-state transition, per-stage latency, and the VAD boundary reason.
+ * conversation-state transition, Front Door / contribution decision labels,
+ * per-stage latency, and the VAD boundary reason.
  *
- * Never records secrets, tokens, or credentials. Writes are best-effort and must
- * never break a live turn.
+ * Never records secrets, tokens, credentials, or hidden chain-of-thought.
+ * Writes are best-effort and must never break a live turn.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildLatencyStages } from "./latencyPipeline.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,30 +30,14 @@ function turnLogFile(conversationId) {
 }
 
 /**
- * @param {{
- *   conversationId: string;
- *   sessionId: string;
- *   voiceTurnNumber: number;
- *   transcript: string;
- *   responseText: string;
- *   intent: string;
- *   conduct?: string|null;
- *   lane: string;
- *   engine: string|null;
- *   runtimeVersion: string;
- *   genomeVersion?: string;
- *   stateTransition: string;
- *   reopened: boolean;
- *   personalMeaning: boolean;
- *   faithOffered: boolean;
- *   pendingPrayerOfferBefore?: boolean;
- *   pendingPrayerOfferAfter?: boolean;
- *   shortAnswerGate?: boolean;
- *   vadReason: string;
- *   latency: object;
- * }} obs
+ * Persist turn observation. Accepts legacy fields plus optional `decision` /
+ * `contribution` / `latencyStages` blobs.
  */
 export async function recordTurnObservation(obs) {
+  const decision = obs.decision && typeof obs.decision === "object" ? obs.decision : {};
+  const meta = obs.meta && typeof obs.meta === "object" ? obs.meta : {};
+  const merged = { ...meta, ...decision };
+
   const record = {
     ts: new Date().toISOString(),
     conversationId: obs.conversationId,
@@ -64,7 +50,10 @@ export async function recordTurnObservation(obs) {
     lane: obs.lane,
     engine: obs.engine,
     runtimeVersion: obs.runtimeVersion,
-    genomeVersion: obs.genomeVersion ?? "philip-voice-genome-v1",
+    genomeVersion: obs.genomeVersion ?? merged.genomeVersion ?? "philip-voice-genome-v1",
+    promptVersion: obs.promptVersion ?? merged.promptVersion ?? null,
+    contributionContractVersion:
+      obs.contributionContractVersion ?? merged.contributionContractVersion ?? null,
     stateTransition: obs.stateTransition,
     reopened: obs.reopened,
     personalMeaning: obs.personalMeaning,
@@ -74,6 +63,33 @@ export async function recordTurnObservation(obs) {
     shortAnswerGate: Boolean(obs.shortAnswerGate),
     vadReason: obs.vadReason,
     latency: obs.latency,
+    latencyStages: obs.latencyStages || buildLatencyStages(obs.latency || {}),
+    // Front Door + contribution decision labels (no secrets / no CoT)
+    conversationalActs: merged.conversationalActs ?? null,
+    orderMode: merged.orderMode ?? null,
+    reciprocalDetected: merged.reciprocalDetected ?? null,
+    reciprocalAnswered: merged.reciprocalAnswered ?? null,
+    relationalDetailDetected: merged.relationalDetailDetected ?? null,
+    caregivingDetected: merged.caregivingDetected ?? null,
+    descriptiveFaith: merged.descriptiveFaith ?? null,
+    activityCompletion: merged.activityCompletion ?? null,
+    contributionType: merged.contributionType ?? null,
+    meaningfulDetailSelected: merged.meaningfulDetailSelected ?? null,
+    contextDetailUsed: merged.contextDetailUsed ?? null,
+    contributionPresent: merged.contributionPresent ?? null,
+    genericPraiseRisk: merged.genericPraiseRisk ?? null,
+    paraphraseOnlyRisk: merged.paraphraseOnlyRisk ?? null,
+    scheduleInventoryRisk: merged.scheduleInventoryRisk ?? null,
+    unnecessaryQuestionRisk: merged.unnecessaryQuestionRisk ?? null,
+    unsupportedStruggleRisk: merged.unsupportedStruggleRisk ?? null,
+    forcedFaithRisk: merged.forcedFaithRisk ?? null,
+    contributionQualityPassed: merged.contributionQualityPassed ?? null,
+    contributionFailReasons: merged.contributionFailReasons ?? null,
+    sentOffBefore: merged.sentOffBefore ?? null,
+    sentOffAfter: merged.sentOffAfter ?? merged.sentOff ?? null,
+    sentOffTransition: merged.sentOffTransition ?? null,
+    routedDeep: merged.routedDeep ?? null,
+    relationalAnchors: merged.relationalAnchors ?? null,
   };
   try {
     const dir = logDir();

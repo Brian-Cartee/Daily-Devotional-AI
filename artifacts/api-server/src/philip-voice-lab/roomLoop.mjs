@@ -29,6 +29,7 @@ import { logVoiceTurnVerification } from "./voiceTurnLog.mjs";
 import { recordTurnObservation } from "./turnObservability.mjs";
 import { awaitingConstrainedShortAnswer } from "./frontDoor.mjs";
 import { PHILIP_VOICE_GENOME_VERSION } from "./compactGenome.mjs";
+import { buildLatencyStages } from "./latencyPipeline.mjs";
 
 /** Candidate genome honesty marker — compact live-voice genome + Front Door routing. */
 export const CANDIDATE_GENOME_VERSION = PHILIP_VOICE_GENOME_VERSION;
@@ -360,6 +361,8 @@ export async function runPhilipLabTurn(job) {
       engine: brain.engine,
       runtimeVersion: runtimeHeaders.runtimeVersion,
       genomeVersion: CANDIDATE_GENOME_VERSION,
+      promptVersion: brain.meta?.promptVersion ?? null,
+      contributionContractVersion: brain.meta?.contributionContractVersion ?? null,
       stateTransition,
       reopened: brain.reopened,
       personalMeaning: brain.personalMeaning,
@@ -368,6 +371,7 @@ export async function runPhilipLabTurn(job) {
       pendingPrayerOfferAfter: pendingAfter,
       shortAnswerGate: Boolean(job.shortAnswerGate),
       vadReason: job.vadReason ?? "vad_silence",
+      meta: brain.meta || {},
       latency: {
         sttMs,
         guidanceMs,
@@ -375,17 +379,48 @@ export async function runPhilipLabTurn(job) {
         playbackMs,
         totalTurnMs,
         utteranceMs,
+        audioBytes: job.audioBytes ?? job.pcmBytes ?? null,
         userSpeechEndAt,
         vadCloseAt,
         sttStartAt,
         sttEndAt,
         guidanceStartAt,
         guidanceEndAt,
+        modelFirstTokenAt: brain.meta?.modelFirstTokenAt ?? null,
         ttsStartAt,
         ttsEndAt,
         firstAudioAt,
+        playbackCompleteAt,
+        pcmDurationMs: pcmMs,
         speechEndToFirstAudioMs,
+        nextUserSpeechStartAt: null,
+        overlapOrInterruption: Boolean(job.overlapOrInterruption),
+        interruptionKind: job.interruptionKind ?? null,
+        discardReason: job.discardReason ?? null,
       },
+      latencyStages: buildLatencyStages({
+        vadCloseAt,
+        userSpeechEndAt,
+        utteranceMs,
+        audioBytes: job.audioBytes ?? job.pcmBytes ?? null,
+        sttStartAt,
+        sttEndAt,
+        sttMs,
+        guidanceStartAt,
+        guidanceEndAt,
+        guidanceMs,
+        modelFirstTokenAt: brain.meta?.modelFirstTokenAt ?? null,
+        ttsStartAt,
+        ttsEndAt,
+        ttsMs,
+        firstAudioAt,
+        playbackCompleteAt,
+        pcmDurationMs: pcmMs,
+        speechEndToFirstAudioMs,
+        overlapOrInterruption: Boolean(job.overlapOrInterruption),
+        interruptionKind: job.interruptionKind ?? null,
+        discardReason: job.discardReason ?? null,
+      }),
     });
 
     job.timeline.endTurn({
