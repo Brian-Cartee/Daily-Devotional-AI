@@ -112,9 +112,84 @@ Publish a one-page dashboard or JSON summary per room: median/p95 SE→publish, 
 
 ---
 
+## Instrumentation implemented (provider-neutral)
+
+Schema: `philip-latency-pipeline-v1` in
+`artifacts/api-server/src/philip-voice-lab/latencyPipeline.mjs`.
+
+Persisted on each `.turns.jsonl` record as `latencyStages` (alongside legacy `latency`):
+
+| Stage | Field |
+|-------|--------|
+| VAD close | `vadCloseAt` |
+| Utterance duration / bytes | `utteranceMs`, `audioBytes` |
+| Upload start/end | `uploadStartAt`, `uploadEndAt` (null until client reports) |
+| STT provider | `sttProviderStartAt`, `sttProviderEndAt`, `sttMs` |
+| Model request / first token / completion | `modelRequestStartAt`, `modelFirstTokenAt`, `modelCompletionAt`, `timeToFirstTokenMs` |
+| TTS request / first audio | `ttsRequestStartAt`, `ttsFirstAudioAt`, `ttsMs` |
+| Publish window | `audioPublishStartAt`, `audioPublishEndAt` |
+| Estimated audible window | `estimatedAudibleStartAt`, `estimatedAudibleEndAt` |
+| Next user speech | `nextUserSpeechStartAt` |
+| Overlap / interrupt | `overlapOrInterruption`, `interruptionKind`, `discardReason` |
+
+**Important:** `firstAudioMeans = agent_publish_start_not_proven_ear` — publish ≠ proven on-device hear time.
+
+Guidance first-token timing is captured inside `guidanceBrain.mjs` when the live LLM path runs (`modelFirstTokenAt`). Front Door–only turns leave it null.
+
+---
+
+## Future benchmark command / runbook (authorization required)
+
+**Do not run paid realtime probes without explicit authorization.**
+
+### Goals
+
+Compare, on the **same scripted prompts** (75e1097c + 4e28a4a8 turns):
+
+1. **Current chained pipeline** (VAD → batch STT → Front Door + GPT-4o → TTS → LiveKit publish)
+2. **OpenAI Realtime** (audio↔audio or text events — prototype only)
+3. **Hybrid** (streaming STT or partials + inspectable Philip Front Door/genome/safety + streamed TTS)
+
+Metrics: speech-end→first-audio (publish), barge-in success, transcript fidelity, contribution quality pass rate, crisis/prayer contract intact.
+
+### Exact future command (placeholder — implement runner later)
+
+```bash
+# LOCAL first. Requires explicit paid-API authorization before realtime modes.
+cd /Users/briancartee/philip-lab-worktrees/philip-voice-lab-fix
+
+# 1) Baseline: harvest chained timings from an isolated lab session turns.jsonl
+node scripts/philip-latency-benchmark-report.mjs \
+  --room <philip-lab-room-id> \
+  --mode chained \
+  --out .tmp-evidence-508/latency-chained-<room>.json
+
+# 2) Realtime prototype (PAID — stop for authorization):
+# node scripts/philip-latency-benchmark-run.mjs --mode openai-realtime --fixture 4e28a4a8
+
+# 3) Hybrid prototype (PAID — stop for authorization):
+# node scripts/philip-latency-benchmark-run.mjs --mode hybrid-philip-guidance --fixture 4e28a4a8
+```
+
+Report must include med/p95 per stage from `latencyStages`, discard rate, and whether genome/Front Door contracts still applied.
+
+### What requires a new iPhone build
+
+| Change | New iPhone / EAS build? |
+|--------|-------------------------|
+| Server-only Front Door / genome / contribution / observability | **No** — existing Philip Voice Lab app reusable |
+| Same LiveKit room + agent dispatch shape | **No** |
+| Client upload timing / next-speech timestamps pushed to agent | **Maybe** — only if not already derivable from LiveKit events |
+| Switching transport to OpenAI Realtime WebRTC on device | **Yes** |
+| New native barge-in UX beyond current agent path | **Likely yes** |
+| Hybrid that keeps LiveKit session contract | **Possibly no** if agent/server-only |
+
+---
+
 ## Explicit non-goals for this document’s package
 
 - No env/nginx changes  
 - No LiveKit Cloud reconfiguration  
 - No EAS  
 - No paid latency probes in this task  
+- No architecture migration until post-phone validation of contribution genome v3  
