@@ -24,11 +24,14 @@
 import {
   evaluateContributionQuality,
   CONTRIBUTION_CONTRACT_VERSION,
+  isLightOrdinaryTopic,
 } from "./contributionContract.mjs";
 import {
   detectRelationalWeight,
   mergeRelationalAnchors,
   relationalHintsFromState,
+  isWeightyDescriptiveFaithContext,
+  serializeRelationalAnchors,
 } from "./relationalWeight.mjs";
 
 export const INTENT = Object.freeze({
@@ -408,6 +411,36 @@ export function resolveFrontDoorClassification(rawText, state) {
     };
   }
 
+  // After a latched goodbye, short thanks / garbled farewell echo stay as closing —
+  // do not reopen on damaged gratitude (ddd033a1 T7).
+  if (
+    state?.sentOff &&
+    /\bthank(s| you)\b/i.test(original) &&
+    wordCount(original) <= 14 &&
+    !/[?]/.test(original) &&
+    !matchesAny(norm(original), CRISIS_PATTERNS) &&
+    !matchesAny(norm(original), PRACTICAL_PATTERNS) &&
+    !matchesAny(norm(original), EMOTIONAL_PATTERNS)
+  ) {
+    return {
+      original,
+      classifyText: original,
+      intent: INTENT.CLOSING,
+      multiIntent: false,
+      gratitudePreserved: false,
+      meaningfulOrdinary: false,
+      conversationalRepair: false,
+      routeDeep: false,
+      orderMode: multi.orderMode || "substance_only",
+      conversationalActs: multi.acts?.length ? multi.acts : [{ type: "gratitude", text: original }],
+      closingFollowedBySubstance: false,
+      substanceFollowedByClosing: false,
+      bareGratitude: false,
+      socialFarewellReciprocal: true,
+      deepRoutingReason: null,
+    };
+  }
+
   if (multi.bareGratitude) {
     return {
       original,
@@ -472,10 +505,13 @@ export function resolveFrontDoorClassification(rawText, state) {
     /\bhow (are|about) (you|yourself)( doing| today)?\b/i.test(classifyText) ||
     /\bhow you(?:'| a)?re (doing|feeling|holding up)\b/i.test(classifyText);
   const descriptiveFaith = isDescriptiveFaithPractice(classifyText);
-  // Multi-topic turns that mix descriptive faith + reciprocal need contribution (deep),
-  // not a short faith-only template. Keep short routine descriptions on templates.
+  const weightyDescriptiveFaith =
+    descriptiveFaith && isWeightyDescriptiveFaithContext(classifyText, state);
+  // Multi-topic turns that mix descriptive faith + reciprocal, OR weighty faith tied to
+  // caregiving/recovery/answered prayer, need contribution (deep) — not a short template.
   const descriptiveFaithNeedsContribution =
-    descriptiveFaith && reciprocalAsk && wordCount(classifyText) >= 18;
+    descriptiveFaith &&
+    ((reciprocalAsk && wordCount(classifyText) >= 18) || weightyDescriptiveFaith);
   const ordinarySubstance =
     (!DEEP_INTENTS.includes(intent) &&
       !isReciprocalSmallTalk(classifyText) &&
@@ -491,6 +527,14 @@ export function resolveFrontDoorClassification(rawText, state) {
     (!isReciprocalSmallTalk(classifyText) || descriptiveFaithNeedsContribution) &&
     (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
     (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
+  let deepRoutingReason = null;
+  if (routeDeep) {
+    if (weightyDescriptiveFaith) deepRoutingReason = "weighty_descriptive_faith";
+    else if (descriptiveFaithNeedsContribution) deepRoutingReason = "descriptive_faith_needs_contribution";
+    else if (DEEP_INTENTS.includes(intent)) deepRoutingReason = `deep_intent:${intent}`;
+    else if (ordinarySubstance) deepRoutingReason = "ordinary_substance";
+    else deepRoutingReason = "informational";
+  }
   return {
     original,
     classifyText,
@@ -507,6 +551,8 @@ export function resolveFrontDoorClassification(rawText, state) {
     bareGratitude: false,
     socialFarewellReciprocal: false,
     descriptiveFaithNeedsContribution: Boolean(descriptiveFaithNeedsContribution),
+    weightyDescriptiveFaith: Boolean(weightyDescriptiveFaith),
+    deepRoutingReason,
   };
 }
 
@@ -668,6 +714,9 @@ const CLOSING_PATTERNS = [
   /\bsee (you|ya) (tomorrow|later|soon)?\b/,
   /\btake care\b/,
   /\bgotta (go|run)\b/,
+  /\bi(?:'| a)?ve got to go\b/,
+  /\bi have to go\b/,
+  /\bgot to go\b/,
   // Session-ending "done" only — NOT "I'm done with breakfast/scripture/…"
   /^\s*i(?:'| a)?m done[.!]?\s*$/,
   /\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/,
@@ -676,6 +725,8 @@ const CLOSING_PATTERNS = [
   /\bthat'?s all( for now| i wanted to say)?\b/,
   /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off|leave)\b/,
   /\bi need to go\b/,
+  /\btalk(?:\s+\w+){0,4}\s+later\b/,
+  /\bspeak(?:\s+\w+){0,4}\s+later\b/,
   /\bhave a (good|great|wonderful|nice) (day|night|one|evening|afternoon)\b/,
   /\byou have a (good|great|wonderful|nice) (day|night|one)\b/,
   /\benjoy (your|the) (day|night|evening|match|game|rest)\b/,
@@ -707,7 +758,7 @@ export function isActivityCompletionNotSessionEnd(rawText) {
 function hasSessionEndingFarewellCue(text) {
   const t = norm(text);
   return (
-    /\b(good ?bye|goodbye|bye( now)?|good ?night|take care|gotta (go|run)|i need to go|talk (to you )?(later|soon|again)|look forward to (speaking|talking)|have a (good|great|wonderful|nice) (day|night|one))\b/.test(
+    /\b(good ?bye|goodbye|bye( now)?|good ?night|take care|gotta (go|run)|i(?:'| a)?ve got to go|i have to go|got to go|i need to go|talk (to you )?(later|soon|again)|talk(?:\s+\w+){0,4}\s+later|speak(?:\s+\w+){0,4}\s+later|look forward to (speaking|talking)|have a (good|great|wonderful|nice) (day|night|one))\b/.test(
       t,
     ) ||
     /^\s*i(?:'| a)?m done[.!]?\s*$/.test(t) ||
@@ -1756,13 +1807,13 @@ export function scrubReopenOpener(rawText) {
 }
 
 const GENERIC_PRAISE_OPENER =
-  /^(that'?s (a )?(wonderful|beautiful|great|fantastic|impressive)( question)?|it'?s (wonderful|beautiful|great)( that| how)?|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting|that sounds (exciting|wonderful|great))\b/i;
+  /^(that'?s (a )?(wonderful|beautiful|great|fantastic|impressive|special)( question)?|it'?s (wonderful|beautiful|great|amazing)( that| how)?|i love that|great choice|thoughtful approach|that makes a lot of sense|sounds like (a )?great (choice|plan)|it'?s exciting|that sounds (exciting|wonderful|great|amazing|special)|sounds like an exciting)\b/i;
 
 export function detectGenericPraiseRisk(rawText) {
   const t = String(rawText || "").trim();
   if (!t) return false;
   if (GENERIC_PRAISE_OPENER.test(t)) return true;
-  return /\b(that'?s (a )?(wonderful|beautiful|fantastic|great (question|approach)|impressive)|it'?s (great|wonderful) (that|how)|that sounds (exciting|wonderful|great)|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach|must be (quite )?(rewarding|exciting))\b/i.test(
+  return /\b(that'?s (a )?(wonderful|beautiful|fantastic|great (question|approach)|impressive|special)|it'?s (great|wonderful|amazing) (that|how)|that sounds (exciting|wonderful|great|amazing|special)|sounds like an exciting|really special|beautiful (mission|rhythm)|great choice|i love that|thoughtful approach|must be (quite )?(rewarding|exciting)|layer of connection and joy)\b/i.test(
     t,
   );
 }
@@ -2517,6 +2568,9 @@ export async function runFrontDoorTurn(input) {
   const descriptiveFaith = isDescriptiveFaithPractice(resolved.classifyText);
   const activityCompletion = isActivityCompletionNotSessionEnd(transcript);
   const priorRelationalHints = relationalHintsFromState(state);
+  const weightyDescriptiveFaith = Boolean(resolved.weightyDescriptiveFaith);
+  const lightOrdinaryTopic =
+    isLightOrdinaryTopic(resolved.classifyText) && !relational.detected && !weightyDescriptiveFaith;
 
   let text;
   let engine;
@@ -2541,15 +2595,18 @@ export async function runFrontDoorTurn(input) {
     gratitudePreserved: resolved.gratitudePreserved,
     multiIntent: resolved.multiIntent,
     recentAssistantReplies: recentAssistants,
-    preferStatement,
+    preferStatement: preferStatement || lightOrdinaryTopic,
     descriptiveFaith,
+    weightyDescriptiveFaith,
+    weightyRelationalContext: relational.weightyRelationalContext,
     reciprocalAsk: reciprocalEmbedded || reciprocalAsk,
     caregivingDetected: relational.caregivingDetected,
     relationalDetailDetected: relational.detected,
-    relationalHint: relational.primaryHint,
+    relationalHint: relational.primaryHint || priorRelationalHints[0] || null,
     priorRelationalHints,
     substantiveOrdinary: Boolean(resolved.meaningfulOrdinary || isDeep),
     requireContribution: Boolean(isDeep),
+    lightOrdinaryTopic,
   };
 
   if (conduct) {
@@ -2777,11 +2834,13 @@ export async function runFrontDoorTurn(input) {
       multiIntent: resolved.multiIntent,
       gratitudePreserved: resolved.gratitudePreserved,
       routedDeep: isDeep,
+      deepRoutingReason: resolved.deepRoutingReason || null,
       conversationalRepair: resolved.conversationalRepair,
       repeatRepair,
       classifyText: resolved.classifyText,
       hybridGreeting: isHybridGreetingReciprocal(resolved.classifyText),
       descriptiveFaith,
+      weightyDescriptiveFaith,
       activityCompletion,
       fragmentRepair: false,
       incompleteSpeechRepair: false,
@@ -2800,22 +2859,30 @@ export async function runFrontDoorTurn(input) {
       closingThenSubstance,
       relationalDetailDetected: relational.detected,
       caregivingDetected: relational.caregivingDetected,
+      caregivingTreatedRelationally: contributionQuality?.caregivingTreatedRelationally ?? null,
       relationalHint: relational.primaryHint,
-      relationalAnchors: nextAnchors.map((a) => ({ kind: a.kind, label: a.label })),
+      relationalAnchors: serializeRelationalAnchors(nextAnchors),
+      relationalAnchorsUsed: priorRelationalHints.slice(0, 4),
       contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
-      contributionType: contributionQuality?.contributionTypeGuess ?? null,
+      contributionType: contributionQuality?.contributionFunction ?? contributionQuality?.contributionTypeGuess ?? null,
+      contributionFunction: contributionQuality?.contributionFunction ?? null,
       meaningfulDetailSelected:
         contributionQuality?.meaningfulDetailGuess ?? relational.primaryHint ?? null,
       contextDetailUsed: priorRelationalHints[0] || null,
       contributionPresent: contributionQuality?.contributionPresent ?? null,
+      newPropositionDetected: contributionQuality?.newPropositionDetected ?? null,
       paraphraseOnlyRisk: contributionQuality?.paraphraseOnlyRisk ?? null,
+      appraisalOnlyRisk: contributionQuality?.appraisalOnlyRisk ?? null,
+      genericRelationalSentimentRisk: contributionQuality?.genericRelationalSentimentRisk ?? null,
+      interviewQuestionRisk: contributionQuality?.interviewQuestionRisk ?? null,
       scheduleInventoryRisk: contributionQuality?.scheduleInventoryRisk ?? null,
       unnecessaryQuestionRisk: contributionQuality?.unnecessaryQuestionRisk ?? null,
       unsupportedStruggleRisk: contributionQuality?.unsupportedStruggleRisk ?? null,
       forcedFaithRisk: contributionQuality?.forcedFaithRisk ?? null,
       contributionQualityPassed: contributionQuality?.passed ?? null,
-      contributionFailReasons: contributionQuality?.failReasons ?? null,
+      contributionFailReasons: contributionQuality?.failReasons ?? contributionQuality?.failureReasons ?? null,
       promptVersion: `genome+${CONTRIBUTION_CONTRACT_VERSION}`,
+      lightOrdinaryTopic,
     },
   };
 }
