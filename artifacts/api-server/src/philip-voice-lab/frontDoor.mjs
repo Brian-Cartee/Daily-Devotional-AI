@@ -88,6 +88,10 @@ const SOCIAL_FAREWELL_RECIPROCAL_BARE =
 function clauseLooksClosing(text) {
   const t = norm(text);
   if (!t) return false;
+  // Activity completion alone must not mark a clause as closing.
+  if (isActivityCompletionNotSessionEnd(t) && !hasSessionEndingFarewellCue(t)) {
+    return false;
+  }
   return matchesAny(t, CLOSING_PATTERNS);
 }
 
@@ -366,7 +370,7 @@ export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if (state?.lastIntent && DEEP_INTENTS.includes(state.lastIntent) && wordCount(t) >= 5) {
     return true;
   }
-  if (state?.personalMeaningSeen && intent === INTENT.CASUAL && wordCount(t) >= 6) return true;
+  if (state?.personalMeaningSeen && intent === INTENT.CASUAL && wordCount(t) >= 5) return true;
   return false;
 }
 
@@ -438,25 +442,44 @@ export function resolveFrontDoorClassification(rawText, state) {
 
   let intent;
   if (multi.substanceFollowedByClosing) {
-    intent = INTENT.CLOSING;
+    const closingOnlyActivity =
+      isActivityCompletionNotSessionEnd(multi.closingText || "") &&
+      !hasSessionEndingFarewellCue(multi.closingText || "");
+    if (closingOnlyActivity) {
+      // Treat as substance: classify on non-closing portion or full original.
+      classifyText = multi.substanceText || classifyText;
+      intent = classifyIntent(classifyText, state);
+    } else {
+      intent = INTENT.CLOSING;
+    }
   } else {
     intent = classifyIntent(classifyText, state);
   }
 
   const conversationalRepair = isConversationalRepair(original, state);
+  const reciprocalAsk =
+    isReciprocalSmallTalk(classifyText) ||
+    /\bhow (are|about) (you|yourself)( doing| today)?\b/i.test(classifyText) ||
+    /\bhow you(?:'| a)?re (doing|feeling|holding up)\b/i.test(classifyText);
+  const descriptiveFaith = isDescriptiveFaithPractice(classifyText);
+  // Multi-topic turns that mix descriptive faith + reciprocal / long disclosure need
+  // contribution (deep), not a short faith-only template.
+  const descriptiveFaithNeedsContribution =
+    descriptiveFaith && reciprocalAsk && wordCount(classifyText) >= 18;
   const ordinarySubstance =
     (!DEEP_INTENTS.includes(intent) &&
       !isReciprocalSmallTalk(classifyText) &&
-      !isDescriptiveFaithPractice(classifyText) &&
+      (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
       !isHybridGreetingReciprocal(classifyText) &&
       (isMeaningfulOrdinaryTurn(classifyText, state, intent) ||
-        (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)))) ||
+        (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)) ||
+        descriptiveFaithNeedsContribution)) ||
     conversationalRepair;
   const routeDeep =
     ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
-    !isReciprocalSmallTalk(classifyText) &&
-    !isDescriptiveFaithPractice(classifyText) &&
     !isHybridGreetingReciprocal(classifyText) &&
+    (!isReciprocalSmallTalk(classifyText) || descriptiveFaithNeedsContribution) &&
+    (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
     (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
   return {
     original,
@@ -473,6 +496,7 @@ export function resolveFrontDoorClassification(rawText, state) {
     substanceFollowedByClosing: Boolean(multi.substanceFollowedByClosing),
     bareGratitude: false,
     socialFarewellReciprocal: false,
+    descriptiveFaithNeedsContribution: Boolean(descriptiveFaithNeedsContribution),
   };
 }
 
@@ -634,17 +658,54 @@ const CLOSING_PATTERNS = [
   /\bsee (you|ya) (tomorrow|later|soon)?\b/,
   /\btake care\b/,
   /\bgotta (go|run)\b/,
-  /\bi('| a)?m done\b/,
-  /\bthat'?s all( for now)?\b/,
+  // Session-ending "done" only — NOT "I'm done with breakfast/scripture/…"
+  /^\s*i(?:'| a)?m done[.!]?\s*$/,
+  /\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/,
+  /\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/,
+  /\bi(?:'| a)?m finished for now\b/,
+  /\bthat'?s all( for now| i wanted to say)?\b/,
   /\bi(?:'| a)?m (gonna|going to) (go|head out|sign off|leave)\b/,
   /\bi need to go\b/,
   /\bhave a (good|great|wonderful|nice) (day|night|one|evening|afternoon)\b/,
   /\byou have a (good|great|wonderful|nice) (day|night|one)\b/,
   /\benjoy (your|the) (day|night|evening|match|game|rest)\b/,
-  /\bi(?:'| a)?m going to watch\b/,
   /\ball right[,.]?\s*(thank(s| you)|thanks)\b/,
   /\b(thank(s| you)|thanks).{0,40}\b(have a good|take care|goodbye|bye|talk later|talk soon)\b/,
 ];
+
+/**
+ * "I'm done with breakfast/scripture/work" = activity completion, not session end.
+ * Session-ending forms ("I'm done.", "I'm done for now") stay closing.
+ */
+export function isActivityCompletionNotSessionEnd(rawText) {
+  const t = norm(rawText);
+  if (!t) return false;
+  // Bare session-ending "I'm done" / "I'm done for now" are NOT activity completion.
+  if (/^\s*i(?:'| a)?m done[.!]?\s*$/.test(t)) return false;
+  if (/\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/.test(t)) {
+    return false;
+  }
+  if (/\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t)) return false;
+  // Task / routine completion.
+  if (/\bi(?:'| a)?m done (with|watching|reading|eating|praying|working|after)\b/.test(t)) return true;
+  if (/\bi finished (my|the|a|with)\b/.test(t)) return true;
+  if (/\bi(?:'| a)?m finished (with|watching|reading)\b/.test(t)) return true;
+  return false;
+}
+
+/** True session-closing cues independent of activity-completion language. */
+function hasSessionEndingFarewellCue(text) {
+  const t = norm(text);
+  return (
+    /\b(good ?bye|goodbye|bye( now)?|good ?night|take care|gotta (go|run)|i need to go|talk (to you )?(later|soon|again)|look forward to (speaking|talking)|have a (good|great|wonderful|nice) (day|night|one))\b/.test(
+      t,
+    ) ||
+    /^\s*i(?:'| a)?m done[.!]?\s*$/.test(t) ||
+    /\bi(?:'| a)?m done (for now|talking(?: for today)?|for today|here)(?:\s|$|[.!,])/.test(t) ||
+    /\bi think i(?:'| a)?m done(?: for now)?(?:\s|$|[.!,])/.test(t) ||
+    /\bthat'?s all( for now| i wanted to say)?\b/.test(t)
+  );
+}
 
 /** Reciprocal small-talk — relational check-ins, not practical advice. */
 const RECIPROCAL_SMALLTALK_PATTERNS = [
@@ -713,7 +774,21 @@ export function isClosingTurn(rawText, state = null) {
   if (multi.closingFollowedBySubstance) return false;
   if (multi.socialFarewellReciprocal) return true;
   if (multi.bareGratitude) return false;
-  if (multi.substanceFollowedByClosing) return true;
+  if (multi.substanceFollowedByClosing) {
+    // "I'm done with Scripture…" mis-tagged as closing must not end the session.
+    if (
+      isActivityCompletionNotSessionEnd(multi.closingText || "") &&
+      !hasSessionEndingFarewellCue(multi.closingText || "")
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  // Activity completion without farewell cues is never a close.
+  if (isActivityCompletionNotSessionEnd(original) && !hasSessionEndingFarewellCue(original)) {
+    return false;
+  }
 
   const text = norm(original);
   if (matchesAny(text, CRISIS_PATTERNS)) return false;
@@ -738,6 +813,24 @@ export function isClosingTurn(rawText, state = null) {
   return false;
 }
 
+
+/**
+ * Leading content before a trailing reciprocal check-in.
+ * Empty when the turn is reciprocal-only or has only a brief status preface.
+ */
+export function extractTextBeforeTrailingReciprocal(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return "";
+  const stripped = original
+    .replace(
+      /[.!?]?\s*(?:(?:and|so|but)\s+)?(?:how (?:about|are) (?:you|yourself)(?: doing| today)?|how you(?:'| a)?re (?:doing|feeling|holding up)|what about you|and (?:you|yourself))\s*\??\s*$/i,
+      "",
+    )
+    .trim();
+  if (!stripped || stripped === original) return "";
+  return stripped;
+}
+
 export function isReciprocalSmallTalk(rawText) {
   const text = norm(rawText);
   if (!text) return false;
@@ -749,6 +842,16 @@ export function isReciprocalSmallTalk(rawText) {
   if (isHybridGreetingReciprocal(text)) return true;
   // Short reciprocal check-ins, optionally after a brief status ("I'm pretty good. How about yourself?")
   if (!matchesAny(text, RECIPROCAL_SMALLTALK_PATTERNS)) return false;
+
+  // Multi-topic: real substance then reciprocal must not collapse to pure small-talk
+  // (contribution should answer both). Brief status prefaces stay reciprocal.
+  const before = extractTextBeforeTrailingReciprocal(rawText);
+  if (before) {
+    const b = norm(before);
+    const briefStatus = matchesAny(b, STATUS_ALREADY_PATTERNS) && wordCount(b) <= 10;
+    if (!briefStatus && wordCount(b) >= 6) return false;
+  }
+
   if (wordCount(text) <= 14) return true;
   // Longer only if the reciprocal ask is the main move and there's no heavy ask.
   if (wordCount(text) <= 20 && !matchesAny(text, EMOTIONAL_PATTERNS)) return true;
@@ -933,12 +1036,16 @@ const CASUAL_PATTERNS = [
   /\blately\b/,
 ];
 
-/** Emotional weight riding under an otherwise casual topic. */
+/** Emotional / relational weight riding under an otherwise casual topic. */
 const MEANING_MARKERS = [
   /\ba lot\b/, /\blately\b/, /\bexhaust/, /\btired\b/, /\bdrain/,
   /\bstressed\b/, /\bworried\b/, /\bbehind\b/, /\bharder\b/, /\bhard\b/,
   /\bstruggl/, /\boverwhelm/, /\bcan'?t keep up\b/, /\btoo much\b/,
   /\bnot myself\b/, /\bheavy\b/, /\bweigh/, /\bpressure\b/,
+  // Caregiving / relational commitment is meaningful even when it is going well.
+  /\b(taking )?care (of|for)\b.{0,40}\b(mom|mother|dad|father|parent|wife|husband|kids?|child|friend)\b/,
+  /\bcaring for\b/,
+  /\bmy (mom|mother|dad|father)\b/,
 ];
 
 // --- Conduct detection ------------------------------------------------------
