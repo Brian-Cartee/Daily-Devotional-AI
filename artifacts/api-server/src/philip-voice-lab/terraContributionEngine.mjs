@@ -269,7 +269,7 @@ export function makeTerraDeepGenerator(opts = {}) {
           model,
           messages,
           temperature: 0.55,
-          max_tokens: 500,
+          max_completion_tokens: 500,
           response_format: {
             type: "json_schema",
             json_schema: TERRA_CONTRIBUTION_JSON_SCHEMA,

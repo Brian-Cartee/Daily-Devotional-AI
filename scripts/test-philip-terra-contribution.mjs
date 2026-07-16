@@ -102,6 +102,10 @@ function mockTerraClient(planOrThrow) {
           assert.equal(args.response_format?.type, "json_schema");
           assert.equal(args.response_format?.json_schema?.strict, true);
           assert.ok(!/gpt-4o$/i.test(String(args.model || "")));
+          // gpt-5.6-terra rejects max_tokens; require max_completion_tokens only.
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "max_tokens"), false);
+          assert.equal(typeof args.max_completion_tokens, "number");
+          assert.ok(args.max_completion_tokens > 0);
           if (typeof planOrThrow === "function") return planOrThrow(args);
           if (planOrThrow instanceof Error) throw planOrThrow;
           const content =
@@ -212,6 +216,46 @@ await check("assembleTerraDeepResult: only spokenResponse is text; private plan 
   assert.equal(result.schemaValid, true);
   assert.equal(result.contributionQualityShadow, true);
   assert.equal(result.contributionEngineVersion, TERRA_CONTRIBUTION_ENGINE_VERSION);
+});
+
+await check("Terra API: max_completion_tokens only; no max_tokens; strict json_schema", async () => {
+  let sawArgs = null;
+  const spoken =
+    "Argentina over England is its own kind of drama — even a casual watch can carry that.";
+  const deep = makeTerraDeepGenerator({
+    resolveClient: async () =>
+      mockTerraClient((args) => {
+        sawArgs = args;
+        return {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify(
+                  validPlan({
+                    spokenResponse: spoken,
+                    faithPosture: "implicit",
+                    questionNeeded: false,
+                  }),
+                ),
+              },
+            },
+          ],
+        };
+      }),
+  });
+  const result = await deep({
+    transcript: TERRA_BENCHMARK_FIXTURES[0].user,
+    rawTranscript: TERRA_BENCHMARK_FIXTURES[0].user,
+    ...TERRA_BENCHMARK_FIXTURES[0].ctx,
+    history: [],
+  });
+  assert.ok(sawArgs);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "max_tokens"), false);
+  assert.equal(sawArgs.max_completion_tokens, 500);
+  assert.equal(sawArgs.response_format?.type, "json_schema");
+  assert.equal(sawArgs.response_format?.json_schema?.strict, true);
+  assert.equal(result.text, spoken);
+  assert.ok(!/recognition|relationalMeaning|warrantedContribution/i.test(result.text));
 });
 
 await check("makeTerraDeepGenerator: mocked valid plan → spoken only", async () => {
