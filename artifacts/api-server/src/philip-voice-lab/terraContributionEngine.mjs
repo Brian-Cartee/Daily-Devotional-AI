@@ -197,17 +197,46 @@ export function assembleTerraDeepResult({
   const allowLong =
     ctx?.intent === "prayer" ||
     ctx?.intent === "crisis" ||
+    Boolean(ctx?.weightyDescriptiveFaith) ||
+    Boolean(ctx?.weightyRelationalContext) ||
+    Boolean(ctx?.caregivingDetected && ctx?.relationalDetailDetected) ||
     /\b(tell me more|go deeper|explain more|say more|more detail)\b/i.test(
       String(ctx?.rawTranscript || ctx?.transcript || ""),
     );
+  let spokenExemptionReason = null;
+  if (allowLong) {
+    if (ctx?.intent === "prayer") spokenExemptionReason = "prayer_mode";
+    else if (ctx?.intent === "crisis") spokenExemptionReason = "crisis_mode";
+    else if (ctx?.weightyDescriptiveFaith) spokenExemptionReason = "weighty_descriptive_faith";
+    else if (ctx?.weightyRelationalContext) spokenExemptionReason = "weighty_relational_context";
+    else if (ctx?.caregivingDetected && ctx?.relationalDetailDetected) {
+      spokenExemptionReason = "caregiving_relational";
+    } else spokenExemptionReason = "requested_depth";
+  }
   let spoken = String(plan.spokenResponse).trim();
   let spokenTrimmed = false;
+  let spokenLengthBefore = measureSpokenLength(spoken);
+  let spokenLength = spokenLengthBefore;
   if (!allowLong) {
     const trimmed = softTrimSpokenResponse(spoken);
     spoken = trimmed.text;
-    spokenTrimmed = trimmed.trimmed;
+    spokenTrimmed = Boolean(trimmed.trimmed || trimmed.trimApplied);
+    spokenLength = {
+      ...(trimmed.after || measureSpokenLength(spoken)),
+      exemptionReason: null,
+      trimApplied: spokenTrimmed,
+      before: trimmed.before || spokenLengthBefore,
+      after: trimmed.after || measureSpokenLength(spoken),
+    };
+  } else {
+    spokenLength = {
+      ...spokenLengthBefore,
+      exemptionReason: spokenExemptionReason,
+      trimApplied: false,
+      before: spokenLengthBefore,
+      after: spokenLengthBefore,
+    };
   }
-  const spokenLength = measureSpokenLength(spoken);
   const shadowGate = evaluateContributionQuality(spoken, ctx);
   const obs = terraPlanObservability(plan, validation);
 
