@@ -32,6 +32,9 @@ import {
   relationalHintsFromState,
   isWeightyDescriptiveFaithContext,
   serializeRelationalAnchors,
+  groundedRelationalHint,
+  groundedPriorRelationalHints,
+  relationalAnchorProvenance,
 } from "./relationalWeight.mjs";
 
 export const INTENT = Object.freeze({
@@ -361,6 +364,84 @@ export function isConversationalRepair(rawText, state) {
 /**
  * Meaningful ordinary conversation should use the deep generator — not canned casual templates.
  */
+export function isThinSocialAcknowledgment(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const t = norm(original);
+  const words = wordCount(t);
+  if (words === 0 || words > 14) return false;
+  if (/\?/.test(original)) return false;
+  // Affirmation that still carries a content claim ("it matters a lot") is not thin.
+  if (/\b(matter|matters|important|relationship|discipline|habit|peace|strength|fuel|scripture|prayer)\b/i.test(t)) {
+    // Pure "you're right about that" remains thin; content nouns below elevate.
+    if (!/^(absolutely[,.]?\s*)?(you'?re (absolutely )?right|that'?s (absolutely )?(right|true))([.!, ]+about that)?[.!]*$/i.test(t)) {
+      if (/\b(matter|matters|important|relationship|discipline|habit|peace|strength|fuel|scripture|prayer)\b/i.test(t)) {
+        return false;
+      }
+    }
+  }
+  // Pure agreement / backchannel — no new situational detail.
+  if (
+    /^(yes|yeah|yep|yup|absolutely|exactly|right|correct|true|sure|ok|okay|indeed)([,.]?\s+(it )?(sure )?(is|does)){0,2}([,.]?\s+(very much so|for sure|totally|completely|about that)){0,2}[.!]*$/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (
+    /^(absolutely[,.]?\s*)?(i agree|you'?re (absolutely )?right|that'?s (absolutely )?(right|true|correct)|it sure (is|does))([.!, ]+(about that|absolutely))?[.!]*$/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (
+    /^(absolutely[,.]?\s*)+(it sure is|you'?re absolutely right)([.!, ]+about that)?[.!]*$/i.test(t)
+  ) {
+    return true;
+  }
+  // Multi-clause pure agreement without content nouns.
+  // Contentful short updates ("Yeah the match was good") are not thin.
+  const hasContentNoun =
+    /\b(mom|mother|dad|father|scripture|prayer|work|app|job|world cup|match|game|cup|hike|news|morning|discipline|relationship|god|jesus|fuel|meal|habit|matter|matters)\b/i.test(
+      t,
+    );
+  if (
+    !hasContentNoun &&
+    words <= 12 &&
+    /^(yes|yeah|absolutely|right|sure|exactly|i agree|you'?re right|that'?s right)\b/i.test(t) &&
+    !/\b(because|when|after|before|about my|with my)\b/i.test(t)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Incomplete "by the way…" / trailing connector stubs that must not reach Terra. */
+export function isIncompleteLeadInFragment(rawText) {
+  const original = String(rawText || "").trim();
+  if (!original) return false;
+  const t = norm(original);
+  const words = wordCount(t);
+  if (words < 2 || words > 14) return false;
+  if (/\?/.test(original) && hasUsableSpokenClause(original.replace(/\s*(\.\.\.|…)\s*$/g, ""))) {
+    return false;
+  }
+  const stripped = original.replace(/\s*(\.\.\.|…)\s*$/g, "").trim();
+  if (/\bby the way\b/i.test(stripped)) {
+    // "by the way, I was wondering about X" with a usable clause is complete.
+    if (hasUsableSpokenClause(stripped) && !/\b(i was|i'?m|i am)\s*$/i.test(stripped)) {
+      return false;
+    }
+    if (/\b(um+|uh+|so|and|but|i was|i'?m|i am|i)\s*$/i.test(stripped)) return true;
+    if (words <= 6) return true;
+  }
+  if (/\b(and|but|so|or|if|when|because|that|i was|i'?m|i am)\s*$/i.test(stripped) && words <= 8) {
+    return !hasUsableSpokenClause(stripped);
+  }
+  return false;
+}
+
 export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if ([INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent)) return false;
   if (intent === INTENT.GRATITUDE) return false;
@@ -368,6 +449,10 @@ export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if (intent === INTENT.CASUAL && isReciprocalSmallTalk(rawText)) return false;
   if (isDescriptiveFaithPractice(rawText)) return false;
   if (isHybridGreetingReciprocal(rawText)) return false;
+  if (isThinSocialAcknowledgment(rawText)) return false;
+  if (isIncompleteLeadInFragment(rawText)) return false;
+  if (isHighConfidenceIncompleteSpeech(rawText, state)) return false;
+  if (isLikelyFragmentTranscript(rawText, state)) return false;
   if (DEEP_INTENTS.includes(intent)) return true;
   if (intent === INTENT.INFORMATIONAL) return true;
   if (isConversationalRepair(rawText, state)) return true;
@@ -377,13 +462,17 @@ export function isMeaningfulOrdinaryTurn(rawText, state, intent) {
   if (/\?/.test(t) && wordCount(t) >= 4) return true;
   // Multi-detail disclosure (clauses), not bare length.
   const clauseHits = (t.match(/[,;]|\band\b|\bbut\b/g) || []).length;
-  if (clauseHits >= 2 && wordCount(t) >= 12) return true;
+  if (clauseHits >= 2 && wordCount(t) >= 12 && !isThinSocialAcknowledgment(rawText)) return true;
   if (wordCount(t) >= 22) return true;
-  // Follow-up after a prior deep / meaningful assistant turn.
+  // Follow-up after a prior deep / meaningful assistant turn — still require substance.
   if (state?.lastIntent && DEEP_INTENTS.includes(state.lastIntent) && wordCount(t) >= 5) {
+    if (isThinSocialAcknowledgment(rawText)) return false;
     return true;
   }
-  if (state?.personalMeaningSeen && intent === INTENT.CASUAL && wordCount(t) >= 5) return true;
+  if (state?.personalMeaningSeen && intent === INTENT.CASUAL && wordCount(t) >= 5) {
+    if (isThinSocialAcknowledgment(rawText)) return false;
+    return true;
+  }
   return false;
 }
 
@@ -517,23 +606,59 @@ export function resolveFrontDoorClassification(rawText, state) {
       !isReciprocalSmallTalk(classifyText) &&
       (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
       !isHybridGreetingReciprocal(classifyText) &&
+      !isThinSocialAcknowledgment(classifyText) &&
+      !isIncompleteLeadInFragment(classifyText) &&
       (isMeaningfulOrdinaryTurn(classifyText, state, intent) ||
-        (intent === INTENT.CASUAL && detectPersonalMeaning(classifyText)) ||
+        (intent === INTENT.CASUAL &&
+          detectPersonalMeaning(classifyText) &&
+          !isThinSocialAcknowledgment(classifyText)) ||
         descriptiveFaithNeedsContribution)) ||
     conversationalRepair;
+  const thinBlocked =
+    isThinSocialAcknowledgment(classifyText) ||
+    isIncompleteLeadInFragment(classifyText) ||
+    isHighConfidenceIncompleteSpeech(classifyText, state) ||
+    isLikelyFragmentTranscript(classifyText, state);
   const routeDeep =
     ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
     !isHybridGreetingReciprocal(classifyText) &&
     (!isReciprocalSmallTalk(classifyText) || descriptiveFaithNeedsContribution) &&
     (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
+    !thinBlocked &&
     (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
   let deepRoutingReason = null;
+  let terraQualification = null;
   if (routeDeep) {
     if (weightyDescriptiveFaith) deepRoutingReason = "weighty_descriptive_faith";
     else if (descriptiveFaithNeedsContribution) deepRoutingReason = "descriptive_faith_needs_contribution";
     else if (DEEP_INTENTS.includes(intent)) deepRoutingReason = `deep_intent:${intent}`;
     else if (ordinarySubstance) deepRoutingReason = "ordinary_substance";
     else deepRoutingReason = "informational";
+    terraQualification = {
+      qualified: true,
+      reason: deepRoutingReason,
+      substance: Boolean(ordinarySubstance || DEEP_INTENTS.includes(intent)),
+    };
+  } else {
+    let denyReason = "front_door_lane";
+    if (intent === INTENT.CLOSING) denyReason = "closing_precedence";
+    else if (intent === INTENT.CRISIS) denyReason = "crisis_protocol";
+    else if (intent === INTENT.GREETING || isHybridGreetingReciprocal(classifyText)) {
+      denyReason = "greeting_or_reciprocal";
+    } else if (thinBlocked) {
+      denyReason = isThinSocialAcknowledgment(classifyText)
+        ? "thin_acknowledgment"
+        : "incomplete_fragment";
+    } else if (descriptiveFaith && !descriptiveFaithNeedsContribution) {
+      denyReason = "descriptive_faith_template";
+    } else if (!ordinarySubstance && !DEEP_INTENTS.includes(intent)) {
+      denyReason = "insufficient_substance";
+    }
+    terraQualification = {
+      qualified: false,
+      reason: denyReason,
+      substance: false,
+    };
   }
   return {
     original,
@@ -553,6 +678,7 @@ export function resolveFrontDoorClassification(rawText, state) {
     descriptiveFaithNeedsContribution: Boolean(descriptiveFaithNeedsContribution),
     weightyDescriptiveFaith: Boolean(weightyDescriptiveFaith),
     deepRoutingReason,
+    terraQualification,
   };
 }
 
@@ -722,12 +848,20 @@ const CLOSING_PATTERNS = [
   /\bi(?:'| a)?m going to leave it there\b/,
   /\btalk(?:\s+\w+){0,4}\s+later\b/,
   /\bspeak(?:\s+\w+){0,4}\s+later\b/,
+  /\breconnect(?:\s+\w+){0,6}\s+(later|soon|again|this (afternoon|evening)|tonight|tomorrow)\b/,
+  /\b(way we can|can we|could we|is there a way (we|to)|let'?s) (reconnect|catch up)\b/,
+  /\b(way we can|can we|could we|is there a way (we|to)|let'?s) (talk|speak)\b.{0,48}\b(later|soon|again|this (afternoon|evening)|tonight|tomorrow)\b/,
+  /\bcatch up (later|soon|again|this (afternoon|evening)|tonight)\b/,
   /\bhave a (good|great|wonderful|nice) (day|night|one|evening|afternoon)\b/,
   /\byou have a (good|great|wonderful|nice) (day|night|one)\b/,
   /\benjoy (your|the) (day|night|evening|match|game|rest)\b/,
   /\ball right[,.]?\s*(thank(s| you)|thanks)\b/,
   /\b(thank(s| you)|thanks).{0,40}\b(have a good|take care|goodbye|bye|talk later|talk soon)\b/,
 ];
+
+/** Continuations that keep a leave-taking "go" phrase as session farewell. */
+const LEAVE_TAKING_CONTINUATION =
+  /\b(reconnect|talk|speak|catch up|come back|later|soon|again|take care|bye|goodbye|good ?night|this (afternoon|evening|morning)|tonight|tomorrow)\b/i;
 
 /**
  * Remainder after a leave-taking "go" cue that indicates destination/purpose/activity,
@@ -741,6 +875,29 @@ function goRemainderIsActivityPurpose(after) {
   if (/^(for now|for today)[.!]?\s*$/i.test(r)) return false;
   if (/^(now|then)[.!]?\s*$/i.test(r)) return false;
 
+  // "go deeper / go back / go ahead / go through" — topical continuation, not hang-up.
+  if (/^(deeper|back|ahead|forward|through|further)\b/i.test(r)) return true;
+
+  // Peel time-box "for now" / "for today" before the generic for/to activity rule.
+  // "I need to go for now, but can we reconnect later?" stays farewell.
+  if (/^(for now|for today)\b/i.test(r)) {
+    const afterBox = r
+      .replace(/^(for now|for today)\b/i, "")
+      .trim()
+      .replace(/^[\s,;:.—–\-]+/, "");
+    if (!afterBox) return false;
+    if (/^(but|and|so|though|however)\b/i.test(afterBox)) {
+      if (LEAVE_TAKING_CONTINUATION.test(afterBox)) return false;
+      const afterConj = afterBox
+        .replace(/^(but|and|so|though|however)\b/i, "")
+        .trim()
+        .replace(/^[\s,;:.—–\-]+/, "");
+      return goRemainderIsActivityPurpose(afterConj);
+    }
+    if (LEAVE_TAKING_CONTINUATION.test(afterBox)) return false;
+    return goRemainderIsActivityPurpose(afterBox);
+  }
+
   if (/^(now|then)\b/i.test(r)) {
     // Peel "now"/"then" plus separators (space or dash/punct). Require progress
     // so "now—hiking" does not recurse forever when whitespace-only strip fails.
@@ -748,6 +905,7 @@ function goRemainderIsActivityPurpose(after) {
     if (peeled === r) return false;
     const afterNow = peeled.trim().replace(/^[\s,;:.—–\-]+/, "");
     if (!afterNow || /^(for now|for today)[.!]?\s*$/i.test(afterNow)) return false;
+    if (LEAVE_TAKING_CONTINUATION.test(afterNow)) return false;
     if (/^(to|for|and|with|over|into|onto)\b/i.test(afterNow)) return true;
     if (goRemainderIsActivityPurpose(afterNow)) return true;
     // "now — talk later" is still leave-taking (handled by talk-later elsewhere).
@@ -766,6 +924,20 @@ function goRemainderIsActivityPurpose(after) {
   if (/^(hiking|walking|running|swimming|shopping|skiing|jogging|climbing)\b/i.test(r)) {
     return true;
   }
+  return false;
+}
+
+/**
+ * Leave-taking that may include a soft reconnect ask ("can we talk later?").
+ * Does not match topical "go deeper / go over the plan / go for a walk".
+ */
+export function isSessionLeaveWithOptionalReconnect(rawText) {
+  const t = norm(rawText);
+  if (!t) return false;
+  if (!isGoPhraseSessionFarewell(t) && !matchesAny(t, CLOSING_PATTERNS)) return false;
+  // Pure leave-taking, or leave-taking + reconnect/timing ask.
+  if (LEAVE_TAKING_CONTINUATION.test(t)) return true;
+  if (isGoPhraseSessionFarewell(t) && wordCount(t) <= 16) return true;
   return false;
 }
 
@@ -938,11 +1110,19 @@ export function isClosingTurn(rawText, state = null) {
   const text = norm(original);
   if (matchesAny(text, CRISIS_PATTERNS)) return false;
   if (matchesAny(text, PRAYER_REQUEST_PATTERNS)) return false;
-  if (matchesAny(text, EMOTIONAL_PATTERNS) && wordCount(text) >= 14) return false;
-  if (matchesAny(text, PRACTICAL_PATTERNS) && !matchesClosingEvidence(text)) return false;
 
   const hasClosing = matchesClosingEvidence(text);
-  if (!hasClosing) return false;
+  const leaveWithReconnect = isSessionLeaveWithOptionalReconnect(original);
+  if (!hasClosing && !leaveWithReconnect) {
+    // Emotional / practical disclosures without farewell evidence are not closings.
+    if (matchesAny(text, EMOTIONAL_PATTERNS) && wordCount(text) >= 14) return false;
+    if (matchesAny(text, PRACTICAL_PATTERNS)) return false;
+    return false;
+  }
+
+  // Leave-taking wins over "I feel like I need to go…" emotional false routes,
+  // including soft reconnect questions ("can we reconnect later?").
+  if (leaveWithReconnect && wordCount(text) <= 55) return true;
 
   // Farewell can be longer when it's clearly a wrap-up ("look forward to talking again…").
   if (wordCount(text) <= 8) return true;
@@ -954,6 +1134,10 @@ export function isClosingTurn(rawText, state = null) {
     /\b(tomorrow|later|soon|again|good day|take care|bye)\b/.test(text)
   ) {
     return true;
+  }
+  // Practical ask alone without leave-taking evidence should not close.
+  if (matchesAny(text, PRACTICAL_PATTERNS) && !leaveWithReconnect && !isGoPhraseSessionFarewell(text)) {
+    return false;
   }
   return false;
 }
@@ -1572,6 +1756,11 @@ export function createFrontDoorState(firstName = "") {
     consecutiveAssistantQuestions: 0,
     /** Stable relational anchors across turns (labels only — not free-form diaries). */
     relationalAnchors: [],
+    /**
+     * Bounded incomplete-fragment coalesce:
+     * { text, askCount, createdAtTurn } | null
+     */
+    pendingFragment: null,
     history: [], // [{ role: "user"|"assistant", content }]
   };
 }
@@ -1591,6 +1780,14 @@ export function hydrateFrontDoorState(raw, firstName = "") {
     prayerCompleted: Boolean(raw.prayerCompleted),
     consecutiveAssistantQuestions: Number(raw.consecutiveAssistantQuestions || 0) || 0,
     relationalAnchors: Array.isArray(raw.relationalAnchors) ? raw.relationalAnchors : [],
+    pendingFragment:
+      raw.pendingFragment && typeof raw.pendingFragment === "object"
+        ? {
+            text: String(raw.pendingFragment.text || "").slice(0, 240),
+            askCount: Number(raw.pendingFragment.askCount || 0) || 0,
+            createdAtTurn: Number(raw.pendingFragment.createdAtTurn || 0) || 0,
+          }
+        : null,
     history: Array.isArray(raw.history) ? raw.history : [],
   };
 }
@@ -2021,21 +2218,27 @@ export function isHighConfidenceIncompleteSpeech(rawText, state) {
   const endsEllipsis = /\.\.\.\s*$|…\s*$/.test(original);
   const stripped = original.replace(/\s*(\.\.\.|…)\s*$/g, "").trim();
   const endsUnfinished =
-    /\b(and|but|so|or|if|when|because|that|that's|thats|the|a|an|to|for|with|my)\s*$/i.test(stripped);
+    /\b(and|but|so|or|if|when|because|that|that's|thats|the|a|an|to|for|with|my|i was|i'?m|i am|um+|uh+)\s*$/i.test(
+      stripped,
+    );
+
+  if (isIncompleteLeadInFragment(original)) return true;
 
   // Completed proposition already present → not incomplete.
-  if (hasUsableSpokenClause(stripped) && !/\b(i thought|i was going to|i mean)\b/i.test(stripped)) {
+  if (hasUsableSpokenClause(stripped) && !/\b(i thought|i was going to|i mean|i was)\b/i.test(stripped)) {
     // "I thought that's" is unfinished even if "I thought" matches poorly; treat specially.
-    if (!/\b(i thought|i was (going to|saying)|i mean)\b.{0,12}$/i.test(stripped)) {
+    if (!/\b(i thought|i was (going to|saying)|i mean|i was)\b.{0,12}$/i.test(stripped)) {
       return false;
     }
   }
 
   if (endsEllipsis) {
-    if (/\b(i thought|i was going to|i mean|that's|that is)\b/i.test(stripped)) return true;
+    if (/\b(i thought|i was going to|i mean|that's|that is|by the way|i was)\b/i.test(stripped)) {
+      return true;
+    }
     if (!hasUsableSpokenClause(stripped)) return true;
   }
-  if (endsUnfinished && words <= 8 && !hasUsableSpokenClause(stripped)) return true;
+  if (endsUnfinished && words <= 10 && !hasUsableSpokenClause(stripped)) return true;
   return false;
 }
 
@@ -2343,6 +2546,7 @@ function advanceState(state, {
   if (intent === INTENT.CLOSING) {
     next.sentOff = true;
     next.reopened = false;
+    next.pendingFragment = null;
   } else if (reopened) {
     next.sentOff = false;
     next.reopened = true;
@@ -2362,6 +2566,7 @@ function advanceState(state, {
   // Crisis clears pending prayer — safety first.
   if (intent === INTENT.CRISIS) {
     next.pendingPrayerOffer = false;
+    next.pendingFragment = null;
   }
   return next;
 }
@@ -2378,7 +2583,7 @@ function advanceState(state, {
  * @returns {Promise<{ text: string; intent: string; lane: string; engine: string|null; reopened: boolean; personalMeaning: boolean; faithOffered: boolean; state: object; meta: object }>}
  */
 export async function runFrontDoorTurn(input) {
-  const state = hydrateFrontDoorState(
+  let state = hydrateFrontDoorState(
     input.state
       ? { ...input.state, firstName: input.state.firstName || cleanFirstName(input.firstName) }
       : null,
@@ -2561,25 +2766,59 @@ export async function runFrontDoorTurn(input) {
     };
   }
 
-  // Mid-conversation fragmentary / incomplete STT — invite a repeat rather than invent continuity.
-  const incompleteSpeech = isHighConfidenceIncompleteSpeech(transcript, state);
+  // Mid-conversation fragmentary / incomplete STT — coalesce briefly, ask once, never Terra.
+  const incompleteSpeech =
+    isHighConfidenceIncompleteSpeech(transcript, state) || isIncompleteLeadInFragment(transcript);
   const danglingFragment = isLikelyFragmentTranscript(transcript, state);
-  if (incompleteSpeech || danglingFragment) {
-    const composed = composeFragmentRepair(state, { incomplete: incompleteSpeech });
-    const nextState = advanceState(state, {
-      intent: composed.intent,
-      conduct: null,
-      transcript,
-      replyText: composed.text,
-      personalMeaning: false,
-      reopened: false,
-      faithOffered: false,
-      usedName: false,
-      pendingPrayerOffer: state.pendingPrayerOffer,
-      prayerCompleted: state.prayerCompleted,
-      prayerOfferedAtTurn: state.prayerOfferedAtTurn,
-      prayerContext: state.prayerContext,
-    });
+  const pending = state.pendingFragment;
+  const pendingExpired =
+    pending &&
+    typeof pending.createdAtTurn === "number" &&
+    state.turnCount - pending.createdAtTurn >= 3;
+
+  if (pendingExpired) {
+    state = { ...state, pendingFragment: null };
+  }
+
+  const activePending = state.pendingFragment;
+  if (activePending?.text && !incompleteSpeech && !danglingFragment && isSubstantive(transcript)) {
+    // Completing speech replaces the pending fragment — clear and continue normally.
+    state = { ...state, pendingFragment: null };
+  } else if (incompleteSpeech || danglingFragment) {
+    const askCount = Number(activePending?.askCount || 0);
+    const shouldAsk = askCount < 1;
+    const composed = shouldAsk
+      ? composeFragmentRepair(state, { incomplete: incompleteSpeech })
+      : {
+          // Already asked once — soft hold, no second clarification loop, no Terra.
+          text: "Take your time — I'm still with you.",
+          engine: "front_door",
+          intent: INTENT.CASUAL,
+          lane: "fragment_hold",
+        };
+    const nextPending = {
+      text: String(transcript).slice(0, 240),
+      askCount: askCount + (shouldAsk ? 1 : 0),
+      createdAtTurn: activePending?.createdAtTurn ?? state.turnCount,
+    };
+    const nextState = advanceState(
+      { ...state, pendingFragment: nextPending },
+      {
+        intent: composed.intent,
+        conduct: null,
+        transcript,
+        replyText: composed.text,
+        personalMeaning: false,
+        reopened: false,
+        faithOffered: false,
+        usedName: false,
+        pendingPrayerOffer: state.pendingPrayerOffer,
+        prayerCompleted: state.prayerCompleted,
+        prayerOfferedAtTurn: state.prayerOfferedAtTurn,
+        prayerContext: state.prayerContext,
+      },
+    );
+    nextState.pendingFragment = nextPending;
     return {
       text: composed.text,
       intent: composed.intent,
@@ -2604,9 +2843,23 @@ export async function runFrontDoorTurn(input) {
         openingRepair: false,
         fragmentRepair: true,
         incompleteSpeechRepair: Boolean(incompleteSpeech),
+        fragmentAskCount: nextPending.askCount,
+        pendingFragmentPresent: true,
         consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
+        terraQualification: {
+          qualified: false,
+          reason: "incomplete_fragment",
+          substance: false,
+        },
+        routedDeep: false,
+        deepRoutingReason: null,
       },
     };
+  }
+
+  // Substantive replacement clears any leftover pending fragment.
+  if (state.pendingFragment) {
+    state = { ...state, pendingFragment: null };
   }
 
   const resolved = resolveFrontDoorClassification(transcript, state);
@@ -2665,6 +2918,10 @@ export async function runFrontDoorTurn(input) {
   let cadenceForcedStatement = false;
   let contributionQuality = null;
 
+  // Session-local anchors may continue on deep turns; never on thin/shallow paths.
+  const allowSessionContinuation = Boolean(
+    isDeep && priorRelationalHints.length > 0 && !isThinSocialAcknowledgment(resolved.classifyText),
+  );
   const deepCtx = {
     intent,
     transcript: resolved.classifyText,
@@ -2686,8 +2943,26 @@ export async function runFrontDoorTurn(input) {
     reciprocalAsk: reciprocalEmbedded || reciprocalAsk,
     caregivingDetected: relational.caregivingDetected,
     relationalDetailDetected: relational.detected,
-    relationalHint: relational.primaryHint || priorRelationalHints[0] || null,
-    priorRelationalHints,
+    // Relational anchors require current-turn evidence, session-state continuation,
+    // or explicitly retrieved durable memory — never silent fixture inheritance.
+    relationalHint: groundedRelationalHint({
+      turnLocal: relational,
+      priorHints: priorRelationalHints,
+      retrievedMemory: input.retrievedRelationalMemory || null,
+      allowSessionContinuation,
+    }),
+    priorRelationalHints: groundedPriorRelationalHints({
+      turnLocal: relational,
+      priorHints: priorRelationalHints,
+      retrievedMemory: input.retrievedRelationalMemory || null,
+      allowSessionContinuation,
+    }),
+    relationalAnchorProvenance: relationalAnchorProvenance({
+      turnLocal: relational,
+      retrievedMemory: input.retrievedRelationalMemory || null,
+      allowSessionContinuation,
+      priorHints: priorRelationalHints,
+    }),
     substantiveOrdinary: Boolean(resolved.meaningfulOrdinary || isDeep),
     requireContribution: Boolean(isDeep),
     lightOrdinaryTopic,
@@ -2798,6 +3073,8 @@ export async function runFrontDoorTurn(input) {
       modelRequestStartAt: result?.timing?.modelRequestStartAt ?? null,
       modelFirstTokenAt: result?.timing?.modelFirstTokenAt ?? null,
       modelCompletionAt: result?.timing?.modelCompletionAt ?? null,
+      spokenLength: result?.spokenLength ?? null,
+      spokenTrimmed: Boolean(result?.spokenTrimmed),
     };
     const isTerraEngine =
       Boolean(result?.contributionEngineVersion) ||
@@ -2998,6 +3275,7 @@ export async function runFrontDoorTurn(input) {
       gratitudePreserved: resolved.gratitudePreserved,
       routedDeep: isDeep,
       deepRoutingReason: resolved.deepRoutingReason || null,
+      terraQualification: resolved.terraQualification || null,
       conversationalRepair: resolved.conversationalRepair,
       repeatRepair,
       classifyText: resolved.classifyText,
@@ -3025,13 +3303,16 @@ export async function runFrontDoorTurn(input) {
       caregivingTreatedRelationally: contributionQuality?.caregivingTreatedRelationally ?? null,
       relationalHint: relational.primaryHint,
       relationalAnchors: serializeRelationalAnchors(nextAnchors),
-      relationalAnchorsUsed: priorRelationalHints.slice(0, 4),
+      relationalAnchorsUsed: (deepCtx.priorRelationalHints || []).slice(0, 4),
+      relationalAnchorProvenance: deepCtx.relationalAnchorProvenance || null,
       contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
       contributionType: contributionQuality?.contributionFunction ?? contributionQuality?.contributionTypeGuess ?? null,
       contributionFunction: contributionQuality?.contributionFunction ?? null,
       meaningfulDetailSelected:
-        contributionQuality?.meaningfulDetailGuess ?? relational.primaryHint ?? null,
-      contextDetailUsed: priorRelationalHints[0] || null,
+        contributionQuality?.meaningfulDetailGuess ??
+        (relational.detected ? relational.primaryHint : null) ??
+        null,
+      contextDetailUsed: (deepCtx.priorRelationalHints || [])[0] || null,
       contributionPresent: contributionQuality?.contributionPresent ?? null,
       newPropositionDetected: contributionQuality?.newPropositionDetected ?? null,
       paraphraseOnlyRisk: contributionQuality?.paraphraseOnlyRisk ?? null,
@@ -3062,6 +3343,8 @@ export async function runFrontDoorTurn(input) {
       contributionQualityShadow: deepCtx._terraResultMeta?.contributionQualityShadow ?? null,
       privatePlanLogged: deepCtx._terraResultMeta?.privatePlanLogged ?? false,
       generationLatencyMs: deepCtx._terraResultMeta?.generationLatencyMs ?? null,
+      spokenLength: deepCtx._terraResultMeta?.spokenLength ?? null,
+      spokenTrimmed: deepCtx._terraResultMeta?.spokenTrimmed ?? false,
     },
   };
 }

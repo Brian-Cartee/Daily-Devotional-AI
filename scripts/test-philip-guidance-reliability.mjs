@@ -257,6 +257,8 @@ await check("makeLlmDeepGenerator: weighty faith flags do not throw", async () =
     "I'll talk to you later.",
     "Thanks, but I've got to go.",
     "I'm going to leave it there for today.",
+    "I need to go for now, but I'd like to reconnect later.",
+    "Absolutely. Well, I feel like I need to go for now, but is there a way we can reconnect later this afternoon or evening?",
   ];
   const activity = [
     "I just got done watching the match.",
@@ -264,6 +266,12 @@ await check("makeLlmDeepGenerator: weighty faith flags do not throw", async () =
     "I just finished my Scripture reading.",
     "I finished breakfast and wanted to ask you something.",
     "I'm done with that task, but I'm still figuring out what comes next.",
+  ];
+  const notFalseClose = [
+    "I need to go deeper into that.",
+    "I need to go over the plan.",
+    "I need to go for a walk later.",
+    "I have to go back to what I was saying.",
   ];
 
   await check("go-phrase activity plans are not session farewells", () => {
@@ -276,6 +284,13 @@ await check("makeLlmDeepGenerator: weighty faith flags do not throw", async () =
   await check("true leave-taking go phrases still close", () => {
     for (const t of mustClose) {
       assert.equal(isClosingTurn(t), true, `should close: ${t}`);
+    }
+  });
+
+  await check("topical go phrases do not falsely close", () => {
+    for (const t of notFalseClose) {
+      assert.equal(isGoPhraseSessionFarewell(t), false, `go farewell? ${t}`);
+      assert.equal(isClosingTurn(t), false, `should not close: ${t}`);
     }
   });
 
