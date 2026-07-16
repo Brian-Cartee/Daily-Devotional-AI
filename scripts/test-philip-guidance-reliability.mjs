@@ -68,13 +68,40 @@ function check(name, fn) {
   }
 }
 
-function mockOpenAIClient(replyText) {
+function mockOpenAIClient(replyTextOrPlan) {
+  const content =
+    typeof replyTextOrPlan === "string" && replyTextOrPlan.trim().startsWith("{")
+      ? replyTextOrPlan
+      : JSON.stringify({
+          recognition: "Brian shared something concrete.",
+          relationalMeaning: "A relationship or commitment worth noticing.",
+          warrantedContribution: "One new supported perspective grounded in what he said.",
+          faithPosture: "implicit",
+          questionNeeded: false,
+          prohibitedMoves: [
+            "generic praise",
+            "paraphrase-only",
+            "invented struggle",
+            "schedule inventory",
+            "unnecessary question",
+          ],
+          spokenResponse:
+            typeof replyTextOrPlan === "string"
+              ? replyTextOrPlan
+              : "I'm with you on that.",
+        });
   return {
     chat: {
       completions: {
-        create: async () => ({
-          choices: [{ message: { content: replyText } }],
-        }),
+        create: async (args) => {
+          // Arm C uses strict json_schema; never freeform GPT-4o.
+          if (args?.response_format) {
+            assert.equal(args.response_format.type, "json_schema");
+          }
+          return {
+            choices: [{ message: { content } }],
+          };
+        },
       },
     },
   };
