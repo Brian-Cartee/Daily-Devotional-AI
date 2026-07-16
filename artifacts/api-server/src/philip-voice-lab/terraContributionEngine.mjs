@@ -268,8 +268,10 @@ export function makeTerraDeepGenerator(opts = {}) {
         const completion = await client.chat.completions.create({
           model,
           messages,
-          temperature: 0.55,
+          // Match proven Arm C bakeoff request for gpt-5.6-terra:
+          // no temperature (model default only); max_completion_tokens; reasoning_effort low.
           max_completion_tokens: 500,
+          reasoning_effort: "low",
           response_format: {
             type: "json_schema",
             json_schema: TERRA_CONTRIBUTION_JSON_SCHEMA,

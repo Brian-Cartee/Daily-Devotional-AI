@@ -102,10 +102,18 @@ function mockTerraClient(planOrThrow) {
           assert.equal(args.response_format?.type, "json_schema");
           assert.equal(args.response_format?.json_schema?.strict, true);
           assert.ok(!/gpt-4o$/i.test(String(args.model || "")));
-          // gpt-5.6-terra rejects max_tokens; require max_completion_tokens only.
+          // Proven gpt-5.6-terra bakeoff shape: max_completion_tokens + reasoning_effort;
+          // never max_tokens / temperature / other unsupported sampling knobs.
           assert.equal(Object.prototype.hasOwnProperty.call(args, "max_tokens"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "temperature"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "top_p"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "frequency_penalty"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "presence_penalty"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "seed"), false);
+          assert.equal(Object.prototype.hasOwnProperty.call(args, "stop"), false);
           assert.equal(typeof args.max_completion_tokens, "number");
           assert.ok(args.max_completion_tokens > 0);
+          assert.equal(args.reasoning_effort, "low");
           if (typeof planOrThrow === "function") return planOrThrow(args);
           if (planOrThrow instanceof Error) throw planOrThrow;
           const content =
@@ -218,7 +226,7 @@ await check("assembleTerraDeepResult: only spokenResponse is text; private plan 
   assert.equal(result.contributionEngineVersion, TERRA_CONTRIBUTION_ENGINE_VERSION);
 });
 
-await check("Terra API: max_completion_tokens only; no max_tokens; strict json_schema", async () => {
+await check("Terra API: bakeoff-compatible request shape (no temp/max_tokens; reasoning_effort low)", async () => {
   let sawArgs = null;
   const spoken =
     "Argentina over England is its own kind of drama — even a casual watch can carry that.";
@@ -251,9 +259,17 @@ await check("Terra API: max_completion_tokens only; no max_tokens; strict json_s
   });
   assert.ok(sawArgs);
   assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "max_tokens"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "temperature"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "top_p"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "frequency_penalty"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "presence_penalty"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "seed"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "stop"), false);
   assert.equal(sawArgs.max_completion_tokens, 500);
+  assert.equal(sawArgs.reasoning_effort, "low");
   assert.equal(sawArgs.response_format?.type, "json_schema");
   assert.equal(sawArgs.response_format?.json_schema?.strict, true);
+  assert.equal(sawArgs.response_format?.json_schema?.name, "philip_contribution_plan");
   assert.equal(result.text, spoken);
   assert.ok(!/recognition|relationalMeaning|warrantedContribution/i.test(result.text));
 });
