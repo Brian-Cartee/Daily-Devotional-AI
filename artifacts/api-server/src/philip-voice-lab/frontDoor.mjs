@@ -2702,16 +2702,43 @@ export async function runFrontDoorTurn(input) {
     // Engagement categories may use the LLM for richer, on-tone replies. Boundary
     // categories are NEVER routed to the model — Philip cannot be argued past them.
     if (!persistent && ENGAGEMENT_CONDUCT.has(conduct) && typeof input.deepGenerate === "function") {
-      const result = await input.deepGenerate({
-        ...deepCtx,
-        intent: deepIntentForConduct(conduct),
-        conduct,
-        offerFaith: false,
-      });
-      const deepText = String(result?.text || "").trim();
-      if (deepText) {
-        text = deepText;
-        engine = result?.engine || "candidate-brain";
+      try {
+        const result = await input.deepGenerate({
+          ...deepCtx,
+          intent: deepIntentForConduct(conduct),
+          conduct,
+          offerFaith: false,
+        });
+        const deepText = String(result?.text || "").trim();
+        if (result?.hardFailure || (result?.noFallback && !deepText)) {
+          const err = new Error(result?.errorMessage || "Deep contribution generation failed");
+          err.noFallback = true;
+          err.hardFailure = true;
+          throw err;
+        }
+        if (deepText) {
+          text = deepText;
+          engine = result?.engine || "candidate-brain";
+          if (result?.contributionQuality) contributionQuality = result.contributionQuality;
+          deepCtx._terraResultMeta = {
+            contributionEngineVersion: result?.contributionEngineVersion ?? null,
+            schemaValid: result?.schemaValid ?? null,
+            faithPosture: result?.faithPosture ?? null,
+            questionNeeded: result?.questionNeeded ?? null,
+            warrantedContributionPresent: result?.warrantedContributionPresent ?? null,
+            relationalAnchorTypes: result?.relationalAnchorTypes ?? null,
+            shadowGatePassed: result?.shadowGatePassed ?? null,
+            shadowGateFailReasons: result?.shadowGateFailReasons ?? null,
+            contributionQualityShadow: result?.contributionQualityShadow ?? null,
+            privatePlanLogged: false,
+            generationLatencyMs: result?.timing?.generationLatencyMs ?? null,
+          };
+        }
+      } catch (err) {
+        if (err?.noFallback || err?.hardFailure || err?.name === "TerraContributionError") {
+          throw err;
+        }
+        throw err;
       }
     }
   } else if (!isDeep) {
@@ -2733,14 +2760,59 @@ export async function runFrontDoorTurn(input) {
       engine = fb.engine;
     }
   } else if (typeof input.deepGenerate === "function") {
-    const result = await input.deepGenerate(deepCtx);
+    let result;
+    try {
+      result = await input.deepGenerate(deepCtx);
+    } catch (err) {
+      // Arm C / readiness failures must never become canned prose or GPT-4o fallback.
+      if (err?.noFallback || err?.hardFailure || err?.name === "TerraContributionError") {
+        throw err;
+      }
+      throw err;
+    }
+    if (result?.hardFailure || result?.noFallback && !String(result?.text || "").trim()) {
+      const err = new Error(
+        result?.errorMessage || result?.message || "Deep contribution generation failed",
+      );
+      err.noFallback = true;
+      err.hardFailure = true;
+      err.code = result?.code || "deep_generation_failed";
+      throw err;
+    }
     text = String(result?.text || "").trim();
     engine = result?.engine || "candidate-brain";
     if (result?.contributionQuality) contributionQuality = result.contributionQuality;
+    // Stash Terra observability on deepCtx for meta merge (no private plan text).
+    deepCtx._terraResultMeta = {
+      contributionEngineVersion: result?.contributionEngineVersion ?? null,
+      schemaValid: result?.schemaValid ?? null,
+      faithPosture: result?.faithPosture ?? null,
+      questionNeeded: result?.questionNeeded ?? null,
+      warrantedContributionPresent: result?.warrantedContributionPresent ?? null,
+      relationalAnchorTypes: result?.relationalAnchorTypes ?? null,
+      shadowGatePassed: result?.shadowGatePassed ?? null,
+      shadowGateFailReasons: result?.shadowGateFailReasons ?? null,
+      contributionQualityShadow: result?.contributionQualityShadow ?? null,
+      privatePlanLogged: result?.privatePlanLogged === true ? true : false,
+      generationLatencyMs: result?.timing?.generationLatencyMs ?? null,
+      modelRequestStartAt: result?.timing?.modelRequestStartAt ?? null,
+      modelFirstTokenAt: result?.timing?.modelFirstTokenAt ?? null,
+      modelCompletionAt: result?.timing?.modelCompletionAt ?? null,
+    };
+    const isTerraEngine =
+      Boolean(result?.contributionEngineVersion) ||
+      Boolean(result?.contributionQualityShadow) ||
+      /terra/i.test(String(result?.engine || ""));
     if (!text && resolved.conversationalRepair) {
       const repair = composeConversationalRepair({ state });
       text = repair.text;
       engine = repair.engine;
+    } else if (!text && isTerraEngine) {
+      const err = new Error("Terra contribution returned empty spokenResponse");
+      err.noFallback = true;
+      err.hardFailure = true;
+      err.code = "empty_spoken_response";
+      throw err;
     } else if (!text) {
       const fb = reflectiveFallback({ intent, state, transcript: resolved.classifyText });
       text = fb.text;
@@ -2806,13 +2878,20 @@ export async function runFrontDoorTurn(input) {
     text = `${text} ${faithInvitation(state)}`.trim();
   }
 
-  // Local quality gate for substantive deep turns (no silent canned replacement).
+  // Local quality gate for substantive deep turns.
+  // For Arm C Terra: shadow observability only — never veto a schema-valid spokenResponse.
+  // For non-Terra deep stubs: still evaluate and log; do not replace with canned prose.
   if (isDeep && text) {
-    contributionQuality = evaluateContributionQuality(text, deepCtx);
+    const terraMeta = deepCtx._terraResultMeta || {};
+    const fromTerra = Boolean(terraMeta.contributionEngineVersion) || terraMeta.contributionQualityShadow;
+    if (!contributionQuality || !fromTerra) {
+      contributionQuality = evaluateContributionQuality(text, deepCtx);
+    }
     if (!contributionQuality.passed) {
       console.warn(
-        "[philip-front-door] contribution quality failed:",
+        "[philip-front-door] contribution quality failed (shadow):",
         (contributionQuality.failReasons || []).join(","),
+        fromTerra ? "[terra-shadow-no-veto]" : "",
       );
     }
   }
@@ -2967,6 +3046,22 @@ export async function runFrontDoorTurn(input) {
       contributionFailReasons: contributionQuality?.failReasons ?? contributionQuality?.failureReasons ?? null,
       promptVersion: `genome+${CONTRIBUTION_CONTRACT_VERSION}`,
       lightOrdinaryTopic,
+      // Arm C Terra observability (no private plan / CoT / secrets)
+      contributionEngineVersion: deepCtx._terraResultMeta?.contributionEngineVersion ?? null,
+      schemaValid: deepCtx._terraResultMeta?.schemaValid ?? null,
+      faithPosture: deepCtx._terraResultMeta?.faithPosture ?? null,
+      questionNeeded: deepCtx._terraResultMeta?.questionNeeded ?? null,
+      warrantedContributionPresent: deepCtx._terraResultMeta?.warrantedContributionPresent ?? null,
+      relationalAnchorTypes: deepCtx._terraResultMeta?.relationalAnchorTypes ?? null,
+      shadowGatePassed:
+        deepCtx._terraResultMeta?.shadowGatePassed ?? contributionQuality?.passed ?? null,
+      shadowGateFailReasons:
+        deepCtx._terraResultMeta?.shadowGateFailReasons ??
+        contributionQuality?.failReasons ??
+        null,
+      contributionQualityShadow: deepCtx._terraResultMeta?.contributionQualityShadow ?? null,
+      privatePlanLogged: deepCtx._terraResultMeta?.privatePlanLogged ?? false,
+      generationLatencyMs: deepCtx._terraResultMeta?.generationLatencyMs ?? null,
     },
   };
 }

@@ -23,16 +23,20 @@ import {
   genomeObservability,
 } from "./compactGenome.mjs";
 import {
-  buildContributionContractInstruction,
-  buildContributionRegenNudge,
-  contributionRegenEnabled,
-  evaluateContributionQuality,
   CONTRIBUTION_CONTRACT_VERSION,
 } from "./contributionContract.mjs";
+import {
+  makeTerraDeepGenerator,
+  terraContributionModel,
+  configureTerraEngineHooks,
+  TerraContributionError,
+  TERRA_CONTRIBUTION_ENGINE_VERSION,
+  TERRA_CONTRIBUTION_MODEL_DEFAULT,
+} from "./terraContributionEngine.mjs";
 
-/** The model that generates Philip's live substantive responses. */
+/** The model that generates Philip's live substantive contribution responses (Arm C). */
 export function brainModel() {
-  return process.env.PHILIP_VOICE_LAB_BRAIN_MODEL?.trim() || "gpt-4o";
+  return terraContributionModel();
 }
 
 /** True when the live deep-generation model key is configured. */
@@ -61,10 +65,11 @@ export function candidateGuidanceReadiness() {
     configured,
     deterministicDiagnostics: deterministic,
     model: brainModel(),
+    contributionEngineVersion: TERRA_CONTRIBUTION_ENGINE_VERSION,
     contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
     contributionRegenDefault: false,
     contributionRegenNote:
-      "PHILIP_VOICE_LAB_CONTRIBUTION_REGEN=1 enables one bounded same-model retry on quality failure; roughly doubles guidance latency/cost on those turns. Default is log-only.",
+      "Arm C Terra structured path does not regenerate or fall back to GPT-4o. Schema/provider failure yields turn_failed.",
     ...genome,
     reason: configured
       ? null
@@ -212,133 +217,27 @@ export function guidanceInstruction(input = {}) {
   return lines.join(" ");
 }
 
+// Wire Terra engine hooks after guidanceInstruction / deterministicModeAllowed exist.
+configureTerraEngineHooks({
+  deterministicModeAllowed,
+  guidanceInstruction,
+});
+
 /**
- * Build a deep-generation adapter. Returns an async fn compatible with
- * runFrontDoorTurn's `deepGenerate`. Uses OpenAI when available.
+ * Build a deep-generation adapter for substantive contribution turns.
  *
- * If the model key is missing: in live mode this THROWS (fail readiness clearly,
- * never canned); only when diagnostics are explicitly allowed does it return null
- * so the front door's reflective composer is used.
+ * Arm C: gpt-5.6-terra strict structured private plan + spokenResponse.
+ * Only spokenResponse is returned as `text` for TTS. Schema/provider failure
+ * throws TerraContributionError (no GPT-4o fallback, no canned prose).
  *
- * Contribution regen: OFF by default. PHILIP_VOICE_LAB_CONTRIBUTION_REGEN=1 allows
- * one bounded retry (same model), which roughly doubles guidance latency/cost on
- * failing turns. Failed quality without regen is logged and returned as-is.
+ * Tests may inject `opts.complete` or `opts.resolveClient` with mocked JSON.
  */
 export function makeLlmDeepGenerator(opts = {}) {
-  const model = opts.model || brainModel();
-  const resolveClient = opts.resolveClient || getOpenAI;
-  return async function deepGenerate(ctx) {
-    const client = await resolveClient();
-    if (!client) {
-      if (deterministicModeAllowed(false)) return null; // diagnostics only
-      throw new Error(
-        "Candidate guidance not ready: OPENAI_API_KEY is not configured. " +
-          "The live Philip candidate will not serve canned deterministic conversation. " +
-          "Set OPENAI_API_KEY (and optionally PHILIP_VOICE_LAB_BRAIN_MODEL), or set " +
-          "PHILIP_VOICE_LAB_ALLOW_DETERMINISTIC=true for diagnostics only.",
-      );
-    }
-
-    // Build prompt instructions first so instruction bugs surface before the provider call.
-    const instruction = guidanceInstruction(ctx);
-    const messages = [{ role: "system", content: COMPACT_PHILIP_GENOME }];
-    messages.push({
-      role: "system",
-      content: `Genome version: ${PHILIP_VOICE_GENOME_VERSION}. Contribution contract: ${CONTRIBUTION_CONTRACT_VERSION}. Approx genome tokens: ${estimateGenomeTokens()}.`,
-    });
-    messages.push({
-      role: "system",
-      content: buildContributionContractInstruction(ctx),
-    });
-    if (ctx.firstName) {
-      messages.push({
-        role: "system",
-        content: `The person's first name is ${ctx.firstName}. Use it naturally and sparingly — not every turn.`,
-      });
-    }
-    if (instruction) messages.push({ role: "system", content: instruction });
-    for (const turn of (ctx.history || []).slice(-12)) {
-      messages.push({
-        role: turn.role === "assistant" ? "assistant" : "user",
-        content: turn.content,
-      });
-    }
-    messages.push({ role: "user", content: ctx.rawTranscript || ctx.transcript });
-
-    const modelRequestStartAt = Date.now();
-    let modelFirstTokenAt = null;
-    let text = "";
-    let usedRegen = false;
-
-    async function completeOnce(msgs) {
-      const completion = await client.chat.completions.create({
-        model,
-        messages: msgs,
-        temperature: 0.65,
-        max_tokens: 220,
-      });
-      if (modelFirstTokenAt == null) modelFirstTokenAt = Date.now();
-      return completion.choices?.[0]?.message?.content?.trim() || "";
-    }
-
-    try {
-      text = await completeOnce(messages);
-      if (!text) return null;
-
-      let quality = evaluateContributionQuality(text, ctx);
-      if (!quality.passed && contributionRegenEnabled() && ctx.requireContribution !== false) {
-        usedRegen = true;
-        const regenMessages = [
-          ...messages,
-          { role: "assistant", content: text },
-          { role: "user", content: buildContributionRegenNudge(quality) },
-        ];
-        const regenerated = await completeOnce(regenMessages);
-        if (regenerated) {
-          text = regenerated;
-          quality = evaluateContributionQuality(text, ctx);
-        }
-      }
-
-      const modelCompletionAt = Date.now();
-      return {
-        text,
-        engine: model,
-        genomeVersion: PHILIP_VOICE_GENOME_VERSION,
-        contributionQuality: quality,
-        contributionRegenUsed: usedRegen,
-        timing: {
-          modelRequestStartAt,
-          modelFirstTokenAt,
-          modelCompletionAt,
-          timeToFirstTokenMs:
-            modelFirstTokenAt != null ? Math.max(0, modelFirstTokenAt - modelRequestStartAt) : null,
-        },
-      };
-    } catch (err) {
-      console.error("[philip-lab-brain] deep generation failed:", err);
-      return null;
-    }
-  };
-}
-
-let cachedClient = null;
-let cachedClientKey = null;
-
-async function getOpenAI() {
-  const key = process.env.OPENAI_API_KEY?.trim();
-  if (!key) return null;
-  if (cachedClient && cachedClientKey === key) return cachedClient;
-  try {
-    const mod = await import("openai");
-    const OpenAI = mod.default || mod.OpenAI;
-    cachedClient = new OpenAI({ apiKey: key });
-    cachedClientKey = key;
-    return cachedClient;
-  } catch (err) {
-    console.error("[philip-lab-brain] failed to init OpenAI client:", err);
-    return null;
-  }
+  return makeTerraDeepGenerator({
+    model: opts.model || brainModel(),
+    resolveClient: opts.resolveClient,
+    complete: opts.complete,
+  });
 }
 
 /**
@@ -360,7 +259,15 @@ export async function runCandidateGuidanceTurn(input) {
       genomeVersion: PHILIP_VOICE_GENOME_VERSION,
       genomeApproxTokens: estimateGenomeTokens(),
       contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
-      promptVersion: `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}`,
+      contributionEngineVersion:
+        result.meta?.contributionEngineVersion ??
+        (result.engine && String(result.engine).includes("terra")
+          ? TERRA_CONTRIBUTION_ENGINE_VERSION
+          : result.engine === TERRA_CONTRIBUTION_MODEL_DEFAULT ||
+              result.engine === terraContributionModel()
+            ? TERRA_CONTRIBUTION_ENGINE_VERSION
+            : result.meta?.contributionEngineVersion ?? null),
+      promptVersion: `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}+${TERRA_CONTRIBUTION_ENGINE_VERSION}`,
     },
   };
 }
@@ -373,4 +280,10 @@ export {
   COMPACT_PHILIP_GENOME,
   estimateGenomeTokens,
   CONTRIBUTION_CONTRACT_VERSION,
+  TERRA_CONTRIBUTION_ENGINE_VERSION,
+  TERRA_CONTRIBUTION_MODEL_DEFAULT,
+  TerraContributionError,
+  makeTerraDeepGenerator,
+  terraContributionModel,
 };
+
