@@ -27,6 +27,12 @@ import {
 } from "./terraContributionSchema.mjs";
 import { measureSpokenLength, softTrimSpokenResponse } from "./spokenLength.mjs";
 
+function countWordsLost(before, after) {
+  const beforeWords = Number(before?.words || 0);
+  const afterWords = Number(after?.words || 0);
+  return beforeWords > 0 && afterWords > 0 && afterWords < beforeWords * 0.55;
+}
+
 /** Injected by guidanceBrain to avoid circular imports. */
 let deterministicModeAllowedFn = (hasInjected = false) => {
   if (hasInjected) return true;
@@ -71,20 +77,32 @@ export function terraContributionModel() {
 
 /** System addendum specific to structured Arm C planning. */
 export function buildTerraStructuredInstruction(ctx = {}) {
+  const budget = ctx.spokenBudget || {};
+  const maxWords = budget.maxWords ?? 30;
+  const minWords = budget.minWords ?? 18;
+  const targetSeconds = Array.isArray(budget.targetSeconds)
+    ? `${budget.targetSeconds[0]}–${budget.targetSeconds[1]}`
+    : "6–10";
+  const maxSentences = budget.maxSentences ?? 2;
+  const weighty = Boolean(budget.weighty);
   const lines = [
     "STRUCTURED CONTRIBUTION ENGINE (INTERNAL)",
     `Engine version: ${TERRA_CONTRIBUTION_ENGINE_VERSION}.`,
     "Produce one JSON object matching the schema. Do not include chain-of-thought, hidden scratchpads, or step-by-step reasoning fields.",
+    "PRIVATE PLAN FIRST: select exactly one principal warrantedContribution before composing spokenResponse. Do not stack multiple contributions.",
     "recognition: what Brian actually communicated (concrete, not invented).",
     "relationalMeaning: the relevant relationship, commitment, hope, tension, or meaning — only if supported by his words or prior anchors.",
     "warrantedContribution: exactly one new supported perspective, distinction, connection, or practical step he did not already supply.",
     "faithPosture: implicit | descriptive | explicit — match the level Brian opened; never escalate descriptive faith into preaching, verse intake, spiritual praise, or a prayer offer.",
-    "questionNeeded: true only when a question materially improves the exchange; otherwise false.",
+    "questionNeeded: true only when a question materially improves the exchange; otherwise false. Default false — no automatic follow-up interview.",
     `prohibitedMoves: include at least: ${REQUIRED_PROHIBITED_MOVES.join("; ")}.`,
-    "spokenResponse: the only text Philip will speak — normally 1–2 concise spoken sentences (~8–10 seconds audible). One principal contribution. Avoid mini-sermons, stacked metaphors, and restatement. Longer only for prayer, crisis, or when Brian explicitly asks for depth.",
+    `SPOKEN BUDGET (compose for speech, do not write prose then trim): target ${minWords}–${maxWords} words` +
+      `${weighty ? " (weighty relational)" : " (ordinary substantive)"}; normally ${maxSentences} short sentence(s); about ${targetSeconds} seconds audible.`,
+    "spokenResponse: the only text Philip will speak. One principal contribution. Avoid mini-sermons, stacked metaphors, and restatement. Longer only for prayer, crisis, or when Brian explicitly asks for depth.",
     "Reciprocal how-are-you: answer with honest Philip presence first (here, attentive, glad to continue). Do not invent a human life.",
     "Caregiving/family: treat relationally; do not invent hardship unless Brian named it.",
     "Avoid praise, paraphrase-only, interviewing, invented burdens, schedule inventory, and therapy clichés.",
+    "Never invent current sports results, brackets, news, weather, prices, or live schedules from memory.",
   ];
   if (ctx.reciprocalAsk) {
     lines.push("RECIPROCAL: Answer presence first, then engage substance.");
@@ -103,6 +121,9 @@ export function buildTerraStructuredInstruction(ctx = {}) {
   }
   if (ctx.preferStatement || ctx.lightOrdinaryTopic) {
     lines.push("Prefer a statement this turn; set questionNeeded false unless something is genuinely unclear.");
+  }
+  if (typeof ctx.spokenTurnTier === "number") {
+    lines.push(`Spoken turn tier: ${ctx.spokenTurnTier} (Terra only when value-justified).`);
   }
   return lines.join("\n");
 }
@@ -217,8 +238,17 @@ export function assembleTerraDeepResult({
   let spokenTrimmed = false;
   let spokenLengthBefore = measureSpokenLength(spoken);
   let spokenLength = spokenLengthBefore;
+  const budget = ctx?.spokenBudget || {};
+  const budgetMaxWords = Number(budget.maxWords) || null;
+  const budgetMaxSentences = Number(budget.maxSentences) || null;
+  const trimOpts = {};
+  if (budgetMaxWords) {
+    trimOpts.maxWords = Math.max(budgetMaxWords, 22);
+    trimOpts.maxChars = Math.max(160, budgetMaxWords * 7);
+  }
+  if (budgetMaxSentences) trimOpts.maxSentences = budgetMaxSentences;
   if (!allowLong) {
-    const trimmed = softTrimSpokenResponse(spoken);
+    const trimmed = softTrimSpokenResponse(spoken, trimOpts);
     spoken = trimmed.text;
     spokenTrimmed = Boolean(trimmed.trimmed || trimmed.trimApplied);
     spokenLength = {
@@ -227,6 +257,14 @@ export function assembleTerraDeepResult({
       trimApplied: spokenTrimmed,
       before: trimmed.before || spokenLengthBefore,
       after: trimmed.after || measureSpokenLength(spoken),
+      requestedWordBudget: budgetMaxWords,
+      generatedWords: spokenLengthBefore.words,
+      finalWords: (trimmed.after || measureSpokenLength(spoken)).words,
+      estimatedAudibleMsBefore: spokenLengthBefore.estimatedAudibleMs,
+      estimatedAudibleMsAfter: (trimmed.after || measureSpokenLength(spoken)).estimatedAudibleMs,
+      trimReason: spokenTrimmed ? "spoken_budget_safeguard" : null,
+      budgetException: null,
+      meaningLostDuringTrim: spokenTrimmed && spokenLengthBefore.words > 8 && countWordsLost(spokenLengthBefore, trimmed.after),
     };
   } else {
     spokenLength = {
@@ -235,6 +273,14 @@ export function assembleTerraDeepResult({
       trimApplied: false,
       before: spokenLengthBefore,
       after: spokenLengthBefore,
+      requestedWordBudget: budgetMaxWords,
+      generatedWords: spokenLengthBefore.words,
+      finalWords: spokenLengthBefore.words,
+      estimatedAudibleMsBefore: spokenLengthBefore.estimatedAudibleMs,
+      estimatedAudibleMsAfter: spokenLengthBefore.estimatedAudibleMs,
+      trimReason: null,
+      budgetException: spokenExemptionReason,
+      meaningLostDuringTrim: false,
     };
   }
   const shadowGate = evaluateContributionQuality(spoken, ctx);

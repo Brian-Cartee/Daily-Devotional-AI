@@ -37,6 +37,16 @@ import {
   relationalAnchorProvenance,
   isRelationallyContinuousTurn,
 } from "./relationalWeight.mjs";
+import {
+  SPOKEN_TURN_TIER,
+  RESPONSE_MODE,
+  classifySpokenTurnTier,
+  serializeSpokenTurnDecision,
+  composeFactualCapabilityBoundary,
+  composeFactualCorrectionAck,
+  composeSessionContinuityResponse,
+  composeContinuityAcknowledgment,
+} from "./spokenTurnRouter.mjs";
 
 export const INTENT = Object.freeze({
   GREETING: "greeting",
@@ -2054,11 +2064,11 @@ const CASUAL_TEMPLATES = [
   (t) => `${t} Fair enough.`,
 ];
 
-/** Bare acknowledgments — statement only; no interview pressure. */
+/** Bare acknowledgments — statement only; no interview pressure. Prefer continuity compose. */
 const THIN_ACK_TEMPLATES = [
   () => `I'm with you.`,
-  () => `Alright.`,
-  () => `Got it.`,
+  () => `Alright — I'm still with you.`,
+  () => `Understood.`,
 ];
 
 const CASUAL_MEANING_TEMPLATES = [
@@ -2609,8 +2619,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
         return { text: pick(CASUAL_MEANING_TEMPLATES, seed)(), engine: "front_door" };
       }
       if (isThinSocialAcknowledgment(transcript) || isLowSubstanceDeferral(transcript)) {
+        const continuity = composeContinuityAcknowledgment(state);
+        const text =
+          continuity && wordCount(continuity) >= 2
+            ? continuity
+            : pick(THIN_ACK_TEMPLATES, seed)();
         return {
-          text: pick(THIN_ACK_TEMPLATES, seed)(),
+          text,
           engine: "front_door",
           lane: "thin_acknowledgment",
         };
@@ -3047,6 +3062,13 @@ export async function runFrontDoorTurn(input) {
         fragmentRepair: false,
         conversationControl: true,
         conversationControlType: conversationControlEarly.type,
+        spokenTurnTier: SPOKEN_TURN_TIER.CONTROL,
+        spokenTurnTierReason: `conversation_control:${conversationControlEarly.type}`,
+        terraValueJustified: false,
+        terraValueSignals: [`conversation_control:${conversationControlEarly.type}`],
+        factualFreshnessRequired: false,
+        factualGroundingAvailable: false,
+        responseMode: RESPONSE_MODE.FRONT_DOOR,
         terraQualification: {
           qualified: false,
           terraQualified: false,
@@ -3171,6 +3193,13 @@ export async function runFrontDoorTurn(input) {
         pendingFragmentPresent: true,
         fragmentLifecycle,
         consecutiveAssistantQuestions: nextState.consecutiveAssistantQuestions,
+        spokenTurnTier: SPOKEN_TURN_TIER.CONTROL,
+        spokenTurnTierReason: "incomplete_fragment_hold",
+        terraValueJustified: false,
+        terraValueSignals: ["incomplete_fragment"],
+        factualFreshnessRequired: false,
+        factualGroundingAvailable: false,
+        responseMode: RESPONSE_MODE.FRONT_DOOR,
         terraQualification: {
           qualified: false,
           terraQualified: false,
@@ -3200,7 +3229,7 @@ export async function runFrontDoorTurn(input) {
   }
 
   const resolved = resolveFrontDoorClassification(workingTranscript, state);
-  const intent = resolved.intent;
+  let intent = resolved.intent;
   const reciprocalCasual =
     intent === INTENT.CASUAL && isReciprocalSmallTalk(resolved.classifyText);
   // Crisis (self-harm) always wins and stays on the crisis protocol; conduct is
@@ -3224,6 +3253,30 @@ export async function runFrontDoorTurn(input) {
     !reciprocalCasual &&
     /\b(how (are|about) (you|yourself)|how'?s it going with you)\b/i.test(resolved.classifyText);
 
+  // Spoken Interaction v1 — value router reserves Terra for worth-the-delay turns.
+  const spokenDecision = classifySpokenTurnTier({
+    transcript: workingTranscript,
+    state,
+    intent,
+    routeDeepCandidate: Boolean(resolved.routeDeep),
+    isCrisis: intent === INTENT.CRISIS,
+    isPrayer: intent === INTENT.PRAYER,
+    isConduct: Boolean(conduct),
+    isClosing: intent === INTENT.CLOSING,
+    isConversationControl: Boolean(resolved.conversationControl),
+    isThinAck: isThinSocialAcknowledgment(resolved.classifyText),
+    isLowSubstance: isLowSubstanceDeferral(resolved.classifyText),
+    isGreeting: intent === INTENT.GREETING || isHybridGreetingReciprocal(resolved.classifyText),
+    isIncomplete: false,
+    weightyRelational: Boolean(relational.weightyRelationalContext),
+    weightyDescriptiveFaith: Boolean(resolved.weightyDescriptiveFaith),
+  });
+
+  // Mixed farewell + light agenda: latch closing without Terra.
+  if (spokenDecision.spokenTurnTierReason === "farewell_with_light_agenda") {
+    intent = INTENT.CLOSING;
+  }
+
   // Re-entry after a completed close. Same-turn farewell→substance is handled by
   // classifyText (no sentOff required for routing); reopenPrefix only when already sentOff.
   const wasSentOff = Boolean(state.sentOff);
@@ -3234,7 +3287,13 @@ export async function runFrontDoorTurn(input) {
     intent === INTENT.CLOSING &&
     (wasSentOff || resolved.socialFarewellReciprocal || recentClosingContext(state));
 
-  const isDeep = !conduct && resolved.routeDeep && !reciprocalCasual;
+  // Tier 4 safety preserves prior deep routing; Tiers 0–2 never Terra; Tier 3 only when justified.
+  const isDeep =
+    !conduct &&
+    !reciprocalCasual &&
+    (spokenDecision.spokenTurnTier === SPOKEN_TURN_TIER.SAFETY
+      ? Boolean(resolved.routeDeep)
+      : Boolean(spokenDecision.terraValueJustified));
   const preferStatement = shouldPreferStatementReply(state, { intent, conduct });
   const offerFaith = !conduct && shouldOfferFaith(state, intent);
   const recentAssistants = recentAssistantTexts(state, 4);
@@ -3307,6 +3366,9 @@ export async function runFrontDoorTurn(input) {
     substantiveOrdinary: Boolean(resolved.meaningfulOrdinary || isDeep),
     requireContribution: Boolean(isDeep),
     lightOrdinaryTopic,
+    spokenTurnTier: spokenDecision.spokenTurnTier,
+    spokenBudget: spokenDecision.spokenBudget,
+    terraValueJustified: spokenDecision.terraValueJustified,
   };
 
   if (conduct) {
@@ -3357,6 +3419,27 @@ export async function runFrontDoorTurn(input) {
         throw err;
       }
     }
+  } else if (spokenDecision.responseMode === RESPONSE_MODE.FACTUAL_BOUNDARY) {
+    text = composeFactualCapabilityBoundary({
+      kind: spokenDecision.factualFreshnessKind,
+      required: spokenDecision.factualFreshnessRequired,
+    });
+    engine = "front_door";
+    composedLane = "factual_capability_boundary";
+  } else if (spokenDecision.factualCorrection) {
+    text = composeFactualCorrectionAck();
+    engine = "front_door";
+    composedLane = "factual_correction";
+  } else if (
+    spokenDecision.sessionContinuityAsk &&
+    spokenDecision.spokenTurnTier === SPOKEN_TURN_TIER.SOCIAL &&
+    intent !== INTENT.CLOSING
+  ) {
+    text = composeSessionContinuityResponse(workingTranscript, {
+      closingDominant: false,
+    });
+    engine = "front_door";
+    composedLane = "session_continuity";
   } else if (!isDeep) {
     const composed = composeFrontDoorResponse({
       intent,
@@ -3564,6 +3647,38 @@ export async function runFrontDoorTurn(input) {
               ? "casual_meaning"
               : intent;
 
+  // Align terra qualification with spoken-value decision (Tier 3 only when justified).
+  let terraQualification = resolved.terraQualification || null;
+  if (spokenDecision.spokenTurnTier === SPOKEN_TURN_TIER.SAFETY) {
+    // Preserve crisis/prayer/conduct labeling; do not invent Terra qualification.
+  } else if (spokenDecision.terraValueJustified) {
+    terraQualification = {
+      qualified: true,
+      terraQualified: true,
+      reason: spokenDecision.spokenTurnTierReason,
+      terraQualificationReason: spokenDecision.spokenTurnTierReason,
+      substance: true,
+      substanceSignals: spokenDecision.terraValueSignals || [],
+      terraRejectedReason: null,
+    };
+  } else if (resolved.routeDeep || isDeep === false) {
+    const denyReason =
+      spokenDecision.spokenTurnTierReason ||
+      resolved.terraQualification?.terraRejectedReason ||
+      "spoken_tier_front_door";
+    terraQualification = {
+      qualified: false,
+      terraQualified: false,
+      reason: denyReason,
+      terraQualificationReason: denyReason,
+      substance: false,
+      substanceSignals: spokenDecision.terraValueSignals || [],
+      terraRejectedReason: denyReason,
+    };
+  }
+
+  const spokenSerialized = serializeSpokenTurnDecision(spokenDecision);
+
   const sentOffTransition =
     intent === INTENT.CLOSING
       ? wasSentOff || resolved.socialFarewellReciprocal
@@ -3615,8 +3730,10 @@ export async function runFrontDoorTurn(input) {
       multiIntent: resolved.multiIntent,
       gratitudePreserved: resolved.gratitudePreserved,
       routedDeep: isDeep,
-      deepRoutingReason: resolved.deepRoutingReason || null,
-      terraQualification: resolved.terraQualification || null,
+      deepRoutingReason: isDeep
+        ? spokenDecision.spokenTurnTierReason || resolved.deepRoutingReason || null
+        : null,
+      terraQualification,
       conversationalRepair: resolved.conversationalRepair,
       repeatRepair,
       classifyText: resolved.classifyText,
@@ -3688,6 +3805,19 @@ export async function runFrontDoorTurn(input) {
       generationLatencyMs: deepCtx._terraResultMeta?.generationLatencyMs ?? null,
       spokenLength: deepCtx._terraResultMeta?.spokenLength ?? null,
       spokenTrimmed: deepCtx._terraResultMeta?.spokenTrimmed ?? false,
+      // Spoken Interaction v1 observability
+      ...spokenSerialized,
+      spokenTurnTier: spokenDecision.spokenTurnTier,
+      spokenTurnTierReason: spokenDecision.spokenTurnTierReason,
+      terraValueJustified: Boolean(spokenDecision.terraValueJustified),
+      terraValueSignals: spokenDecision.terraValueSignals || [],
+      factualFreshnessRequired: Boolean(spokenDecision.factualFreshnessRequired),
+      factualFreshnessKind: spokenDecision.factualFreshnessKind || null,
+      factualGroundingAvailable: Boolean(spokenDecision.factualGroundingAvailable),
+      responseMode: spokenDecision.responseMode,
+      spokenBudget: spokenDecision.spokenBudget || null,
+      conversationControl: false,
+      conversationControlType: null,
     },
   };
 }

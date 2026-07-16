@@ -165,6 +165,23 @@ export async function recordTurnObservation(obs) {
     sentOffTransition: merged.sentOffTransition ?? null,
     routedDeep: merged.routedDeep ?? null,
     relationalAnchors: merged.relationalAnchors ?? null,
+    // Spoken Interaction v1 — persist decision fields into turn JSONL
+    spokenTurnTier: merged.spokenTurnTier ?? null,
+    spokenTurnTierReason: merged.spokenTurnTierReason ?? null,
+    terraValueJustified: merged.terraValueJustified ?? null,
+    terraValueSignals: merged.terraValueSignals ?? null,
+    factualFreshnessRequired: merged.factualFreshnessRequired ?? null,
+    factualFreshnessKind: merged.factualFreshnessKind ?? null,
+    factualGroundingAvailable: merged.factualGroundingAvailable ?? null,
+    responseMode: merged.responseMode ?? null,
+    spokenBudget: merged.spokenBudget ?? null,
+    spokenLength: merged.spokenLength ?? null,
+    spokenTrimmed: merged.spokenTrimmed ?? null,
+    terraQualification: merged.terraQualification ?? null,
+    fragmentLifecycle: merged.fragmentLifecycle ?? null,
+    conversationControl: merged.conversationControl ?? null,
+    conversationControlType: merged.conversationControlType ?? null,
+    relationalAnchorProvenance: merged.relationalAnchorProvenance ?? null,
   };
   await appendTurnRecord(obs.conversationId, record);
   return record;
