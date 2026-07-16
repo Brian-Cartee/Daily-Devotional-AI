@@ -223,7 +223,12 @@ export function evaluateContributionQuality(replyText, ctx = {}) {
     unsupportedStruggleRisk,
     forcedFaithRisk,
     contributionTypeGuess: contributionFunction,
-    meaningfulDetailGuess: ctx.relationalHint || pickUserCue(user) || null,
+    meaningfulDetailGuess:
+      (ctx.relationalHint && ctx.relationalAnchorProvenance?.hintPresent
+        ? ctx.relationalHint
+        : null) ||
+      pickUserCue(user) ||
+      null,
     contractVersion: CONTRIBUTION_CONTRACT_VERSION,
   };
 }
@@ -278,7 +283,7 @@ function isEmotionalLabelWithoutInsight(reply, user) {
   }
   // Soft summary of user's nouns without a because/means edge.
   const u = String(user || "").toLowerCase();
-  if (/\bmom|mother\b/.test(u) && /\bmom|mother\b/.test(r) && !NEW_PROPOSITION_CUES.test(r)) {
+  if (/\b(?:mom|mother)\b/.test(u) && /\b(?:mom|mother)\b/.test(r) && !NEW_PROPOSITION_CUES.test(r)) {
     if (/\b(special|great|amazing|wonderful|joy|company)\b/i.test(r)) return true;
   }
   return false;
@@ -306,13 +311,13 @@ function mentionOverlap(text, hint) {
 
 function selectsMeaningfulDetail(text, ctx) {
   if (ctx.relationalHint && mentionOverlap(text, ctx.relationalHint)) return true;
-  if (ctx.caregivingDetected && /\b(mom|mother|dad|father|parent|care|recover)\b/i.test(text)) {
+  if (ctx.caregivingDetected && /\b(?:mom|mother|dad|father|parent|care|recover)\b/i.test(text)) {
     return true;
   }
   if (ctx.descriptiveFaith && /\b(scripture|prayer|peace|ground|dedicat|resonat|answered)\b/i.test(text)) {
     return true;
   }
-  return /\b(mom|mother|dad|father|friend|scripture|prayer|peace|app|job|match|cup|argentina|england)\b/i.test(
+  return /\b(?:mom|mother|dad|father|friend|scripture|prayer|peace|app|job|match|cup|argentina|england)\b/i.test(
     text,
   );
 }
@@ -357,8 +362,8 @@ function guessContributionType(text, ctx) {
 
 function pickUserCue(user) {
   const t = String(user || "");
-  if (/\bmom|mother\b/i.test(t)) return "mother / caregiving";
-  if (/\bdad|father\b/i.test(t)) return "father / caregiving";
+  if (/\b(?:mom|mother)\b/i.test(t)) return "mother / caregiving";
+  if (/\b(?:dad|father)\b/i.test(t)) return "father / caregiving";
   if (/\bscripture|prayer\b/i.test(t)) return "scripture / prayer practice";
   if (/\bworld cup\b/i.test(t)) return "World Cup";
   return null;

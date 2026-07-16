@@ -25,6 +25,7 @@ import {
   validateTerraContributionPlan,
   terraPlanObservability,
 } from "./terraContributionSchema.mjs";
+import { measureSpokenLength, softTrimSpokenResponse } from "./spokenLength.mjs";
 
 /** Injected by guidanceBrain to avoid circular imports. */
 let deterministicModeAllowedFn = (hasInjected = false) => {
@@ -80,7 +81,7 @@ export function buildTerraStructuredInstruction(ctx = {}) {
     "faithPosture: implicit | descriptive | explicit — match the level Brian opened; never escalate descriptive faith into preaching, verse intake, spiritual praise, or a prayer offer.",
     "questionNeeded: true only when a question materially improves the exchange; otherwise false.",
     `prohibitedMoves: include at least: ${REQUIRED_PROHIBITED_MOVES.join("; ")}.`,
-    "spokenResponse: the only text Philip will speak — one to three short spoken sentences. Never voice planning labels or field names.",
+    "spokenResponse: the only text Philip will speak — normally 1–2 concise spoken sentences (~8–10 seconds audible). One principal contribution. Avoid mini-sermons, stacked metaphors, and restatement. Longer only for prayer, crisis, or when Brian explicitly asks for depth.",
     "Reciprocal how-are-you: answer with honest Philip presence first (here, attentive, glad to continue). Do not invent a human life.",
     "Caregiving/family: treat relationally; do not invent hardship unless Brian named it.",
     "Avoid praise, paraphrase-only, interviewing, invented burdens, schedule inventory, and therapy clichés.",
@@ -193,7 +194,20 @@ export function assembleTerraDeepResult({
   timing,
   providerRawOk = true,
 }) {
-  const spoken = String(plan.spokenResponse).trim();
+  const allowLong =
+    ctx?.intent === "prayer" ||
+    ctx?.intent === "crisis" ||
+    /\b(tell me more|go deeper|explain more|say more|more detail)\b/i.test(
+      String(ctx?.rawTranscript || ctx?.transcript || ""),
+    );
+  let spoken = String(plan.spokenResponse).trim();
+  let spokenTrimmed = false;
+  if (!allowLong) {
+    const trimmed = softTrimSpokenResponse(spoken);
+    spoken = trimmed.text;
+    spokenTrimmed = trimmed.trimmed;
+  }
+  const spokenLength = measureSpokenLength(spoken);
   const shadowGate = evaluateContributionQuality(spoken, ctx);
   const obs = terraPlanObservability(plan, validation);
 
@@ -214,6 +228,8 @@ export function assembleTerraDeepResult({
     shadowGatePassed: shadowGate.passed,
     shadowGateFailReasons: shadowGate.failReasons || [],
     privatePlanLogged: false,
+    spokenLength,
+    spokenTrimmed,
     // Explicit: private fields are not attached for TTS / logging sinks.
     recognition: undefined,
     relationalMeaning: undefined,
@@ -227,6 +243,8 @@ export function assembleTerraDeepResult({
       shadowGatePassed: shadowGate.passed,
       shadowGateFailReasons: shadowGate.failReasons || [],
       relationalAnchorTypes: relationalAnchorTypesFromCtx(ctx),
+      spokenLength,
+      spokenTrimmed,
     },
     noFallback: true,
   };

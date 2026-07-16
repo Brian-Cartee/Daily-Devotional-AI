@@ -91,24 +91,28 @@ const FAITH_SUSTAIN_RE =
  */
 export function isWeightyDescriptiveFaithContext(rawText, state = null) {
   const text = String(rawText || "");
-  const blob = [
-    text,
-    ...(state?.relationalAnchors || []).map((a) =>
-      [a.label, a.meaningfulEvent, a.faithConnection, a.userInvolvement, a.roleContext]
-        .filter(Boolean)
-        .join(" "),
-    ),
-  ].join(" ");
+  // Prefer current-turn evidence. Prior anchors only reinforce when the current
+  // turn already names faith practice — never alone invent weight on unrelated turns.
+  const currentRelational = detectRelationalWeight(text);
+  const anchorBlob = currentRelational.detected
+    ? [
+        ...(state?.relationalAnchors || []).map((a) =>
+          [a.label, a.meaningfulEvent, a.faithConnection, a.userInvolvement, a.roleContext]
+            .filter(Boolean)
+            .join(" "),
+        ),
+      ].join(" ")
+    : "";
+  const blob = [text, anchorBlob].join(" ");
   if (!/\b(scripture|prayer|pray|god|bible|faith)\b/i.test(text) && !ANSWERED_PRAYER_RE.test(text)) {
-    // Still allow weight when anchors already hold ordeal + current faith mention is light.
-    if (!/\b(scripture|prayer|pray|god|bible|faith)\b/i.test(blob)) return false;
+    return false;
   }
   return (
     SERIOUS_ILLNESS_RECOVERY.test(blob) ||
     ACCOMPANIMENT_RE.test(blob) ||
     ANSWERED_PRAYER_RE.test(blob) ||
     /\b(grief|funeral|died|dying|passed away|reconciliat|caregiv|looking after)\b/i.test(blob) ||
-    (Boolean(state?.relationalAnchors?.some((a) => a.meaningfulEvent)) &&
+    (Boolean(currentRelational.detected && currentRelational.anchors.some((a) => a.meaningfulEvent)) &&
       /\b(scripture|prayer|pray|peace|strength)\b/i.test(text))
   );
 }
@@ -246,6 +250,81 @@ export function relationalHintsFromState(state) {
   return anchors
     .map((a) => a.hint || a.label)
     .filter(Boolean);
+}
+
+/**
+ * Only expose a relational hint to Terra when supported by:
+ * - the current turn transcript, or
+ * - current-session state anchors (allowSessionContinuation), or
+ * - durable memory explicitly retrieved with provenance.
+ * Never silently inherit fixture / unrelated prior-session hints.
+ */
+export function groundedRelationalHint({
+  turnLocal,
+  priorHints = [],
+  retrievedMemory = null,
+  allowSessionContinuation = false,
+} = {}) {
+  if (retrievedMemory?.hint && retrievedMemory?.provenance) {
+    return String(retrievedMemory.hint);
+  }
+  if (turnLocal?.detected && turnLocal?.primaryHint) return turnLocal.primaryHint;
+  if (allowSessionContinuation && priorHints?.length) return String(priorHints[0]);
+  return null;
+}
+
+export function groundedPriorRelationalHints({
+  turnLocal,
+  priorHints = [],
+  retrievedMemory = null,
+  allowSessionContinuation = false,
+} = {}) {
+  if (retrievedMemory?.hint && retrievedMemory?.provenance) {
+    return [String(retrievedMemory.hint)];
+  }
+  if (turnLocal?.detected) {
+    // Current-turn anchors may be reinforced by prior session anchors of the same kind.
+    return (priorHints || []).slice(0, 4);
+  }
+  if (allowSessionContinuation && priorHints?.length) {
+    return (priorHints || []).slice(0, 4);
+  }
+  return [];
+}
+
+export function relationalAnchorProvenance({
+  turnLocal,
+  retrievedMemory = null,
+  allowSessionContinuation = false,
+  priorHints = [],
+} = {}) {
+  if (retrievedMemory?.hint && retrievedMemory?.provenance) {
+    return {
+      source: "retrieved_memory",
+      provenance: String(retrievedMemory.provenance).slice(0, 80),
+      hintPresent: true,
+    };
+  }
+  if (turnLocal?.detected) {
+    return {
+      source: "current_turn",
+      provenance: "session_transcript",
+      hintPresent: true,
+      kinds: (turnLocal.anchors || []).map((a) => a.kind).filter(Boolean),
+    };
+  }
+  if (allowSessionContinuation && priorHints?.length) {
+    return {
+      source: "session_state",
+      provenance: "prior_turn_in_session",
+      hintPresent: true,
+    };
+  }
+  return {
+    source: "none",
+    provenance: null,
+    hintPresent: false,
+  };
 }
 
 /** Compact serializable anchors for observability (no long free text). */

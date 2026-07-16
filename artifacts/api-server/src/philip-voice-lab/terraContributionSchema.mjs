@@ -67,7 +67,8 @@ export const TERRA_CONTRIBUTION_JSON_SCHEMA = {
       },
       spokenResponse: {
         type: "string",
-        description: "The concise response Philip will speak (TTS only)",
+        description:
+          "The concise response Philip will speak (TTS only). Prefer 1–2 short spoken sentences (~8–10 seconds). One principal contribution. No mini-sermons or stacked metaphors.",
       },
     },
   },
@@ -137,6 +138,14 @@ export function validateTerraContributionPlan(raw) {
 
   if (typeof plan.spokenResponse === "string" && PLANNING_LABEL_LEAK.test(plan.spokenResponse)) {
     errors.push("spokenResponse_leaks_plan_labels");
+  }
+
+  if (typeof plan.spokenResponse === "string") {
+    const spoken = plan.spokenResponse;
+    const sentenceApprox = spoken.split(/(?<=[.!?])\s+/).filter((p) => p.trim()).length;
+    if (sentenceApprox > 3) warnings.push("spokenResponse_too_many_sentences");
+    if (spoken.length > 160) warnings.push("spokenResponse_over_target_chars");
+    if (spoken.length > 280) warnings.push("spokenResponse_over_soft_max_chars");
   }
 
   if (typeof plan.spokenResponse === "string" && typeof plan.recognition === "string") {
