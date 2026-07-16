@@ -659,7 +659,17 @@ await check("all six fixtures route through Front Door with Terra stub", async (
         }),
     });
     assert.ok(r.meta.routedDeep || r.engine === "gpt-5.6-terra" || r.text === spoken, fixture.id);
-    assert.equal(r.text, spoken, fixture.id);
+    // Audible budget may soft-trim ordinary replies; preserve contribution, never empty/generic.
+    if (r.text !== spoken) {
+      assert.ok(r.meta.spokenTrimmed || r.meta.spokenLength?.trimApplied, fixture.id);
+      assert.ok(r.text.split(/\s+/).filter(Boolean).length >= 8, fixture.id);
+      assert.ok(!/^(i'?m with you|alright|got it)\.?$/i.test(r.text), fixture.id);
+      // Keep a distinctive stem from the approved contribution.
+      const stem = spoken.split(/\s+/).slice(0, 6).join(" ");
+      assert.ok(r.text.includes(stem.slice(0, Math.min(40, stem.length))) || spoken.includes(r.text.slice(0, 40)), fixture.id);
+    } else {
+      assert.equal(r.text, spoken, fixture.id);
+    }
     assert.equal(r.meta.schemaValid, true, fixture.id);
   }
 });

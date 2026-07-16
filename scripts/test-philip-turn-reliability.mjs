@@ -11,6 +11,8 @@ import {
   isThinSocialAcknowledgment,
   isIncompleteLeadInFragment,
   isHighConfidenceIncompleteSpeech,
+  isLowSubstanceDeferral,
+  detectConversationControl,
   resolveFrontDoorClassification,
   runFrontDoorTurn,
   INTENT,
@@ -20,11 +22,15 @@ import {
   groundedRelationalHint,
   groundedPriorRelationalHints,
   detectRelationalWeight,
+  isRelationallyContinuousTurn,
+  relationalAnchorProvenance,
 } from "../artifacts/api-server/src/philip-voice-lab/relationalWeight.mjs";
 import {
   measureSpokenLength,
   softTrimSpokenResponse,
   SPOKEN_TARGET_MAX_SENTENCES,
+  SPOKEN_TARGET_MAX_MS,
+  SPOKEN_TARGET_MAX_WORDS,
 } from "../artifacts/api-server/src/philip-voice-lab/spokenLength.mjs";
 import { assembleTerraDeepResult } from "../artifacts/api-server/src/philip-voice-lab/terraContributionEngine.mjs";
 import { startPcmPublishAsync } from "../artifacts/api-server/src/philip-voice-lab/audioUtil.mjs";
@@ -59,6 +65,23 @@ const SESSION_F33 = [
   "By the way...",
   "Yeah, by the way, I was...",
   "I was wondering if you had any opinion upon how I deal with the mornings and making sure that I continue to stay dedicated and, you know, commitment and so on and so forth to everything else that I have to go on through the day. Obviously it's important, but do you have any advice on how to be present in those moments?",
+];
+
+/** Genuine session philip-lab-mrjs2inh-va4-2b1b0306 (post-deploy phone). */
+const SESSION_2B1B = [
+  "Hello, Philip, how are you today?",
+  "I've just been working out and watching a little bit of the World Cup and then spending time with my mom, along with working. I'm a little sore lately from my workouts because I've actually improved them to do some kettlebell workout.",
+  "Absolutely, I agree. Definitely a new time, a new type of workout that I'm not used to performing, but it definitely has some huge benefits. But so far, so good.",
+  "Yeah, yeah, I, uh, yeah, I...",
+  "I was just saying, yes, I'm very familiar with, I've been working out my whole life, so I'm familiar with all of this and very adaptive to, just because I don't do it all the time doesn't mean that I don't kind of understand what all to look for.",
+  "Absolutely.",
+  "Um, nothing stands out at the moment.",
+  "Oh, by the way.",
+  "Do you know anything about...",
+  "Um, are you going to watch the world cup, uh, championship match?",
+  "Yes, that's right.",
+  "OK, well, I'll be glad to do that later. For now, I've got to run, but can we connect later?",
+  "Are you there?",
 ];
 
 function deepStub(text = "A short warranted contribution about morning presence.") {
@@ -104,12 +127,18 @@ await check("closing precedence: f33 T9 leave+reconnect closes Front Door", asyn
   assert.notEqual(out.text, "SHOULD_NOT_FIRE");
 });
 
-await check("closing negatives: deeper/over/walk/back do not close", async () => {
+await check("closing negatives: deeper/over/walk/back/run-activity do not close", async () => {
   const negatives = [
     "I need to go deeper into that.",
     "I need to go over the plan.",
     "I need to go for a walk later.",
     "I have to go back to what I was saying.",
+    "I'm going for a run later",
+    "I need to run through the plan",
+    "I have to run an errand",
+    "I need to go deeper",
+    "I need to go over something",
+    "We can talk about the match later",
   ];
   for (const t of negatives) {
     assert.equal(isGoPhraseSessionFarewell(t), false, `go farewell? ${t}`);
@@ -136,7 +165,7 @@ await check("closing then later re-entry clears sentOff and can deep-route", asy
   assert.match(reentry.engine, /terra|candidate|gpt/i);
 });
 
-await check("by-the-way fragment coalesce asks once and never reaches Terra", async () => {
+await check("by-the-way fragment hold creates without asking; extends without Terra", async () => {
   let state = createFrontDoorState();
   state.turnCount = 4;
   const deep = deepStub("SHOULD_NOT_TERRA");
@@ -145,10 +174,12 @@ await check("by-the-way fragment coalesce asks once and never reaches Terra", as
     state,
     deepGenerate: deep,
   });
-  assert.equal(t10.lane, "fragment_repair");
+  assert.equal(t10.lane, "fragment_hold");
   assert.equal(t10.engine, "front_door");
-  assert.equal(t10.meta.fragmentAskCount, 1);
+  assert.equal(t10.meta.fragmentLifecycle, "created");
+  assert.equal(t10.meta.fragmentAskCount, 0);
   assert.ok(t10.state.pendingFragment);
+  assert.equal(/\?/.test(t10.text), false);
 
   const t11 = await runFrontDoorTurn({
     transcript: "By the way...",
@@ -157,6 +188,7 @@ await check("by-the-way fragment coalesce asks once and never reaches Terra", as
   });
   assert.equal(t11.lane, "fragment_hold");
   assert.equal(t11.engine, "front_door");
+  assert.equal(t11.meta.fragmentLifecycle, "extended");
   assert.equal(/\?/.test(t11.text), false);
 
   const t12 = await runFrontDoorTurn({
@@ -185,6 +217,9 @@ await check("thin affirmation stays shallow even after personalMeaningSeen", asy
     deepGenerate: deepStub("SHOULD_NOT_TERRA"),
   });
   assert.equal(out.engine, "front_door");
+  assert.equal(out.lane, "thin_acknowledgment");
+  assert.equal(/\?/.test(out.text), false);
+  assert.equal(/stands out|tell me more|hear more|how is that|what has that/i.test(out.text), false);
   assert.notEqual(out.text, "SHOULD_NOT_TERRA");
 });
 
@@ -227,7 +262,6 @@ await check("no phantom caregiving from moments / unrelated morning advice", asy
     priorHints: ["caring for a parent"],
   });
   assert.deepEqual(priors, []);
-  // Loose fixture priors must not inject even if someone sets continuation without session evidence.
   assert.deepEqual(
     groundedPriorRelationalHints({
       turnLocal: detectRelationalWeight(user),
@@ -250,21 +284,58 @@ await check("retrieved memory provenance can supply relational hint", async () =
     retrievedMemory: { hint: "caring for a parent", provenance: "durable_memory:anchor_12" },
   });
   assert.equal(hint, "caring for a parent");
+  const prov = relationalAnchorProvenance({
+    turnLocal: detectRelationalWeight("How is the morning going?"),
+    retrievedMemory: { hint: "caring for a parent", provenance: "durable_memory:anchor_12" },
+  });
+  assert.equal(prov.source, "retrieved_memory");
 });
 
-await check("Terra spoken-length soft trim keeps 1–2 sentences", async () => {
+await check("mom anchor continuity requires relational connection", async () => {
+  const prior = ["caring for a parent"];
+  assert.equal(
+    isRelationallyContinuousTurn("Um, are you going to watch the world cup championship match?", prior),
+    false,
+  );
+  assert.equal(
+    isRelationallyContinuousTurn("spending time with her has mattered a lot lately", prior),
+    true,
+  );
+  assert.equal(isRelationallyContinuousTurn("Just the World Cup tonight.", []), false);
+  const worldLocal = detectRelationalWeight("Just the World Cup tonight.");
+  assert.equal(
+    groundedRelationalHint({
+      turnLocal: worldLocal,
+      priorHints: prior,
+      allowSessionContinuation: false,
+    }),
+    null,
+  );
+  assert.equal(
+    relationalAnchorProvenance({
+      turnLocal: worldLocal,
+      priorHints: prior,
+      allowSessionContinuation: false,
+    }).source,
+    "none",
+  );
+});
+
+await check("Terra spoken-length soft trim keeps audible budget", async () => {
   const long =
     "Discipline is not the relationship itself; it is one way of protecting room for the relationship to remain real. The goal is not to earn God's nearness, but to keep turning toward Him with an available heart. Faithfulness in that small morning place quietly forms the rest of the day.";
   const trimmed = softTrimSpokenResponse(long);
   assert.equal(trimmed.trimmed, true);
   const m = measureSpokenLength(trimmed.text);
   assert.ok(m.sentenceCount <= SPOKEN_TARGET_MAX_SENTENCES);
-  // Single long sentence under soft max is measured, not hard-cut.
-  const singleLong =
-    "What I'm noticing is that the morning Scripture and prayer were not only private discipline — they walked with you while you stayed beside her through that ordeal, and the peace you name sits next to the strength you hoped for her.";
-  const single = softTrimSpokenResponse(singleLong);
-  assert.equal(single.trimmed, false);
-  assert.equal(single.text, singleLong);
+  assert.ok(m.words <= SPOKEN_TARGET_MAX_WORDS);
+  assert.ok(m.estimatedSpokenDurationMs <= SPOKEN_TARGET_MAX_MS);
+  const kettle =
+    "Kettlebells can make even familiar training feel new, since they ask your grip, core, and stabilizers to join the work. A little soreness can be part of adapting, but sharp or lingering joint pain is a cue to ease the load or check the movement.";
+  const kettleTrim = softTrimSpokenResponse(kettle);
+  assert.equal(kettleTrim.trimmed, true);
+  assert.ok(kettleTrim.after.estimatedSpokenDurationMs <= SPOKEN_TARGET_MAX_MS);
+  assert.ok(kettleTrim.after.words <= SPOKEN_TARGET_MAX_WORDS);
   const plan = {
     recognition: "Brian named discipline and relationship.",
     relationalMeaning: "Morning devotion as relationship.",
@@ -291,6 +362,10 @@ await check("Terra spoken-length soft trim keeps 1–2 sentences", async () => {
   });
   assert.ok(assembled.spokenTrimmed);
   assert.ok(assembled.spokenLength.sentenceCount <= SPOKEN_TARGET_MAX_SENTENCES);
+  assert.ok(assembled.spokenLength.words <= SPOKEN_TARGET_MAX_WORDS);
+  assert.ok(assembled.spokenLength.trimApplied);
+  assert.ok(assembled.spokenLength.before);
+  assert.ok(assembled.spokenLength.after);
   assert.ok(!assembled.text.includes("Faithfulness in that small morning place"));
 });
 
@@ -348,6 +423,83 @@ await check("replay f33 classifications: T9 close, T7 shallow, T8/T13 deep", asy
       isIncompleteLeadInFragment(SESSION_F33[9]) ||
       isHighConfidenceIncompleteSpeech(SESSION_F33[9], { turnCount: 9 }),
   );
+});
+
+await check("replay 2b1b0306: T7–T13 routing, fragment coalesce, presence, closing", async () => {
+  const deep = async (ctx) => {
+    const text =
+      ctx?.transcript && /world cup|championship/i.test(ctx.transcript)
+        ? "I don't watch matches myself, but finals often turn on one small moment."
+        : "A short warranted contribution.";
+    return deepStub(text)();
+  };
+  let state = createFrontDoorState("Brian");
+  const outs = [];
+  for (const transcript of SESSION_2B1B) {
+    const out = await runFrontDoorTurn({ transcript, state, deepGenerate: deep });
+    outs.push(out);
+    state = out.state;
+  }
+
+  // T2/T3/T5/T10 substantive → Terra
+  assert.equal(outs[1].meta.routedDeep, true, "T2 deep");
+  assert.equal(outs[2].meta.routedDeep, true, "T3 deep");
+  assert.equal(outs[4].meta.routedDeep, true, "T5 deep");
+  assert.equal(outs[9].meta.routedDeep, true, "T10 deep");
+
+  // T7 low-substance rejection
+  assert.equal(isLowSubstanceDeferral(SESSION_2B1B[6]), true);
+  assert.equal(outs[6].meta.routedDeep, false, "T7 shallow");
+  assert.equal(outs[6].meta.terraQualification?.terraRejectedReason, "low_substance_deferral");
+  assert.equal(outs[6].engine, "front_door");
+
+  // T8 fragment created, no ask
+  assert.equal(outs[7].lane, "fragment_hold");
+  assert.equal(outs[7].meta.fragmentLifecycle, "created");
+  assert.equal(outs[7].meta.routedDeep, false);
+  assert.equal(/\?/.test(outs[7].text), false);
+
+  // T9 fragment extended, no Terra
+  assert.equal(outs[8].lane, "fragment_hold");
+  assert.equal(outs[8].meta.fragmentLifecycle, "extended");
+  assert.equal(outs[8].meta.routedDeep, false);
+  assert.equal(outs[8].engine, "front_door");
+
+  // T10 completed once — only one Terra call for the World Cup completion path among T8–T10
+  assert.equal(outs[9].meta.fragmentLifecycle, "completed");
+  assert.match(String(outs[9].engine), /terra|gpt/i);
+  const terraInFragWindow = [outs[7], outs[8], outs[9]].filter((o) => o.meta.routedDeep).length;
+  assert.equal(terraInFragWindow, 1, "World Cup question routes once");
+
+  // T11 thin ack, no interview prompt
+  assert.equal(outs[10].engine, "front_door");
+  assert.equal(outs[10].lane, "thin_acknowledgment");
+  assert.equal(/\?/.test(outs[10].text), false);
+  assert.equal(/stands out|tell me more|hear more|how is that/i.test(outs[10].text), false);
+
+  // T12 closing precedence + sentOff
+  assert.equal(outs[11].intent, INTENT.CLOSING);
+  assert.equal(outs[11].engine, "front_door");
+  assert.equal(outs[11].state.sentOff, true);
+  assert.equal(outs[11].meta.routedDeep, false);
+  assert.equal(/\?/.test(outs[11].text), false);
+
+  // T13 presence check deterministic
+  assert.equal(detectConversationControl(SESSION_2B1B[12])?.type, "presence_check");
+  assert.equal(outs[12].lane, "conversation_control");
+  assert.equal(outs[12].meta.conversationControl, true);
+  assert.equal(outs[12].meta.conversationControlType, "presence_check");
+  assert.equal(outs[12].meta.routedDeep, false);
+  assert.equal(outs[12].engine, "front_door");
+  assert.match(outs[12].text, /here/i);
+
+  // Mom anchor not carried into World Cup-only T10
+  assert.equal(outs[9].meta.relationalAnchorProvenance?.source, "none");
+  assert.ok(!outs[9].meta.relationalAnchorsUsed?.some((h) => /mom|parent|caregiv/i.test(String(h))));
+
+  // Mom was current-turn on T2
+  assert.equal(outs[1].meta.relationalDetailDetected, true);
+  assert.equal(outs[1].meta.relationalAnchorProvenance?.source, "current_turn");
 });
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

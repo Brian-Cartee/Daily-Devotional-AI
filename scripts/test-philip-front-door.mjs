@@ -63,6 +63,7 @@ import {
   detectRelationalWeight,
   isWeightyDescriptiveFaithContext,
   mergeRelationalAnchors,
+  isRelationallyContinuousTurn,
 } from "../artifacts/api-server/src/philip-voice-lab/relationalWeight.mjs";
 import { buildLatencyStages, LATENCY_PIPELINE_SCHEMA_VERSION } from "../artifacts/api-server/src/philip-voice-lab/latencyPipeline.mjs";
 
@@ -1744,7 +1745,7 @@ check("activity completion is not session closing", () => {
     assert.ok(/avoid|leverage|unique|forever/i.test(r.text), r.text);
   });
 
-  check("contribution: follow-up remembers mother detail", async () => {
+  check("contribution: match-only follow-up does not force mom continuation", async () => {
     let st = createFrontDoorState("Brian");
     const t1 = await contribTurn(
       "I'm watching the World Cup and taking care of my mom this week.",
@@ -1752,12 +1753,26 @@ check("activity completion is not session closing", () => {
       "I'm with you. The Cup is on the screen, and your mom is still the person the week is organized around.",
     );
     st = t1.state;
+    assert.equal(t1.meta.relationalDetailDetected, true);
+    assert.equal(t1.meta.relationalAnchorProvenance?.source, "current_turn");
     const t2 = await contribTurn(
       "Yeah the match was good.",
       st,
-      "Glad the match was good — and your mom's still in the middle of the week either way.",
+      "Glad the match landed well — a good game can sit beside the rest of the week without needing to explain it.",
     );
-    assert.ok(/\bmom|mother\b/i.test(t2.text), t2.text);
+    // Match-only follow-up is not relationally continuous with caregiving.
+    assert.equal(isRelationallyContinuousTurn("Yeah the match was good.", ["caring for a parent"]), false);
+    assert.ok(!/\bmom|mother\b/i.test(t2.meta.relationalAnchorsUsed?.join(" ") || ""), t2.meta.relationalAnchorsUsed);
+    const continuous = await contribTurn(
+      "Spending time with her has mattered a lot this week.",
+      t2.state,
+      "That time with her is carrying real weight — it belongs in the center of the week, not as a side note.",
+    );
+    assert.equal(
+      isRelationallyContinuousTurn("Spending time with her has mattered a lot this week.", ["caring for a parent"]),
+      true,
+    );
+    assert.ok(/\bher|mom|mother\b/i.test(continuous.text), continuous.text);
   });
 }
 
