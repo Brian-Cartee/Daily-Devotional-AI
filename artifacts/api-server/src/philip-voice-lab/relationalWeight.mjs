@@ -252,6 +252,42 @@ export function relationalHintsFromState(state) {
     .filter(Boolean);
 }
 
+const UNRELATED_TOPIC_ONLY =
+  /\b(world cup|championship|match|game|kettlebell|workout|gym|training|sore|exercise|football|soccer)\b/i;
+
+const RELATIONAL_CONTINUITY_CUES =
+  /\b(mom|mother|dad|father|parent|wife|husband|spouse|kids?|children|son|daughter|friend|caregiv|caring for|looking after|spending time with (her|him|them|my))\b/i;
+
+/**
+ * Session anchors continue only when the current turn is meaningfully connected
+ * to that relationship/topic — not merely because it appeared earlier.
+ */
+export function isRelationallyContinuousTurn(rawText, priorHints = []) {
+  const text = String(rawText || "").trim();
+  if (!text || !(priorHints || []).length) return false;
+  if (detectRelationalWeight(text).detected) return true;
+  if (RELATIONAL_CONTINUITY_CUES.test(text)) return true;
+  // Explicit continuity language about a prior relationship without re-naming it.
+  if (
+    /\b(spending time with her|being with her|caring for her|she has mattered|that time with her|looking after her)\b/i.test(
+      text,
+    )
+  ) {
+    return true;
+  }
+  // Unrelated ordinary topics alone must not inherit caregiving anchors.
+  if (UNRELATED_TOPIC_ONLY.test(text) && !RELATIONAL_CONTINUITY_CUES.test(text)) {
+    return false;
+  }
+  const hintBlob = (priorHints || []).join(" ").toLowerCase();
+  const tokens = text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 4);
+  const overlap = tokens.some((w) => hintBlob.includes(w) && !/^(with|that|this|just|been|from|have|about)$/.test(w));
+  return overlap && RELATIONAL_CONTINUITY_CUES.test(hintBlob);
+}
+
 /**
  * Only expose a relational hint to Terra when supported by:
  * - the current turn transcript, or
