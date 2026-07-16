@@ -36,7 +36,7 @@ import { buildLatencyStages } from "./latencyPipeline.mjs";
 export const CANDIDATE_GENOME_VERSION = PHILIP_VOICE_GENOME_VERSION;
 export const CANDIDATE_RUNTIME_LABEL = "Philip Voice Lab Candidate";
 /** Narrow runtime identifier for reliability hotfixes (genome/contract unchanged). */
-export const CANDIDATE_RUNTIME_VERSION = "candidate-front-door-1.1";
+export const CANDIDATE_RUNTIME_VERSION = "candidate-front-door-1.2";
 
 function log(...args) {
   console.log("[philip-voice-agent]", ...args);
@@ -286,9 +286,42 @@ export async function runPhilipLabTurn(job) {
     audioPublished = true;
 
     await job.playbackQueue.pending.catch(() => {});
-    const { pcmDurationMs: pcmMs, framePublished } =
-      await publishMp3ToSourceDetached(audio, job.audioSource, DEFAULT_SAMPLE_RATE, job.audioFrameFactory);
+    // Cancel any still-publishing prior generation before starting a new one.
+    if (job.activePlayback?.abortController && !job.activePlayback.abortController.signal.aborted) {
+      job.timeline.mark("playback_supersede", {
+        reason: "new_turn_publish",
+        generation: job.activePlayback.generation ?? null,
+      });
+      job.activePlayback.abortController.abort();
+      try {
+        if (typeof job.audioSource?.clearQueue === "function") job.audioSource.clearQueue();
+      } catch {
+        /* best-effort */
+      }
+    }
+    const playbackAbort = new AbortController();
+    const playbackGeneration = (job.playbackGeneration || 0) + 1;
+    const { pcmDurationMs: pcmMs, framePublished } = await publishMp3ToSourceDetached(
+      audio,
+      job.audioSource,
+      DEFAULT_SAMPLE_RATE,
+      job.audioFrameFactory,
+      { abortController: playbackAbort },
+    );
     playbackMs = Date.now() - playbackStartAt;
+    const activePlayback = {
+      generation: playbackGeneration,
+      abortController: playbackAbort,
+      startedAt: playbackStartAt,
+      expectedPcmDurationMs: pcmMs,
+      cancelled: false,
+    };
+    job.activePlayback = activePlayback;
+    if (typeof job.setActivePlayback === "function") {
+      job.setActivePlayback(activePlayback);
+    } else {
+      job.playbackGeneration = playbackGeneration;
+    }
 
     job.timeline.mark("playback_publish_end", { pcmDurationMs: pcmMs });
     job.timeline.metric("playbackPublishEndAt");
@@ -296,6 +329,7 @@ export async function runPhilipLabTurn(job) {
       pcmDurationMs: pcmMs,
       earlyMic: true,
       estimatedClientPlaybackEndAt: Date.now() + pcmMs,
+      playbackGeneration,
     });
 
     const micSettleMs = envInt("PHILIP_VOICE_LAB_EARLY_MIC_SETTLE_MS", 600);
@@ -303,12 +337,22 @@ export async function runPhilipLabTurn(job) {
 
     job.playbackQueue.pending = framePublished.then((result) => {
       playbackCompleteAt = Date.now();
+      if (job.activePlayback?.generation === playbackGeneration) {
+        job.activePlayback = null;
+        if (typeof job.setActivePlayback === "function") job.setActivePlayback(null);
+      }
       return result;
     });
     // Intentionally not awaited: audio delivery continues after this turn returns
     // and the caller resumes the mic. Errors are already logged inside
     // publishMp3ToSourceDetached; this just prevents an unhandled-rejection warning.
     framePublished.catch(() => {});
+
+    // If the next user utterance already started overlapping this publish window,
+    // mark interruption for observability (cancel happens when next turn publishes
+    // or when the mic loop detects speech during activePlayback).
+    const overlapOrInterruption = Boolean(job.overlapOrInterruption);
+    const interruptionKind = job.interruptionKind || null;
 
     const totalTurnMs = Date.now() - turnStartAt;
     const speechEndToFirstAudioMs =
@@ -410,8 +454,8 @@ export async function runPhilipLabTurn(job) {
         pcmDurationMs: pcmMs,
         speechEndToFirstAudioMs,
         nextUserSpeechStartAt: null,
-        overlapOrInterruption: Boolean(job.overlapOrInterruption),
-        interruptionKind: job.interruptionKind ?? null,
+        overlapOrInterruption,
+        interruptionKind,
         discardReason: job.discardReason ?? null,
       },
       latencyStages: buildLatencyStages({
@@ -577,12 +621,58 @@ export async function runPhilipVoiceRoom(opts) {
   const collector = new UtteranceCollector(vadConfig);
   const conversationState = createConversationState(conversationId, { firstName: opts.firstName });
   const playbackQueue = { pending: Promise.resolve() };
+  /** Shared abortable playback handle across turns (bounded barge-in). */
+  const playbackHandle = {
+    activePlayback: null,
+    playbackGeneration: 0,
+  };
+  let sessionTerminateReason = null;
+  let endSessionResolve = null;
+  const sessionEnded = new Promise((resolve) => {
+    endSessionResolve = resolve;
+  });
   log("vad config", vadConfig);
+
+  const cancelActivePlayback = (reason) => {
+    const active = playbackHandle.activePlayback;
+    if (!active?.abortController || active.abortController.signal.aborted) return false;
+    timeline.mark("playback_cancel_start", {
+      reason,
+      generation: active.generation ?? null,
+      expectedPcmDurationMs: active.expectedPcmDurationMs ?? null,
+    });
+    active.cancelled = true;
+    active.abortController.abort();
+    try {
+      if (typeof audioSource.clearQueue === "function") audioSource.clearQueue();
+    } catch {
+      /* best-effort */
+    }
+    timeline.mark("playback_cancel_end", { reason, generation: active.generation ?? null });
+    playbackHandle.activePlayback = null;
+    return true;
+  };
 
   const stopListening = () => {
     listenAbort?.abort();
     listenAbort = null;
     listenTask = null;
+  };
+
+  const requestSessionEnd = (reason) => {
+    if (sessionTerminateReason) return;
+    sessionTerminateReason = reason;
+    timeline.mark("room_loop_terminate", { reason });
+    cancelActivePlayback(reason);
+    if (conversationState.brainState) {
+      conversationState.brainState = {
+        ...conversationState.brainState,
+        pendingFragment: null,
+      };
+    }
+    stopListening();
+    collector.reset();
+    endSessionResolve?.(reason);
   };
 
   const startMicLoop = (track, participant) => {
@@ -642,6 +732,14 @@ export async function runPhilipVoiceRoom(opts) {
 
           processing = true;
           collector.pause();
+          // Bounded barge-in: stop publishing Philip audio when real user speech begins.
+          const interruptedPrior = cancelActivePlayback("user_interrupt");
+          if (interruptedPrior) {
+            timeline.mark("user_barge_in", {
+              speechMs: vad.speechMs ?? null,
+              utteranceBytes: vad.utterance.length,
+            });
+          }
           try {
             await runPhilipLabTurn({
               roomName,
@@ -656,6 +754,17 @@ export async function runPhilipVoiceRoom(opts) {
               room,
               conversationState,
               playbackQueue,
+              audioFrameFactory: opts.audioFrameFactory,
+              activePlayback: playbackHandle.activePlayback,
+              playbackGeneration: playbackHandle.playbackGeneration,
+              setActivePlayback: (next) => {
+                playbackHandle.activePlayback = next;
+                if (next?.generation != null) {
+                  playbackHandle.playbackGeneration = next.generation;
+                }
+              },
+              overlapOrInterruption: interruptedPrior,
+              interruptionKind: interruptedPrior ? "user_interrupt" : null,
             });
           } catch (err) {
             log("turn error:", err);
@@ -695,13 +804,16 @@ export async function runPhilipVoiceRoom(opts) {
   room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
   room.on(RoomEvent.ParticipantDisconnected, (participant) => {
     if (!isLabAgentIdentity(participant.identity)) {
-      timeline.mark("participant_disconnected", { identity: participant.identity });
-      stopListening();
-      collector.reset();
+      timeline.mark("participant_disconnected", {
+        identity: participant.identity,
+        at: new Date().toISOString(),
+      });
+      requestSessionEnd("participant_disconnected");
     }
   });
   room.on(RoomEvent.Disconnected, (reason) => {
     timeline.mark("disconnect", { reason: String(reason ?? "unknown") });
+    requestSessionEnd(`room_disconnected:${String(reason ?? "unknown")}`);
   });
 
   try {
@@ -712,25 +824,38 @@ export async function runPhilipVoiceRoom(opts) {
     timeline.mark("agent_track_published");
     attachExistingUserTracks();
 
-    await new Promise((resolve) => {
-      if (opts.abortSignal?.aborted) {
-        resolve();
-        return;
-      }
-      room.on(RoomEvent.Disconnected, resolve);
-      opts.abortSignal?.addEventListener("abort", () => {
-        timeline.mark("session_abort");
-        resolve();
-      }, { once: true });
-    });
+    await Promise.race([
+      sessionEnded,
+      new Promise((resolve) => {
+        if (opts.abortSignal?.aborted) {
+          resolve("abort_signal");
+          return;
+        }
+        opts.abortSignal?.addEventListener(
+          "abort",
+          () => {
+            timeline.mark("session_abort");
+            requestSessionEnd("abort_signal");
+            resolve("abort_signal");
+          },
+          { once: true },
+        );
+      }),
+    ]);
   } finally {
+    cancelActivePlayback("session_end");
     stopListening();
     collector.reset();
-    timeline.mark("session_end");
+    timeline.mark("session_end", {
+      terminateReason: sessionTerminateReason || "unknown",
+      pendingPlaybackCleared: true,
+      pendingFragmentCleared: true,
+    });
     const payload = await timeline.persist();
     await publishTimelineToRoom(room, {
       conversationId,
       phase: "session_end",
+      terminateReason: sessionTerminateReason || "unknown",
       timeline: payload,
     });
     try {
@@ -739,7 +864,7 @@ export async function runPhilipVoiceRoom(opts) {
     try {
       await room.disconnect();
     } catch {}
-    log("room session ended", roomName);
+    log("room session ended", roomName, sessionTerminateReason || "unknown");
   }
 }
 

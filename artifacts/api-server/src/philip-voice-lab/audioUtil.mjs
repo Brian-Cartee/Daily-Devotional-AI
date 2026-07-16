@@ -327,32 +327,123 @@ export async function publishMp3ToSource(mp3Buffer, source, sampleRate = DEFAULT
 }
 
 /**
- * Same audio delivery as publishMp3ToSource, but returns as soon as decode +
- * duration are known. The real-time frame-publish loop continues in the
- * background. Callers that need full-playback confirmation should await the
- * returned `framePublished` promise; callers that just need to release the
- * mic quickly should not.
- * @param {Buffer} mp3Buffer
+ * Abortable PCM publish for barge-in cancellation.
+ * @param {Buffer|Int16Array} pcmBuffer
  * @param {import('@livekit/rtc-node').AudioSource} source
  * @param {number} [sampleRate]
- * @param {(chunk: Int16Array) => unknown} [audioFrameFactory]
+ * @param {{ signal?: AbortSignal; audioFrameFactory?: (chunk: Int16Array) => unknown }} [opts]
  */
-export async function publishMp3ToSourceDetached(mp3Buffer, source, sampleRate = DEFAULT_SAMPLE_RATE, audioFrameFactory) {
+export function startPcmPublishAsync(pcmBuffer, source, sampleRate = DEFAULT_SAMPLE_RATE, opts = {}) {
+  const signal = opts.signal;
+  let resolveFirst = null;
+  const firstFramePromise = new Promise((resolve) => {
+    resolveFirst = resolve;
+  });
+
+  const completion = (async () => {
+    const playbackPublishStartAt = Date.now();
+    const asBuffer =
+      Buffer.isBuffer(pcmBuffer)
+        ? pcmBuffer
+        : Buffer.from(pcmBuffer.buffer, pcmBuffer.byteOffset, pcmBuffer.byteLength);
+    const sampleCount = Math.floor(asBuffer.byteLength / 2);
+    const pcmDurationMsValue = pcmDurationMs(asBuffer, sampleRate);
+    if (!sampleCount) {
+      resolveFirst?.({ firstFrameAt: Date.now() });
+      return {
+        cancelled: false,
+        framesPublished: 0,
+        discardedSamples: 0,
+        playbackPublishStartAt,
+        playbackPublishEndAt: Date.now(),
+        pcmDurationMs: 0,
+      };
+    }
+
+    const createAudioFrame = resolveAudioFrameFactory(opts.audioFrameFactory, sampleRate);
+    const int16 = new Int16Array(sampleCount);
+    int16.set(new Int16Array(asBuffer.buffer, asBuffer.byteOffset, sampleCount));
+    const samplesPerFrame = Math.max(1, Math.floor(sampleRate / 100));
+    let framesPublished = 0;
+    let firstFrameAt = null;
+
+    for (let offset = 0; offset < int16.length; offset += samplesPerFrame) {
+      if (signal?.aborted) {
+        const discardedSamples = int16.length - offset;
+        try {
+          if (typeof source.clearQueue === "function") source.clearQueue();
+        } catch {
+          /* best-effort */
+        }
+        return {
+          cancelled: true,
+          framesPublished,
+          discardedSamples,
+          playbackPublishStartAt,
+          playbackPublishEndAt: Date.now(),
+          pcmDurationMs: pcmDurationMsValue,
+          firstFrameAt,
+        };
+      }
+      const end = Math.min(offset + samplesPerFrame, int16.length);
+      const chunk = int16.subarray(offset, end);
+      const frame = await createAudioFrame(chunk);
+      await source.captureFrame(frame);
+      framesPublished += 1;
+      if (firstFrameAt == null) {
+        firstFrameAt = Date.now();
+        resolveFirst?.({ firstFrameAt });
+      }
+    }
+
+    return {
+      cancelled: false,
+      framesPublished,
+      discardedSamples: 0,
+      playbackPublishStartAt,
+      playbackPublishEndAt: Date.now(),
+      pcmDurationMs: pcmDurationMsValue,
+      firstFrameAt,
+    };
+  })();
+
+  completion.catch(() => {});
+  return { firstFramePromise, completion };
+}
+
+/**
+ * Same audio delivery as publishMp3ToSource, but returns as soon as decode +
+ * duration are known. The real-time frame-publish loop continues in the
+ * background and can be aborted via `abortController`.
+ */
+export async function publishMp3ToSourceDetached(
+  mp3Buffer,
+  source,
+  sampleRate = DEFAULT_SAMPLE_RATE,
+  audioFrameFactory,
+  { abortController = null } = {},
+) {
   const decodeStartAt = Date.now();
   const pcm = await mp3ToPcm16(mp3Buffer, sampleRate);
   const decodeMs = Date.now() - decodeStartAt;
   const pcmDurationMsValue = pcmDurationMs(pcm, sampleRate);
 
-  const framePublished = publishPcmToSource(pcm, source, sampleRate, {
-    waitForPlayout: false,
-    tailWaitMs: 0,
+  const { completion: framePublished } = startPcmPublishAsync(pcm, source, sampleRate, {
+    signal: abortController?.signal,
     audioFrameFactory,
-  }).catch((err) => {
+  });
+
+  const guarded = framePublished.catch((err) => {
     console.error("[philip-voice-lab] background frame publish failed:", err);
     return null;
   });
 
-  return { decodeMs, pcmDurationMs: pcmDurationMsValue, framePublished };
+  return {
+    decodeMs,
+    pcmDurationMs: pcmDurationMsValue,
+    framePublished: guarded,
+    abortController,
+  };
 }
 
 export { DEFAULT_SAMPLE_RATE, rmsInt16 };
