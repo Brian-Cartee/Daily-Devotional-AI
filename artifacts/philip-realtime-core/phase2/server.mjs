@@ -8,6 +8,7 @@ import {
   sanitizedPreflightConfig,
 } from "./config.mjs";
 import { getPhase2Scenario } from "./scenarios.mjs";
+import { scrubSecrets } from "./loadCredential.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(HERE, "..");
@@ -229,6 +230,7 @@ async function createRealtimeCall(req, res, sessionNumber) {
         providerStatus: providerResponse.status,
         providerErrorType,
         providerErrorCode,
+        providerRequestId: providerResponse.headers.get("x-request-id") || null,
         providerHost: "api.openai.com",
         providerPath: "/v1/realtime/calls",
         finishedAt: new Date().toISOString(),
@@ -239,13 +241,13 @@ async function createRealtimeCall(req, res, sessionNumber) {
         providerErrorType,
         providerErrorCode,
         attemptId: attempt.attemptId,
-        // Never include Authorization or secret material. Keep a short sanitized body.
-        providerBodySanitized: answer.slice(0, 300).replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]"),
+        providerBodySanitized: scrubSecrets(answer.slice(0, 300)),
       });
     }
     await updateAttempt(attempt.attemptId, {
       status: "transport_connected",
       providerStatus: providerResponse.status,
+      providerRequestId: providerResponse.headers.get("x-request-id") || null,
     });
     text(res, 200, answer, "application/sdp", {
       "x-phase2-attempt-id": attempt.attemptId,
@@ -335,7 +337,7 @@ export async function startPhase2Server({ port = 0 } = {}) {
       if (req.method === "GET") return serveStatic(req, res, url.pathname);
       text(res, 404, "not found");
     } catch (error) {
-      json(res, 500, { error: String(error.message || error).slice(0, 500) });
+      json(res, 500, { error: scrubSecrets(String(error.message || error).slice(0, 500)) });
     }
   });
 

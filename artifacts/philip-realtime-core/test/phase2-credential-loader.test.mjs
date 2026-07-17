@@ -4,6 +4,7 @@ import {
   brokenSession1AdHocParser,
   parseOpenAiApiKeyFromEnvFile,
   loadPhase2OpenAiApiKey,
+  scrubSecrets,
 } from "../phase2/loadCredential.mjs";
 
 describe("Phase 2 credential loader (fake credentials only)", () => {
@@ -25,7 +26,6 @@ describe("Phase 2 credential loader (fake credentials only)", () => {
 
   it("rejects empty assignment instead of passing the literal line as the bearer token", () => {
     const emptyFile = "OPENAI_API_KEY=\n";
-    // Session 1 defect: broken parser falls back to the whole assignment line.
     assert.equal(brokenSession1AdHocParser(emptyFile), "OPENAI_API_KEY=");
     assert.throws(
       () => parseOpenAiApiKeyFromEnvFile(emptyFile),
@@ -51,10 +51,14 @@ describe("Phase 2 credential loader (fake credentials only)", () => {
     );
   });
 
-  it("rejects placeholders and multiple assignments", () => {
+  it("rejects placeholders, malformed quotes, missing file path handling, and duplicates", () => {
     assert.throws(
       () => parseOpenAiApiKeyFromEnvFile("OPENAI_API_KEY=<your-key-here>\n"),
       /placeholder/,
+    );
+    assert.throws(
+      () => parseOpenAiApiKeyFromEnvFile('OPENAI_API_KEY="sk-test-unbalanced\n'),
+      /malformed surrounding quotes/,
     );
     assert.throws(
       () =>
@@ -63,18 +67,51 @@ describe("Phase 2 credential loader (fake credentials only)", () => {
         ),
       /exactly one/,
     );
+    assert.throws(
+      () =>
+        loadPhase2OpenAiApiKey({
+          filePath: "missing.env",
+          env: {},
+          readFile: () => {
+            const err = new Error("ENOENT");
+            err.code = "ENOENT";
+            throw err;
+          },
+        }),
+      /credential file not found/,
+    );
   });
 
-  it("loadPhase2OpenAiApiKey refuses a parent env that is the broken assignment token", () => {
+  it("rejects suspicious parent-environment overrides", () => {
     const fakeFs = {
       "fake.env": "OPENAI_API_KEY=sk-test-fake-from-file-abcdefghij\n",
     };
-    const value = loadPhase2OpenAiApiKey({
-      filePath: "fake.env",
-      env: { OPENAI_API_KEY: "OPENAI_API_KEY=" },
-      readFile: (p) => fakeFs[p],
-    });
-    assert.equal(value, "sk-test-fake-from-file-abcdefghij");
+    assert.throws(
+      () =>
+        loadPhase2OpenAiApiKey({
+          filePath: "fake.env",
+          env: { OPENAI_API_KEY: "OPENAI_API_KEY=" },
+          readFile: (p) => fakeFs[p],
+        }),
+      /suspicious parent-environment/,
+    );
+    assert.throws(
+      () =>
+        loadPhase2OpenAiApiKey({
+          filePath: "fake.env",
+          env: { OPENAI_API_KEY: "sk-test-different-parent-zzzzzzzz" },
+          readFile: (p) => fakeFs[p],
+        }),
+      /suspicious parent-environment/,
+    );
+    assert.equal(
+      loadPhase2OpenAiApiKey({
+        filePath: "fake.env",
+        env: { OPENAI_API_KEY: "sk-test-fake-from-file-abcdefghij" },
+        readFile: (p) => fakeFs[p],
+      }),
+      "sk-test-fake-from-file-abcdefghij",
+    );
   });
 
   it("Authorization header helper shape remains Bearer plus parsed value only", () => {
@@ -85,5 +122,14 @@ describe("Phase 2 credential loader (fake credentials only)", () => {
     assert.equal(header.startsWith("Bearer "), true);
     assert.equal(header.includes("OPENAI_API_KEY="), false);
     assert.equal(header.split(" ").length, 2);
+  });
+
+  it("scrubSecrets redacts bearer tokens and sk-shaped secrets", () => {
+    const scrubbed = scrubSecrets({
+      authorization: "Bearer sk-test-fake-secret-abcdefgh",
+      note: "OPENAI_API_KEY=sk-test-fake-secret-abcdefgh",
+    });
+    assert.equal(scrubbed.includes("sk-test-fake-secret-abcdefgh"), false);
+    assert.equal(scrubbed.includes("[redacted]"), true);
   });
 });

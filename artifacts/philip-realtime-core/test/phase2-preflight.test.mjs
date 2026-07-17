@@ -65,6 +65,7 @@ describe("Phase 2 paid-session preflight (no provider calls)", () => {
     delete process.env.OPENAI_API_KEY;
     const running = await startPhase2Server();
     try {
+      const before = await fetch(`${running.origin}/api/ledger`).then((r) => r.json());
       const response = await fetch(`${running.origin}/api/session?session=1`, {
         method: "POST",
         headers: { "content-type": "application/sdp" },
@@ -72,7 +73,7 @@ describe("Phase 2 paid-session preflight (no provider calls)", () => {
       });
       assert.equal(response.status, 412);
       const ledger = await fetch(`${running.origin}/api/ledger`).then((r) => r.json());
-      assert.equal(ledger.attempts.length, 0);
+      assert.equal(ledger.attempts.length, before.attempts.length);
     } finally {
       await running.close();
       if (original) process.env.OPENAI_API_KEY = original;
