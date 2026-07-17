@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
+  type AppStateStatus,
   Linking,
   Platform,
   Pressable,
@@ -21,11 +23,18 @@ import {
   philipRealtimeLabBaseUrl,
 } from "@/lib/philipRealtimeLabConfig";
 import {
+  fetchRealtimeLabAccess,
+  type RealtimeLabReadiness,
+} from "@/lib/philipRealtimeLabApi";
+import {
+  prepareRealtimeAudioSession,
+  releaseRealtimeAudioSession,
+} from "@/lib/philipRealtimeAudioSession";
+import {
   PhilipRealtimeLabSession,
   type RealtimeLabEvidence,
 } from "@/lib/philipRealtimeLabSession";
 import { loadLiveKitReactNativeWebRtc } from "@/lib/philipRealtimeWebRtc";
-import { ensureLiveKitGlobals } from "@/lib/setupLiveKit";
 
 const GOLD = "#D4880E";
 const BG = "#0d0612";
@@ -53,6 +62,8 @@ export default function PhilipRealtimeLabScreen() {
   ]);
   const [evidence, setEvidence] = useState<RealtimeLabEvidence | null>(null);
   const [webrtcOk, setWebrtcOk] = useState<boolean | null>(null);
+  const [readiness, setReadiness] = useState<RealtimeLabReadiness | null>(null);
+  const [readinessFailure, setReadinessFailure] = useState<string | null>(null);
 
   const labUrlConfigured = Boolean(philipRealtimeLabBaseUrl());
 
@@ -62,7 +73,6 @@ export default function PhilipRealtimeLabScreen() {
 
   useEffect(() => {
     if (!enabled) return;
-    ensureLiveKitGlobals();
     const probe = loadLiveKitReactNativeWebRtc();
     setWebrtcOk(probe.ok);
     if (!probe.ok) {
@@ -72,6 +82,50 @@ export default function PhilipRealtimeLabScreen() {
       appendLog("Native WebRTC package available (@livekit/react-native-webrtc).");
     }
   }, [enabled, appendLog]);
+
+  const refreshReadiness = useCallback(async () => {
+    if (!labUrlConfigured) {
+      setReadiness(null);
+      setReadinessFailure("Realtime Lab is not configured: missing server URL");
+      return null;
+    }
+    try {
+      const access = await fetchRealtimeLabAccess();
+      setReadiness(access.readiness);
+      setReadinessFailure(null);
+      appendLog(
+        `Realtime server ready · runtime ${access.readiness.runtime} · armed=${access.readiness.armed}.`,
+      );
+      return access;
+    } catch (err) {
+      const message = String((err as Error)?.message || err);
+      setReadiness(null);
+      setReadinessFailure(`Realtime readiness failed: ${message}`);
+      appendLog(`Realtime readiness failed: ${message}`);
+      return null;
+    }
+  }, [appendLog, labUrlConfigured]);
+
+  useEffect(() => {
+    if (enabled && webrtcOk === true) void refreshReadiness();
+  }, [enabled, refreshReadiness, webrtcOk]);
+
+  useEffect(() => {
+    const endForLifecycle = (reason: string) => {
+      const session = sessionRef.current;
+      sessionRef.current = null;
+      if (session) void session.end("stopped", reason);
+    };
+    const onAppState = (next: AppStateStatus) => {
+      if (next !== "active") endForLifecycle(`app_state_${next}`);
+    };
+    const subscription = AppState.addEventListener("change", onAppState);
+    return () => {
+      subscription.remove();
+      endForLifecycle("screen_navigation");
+      void releaseRealtimeAudioSession();
+    };
+  }, []);
 
   const onTestMic = useCallback(async () => {
     try {
@@ -121,13 +175,11 @@ export default function PhilipRealtimeLabScreen() {
         return;
       }
       setMicState("granted");
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
+      const access = await refreshReadiness();
+      if (!access) throw new Error("realtime_readiness_unavailable");
+      if (!access.readiness.armed) throw new Error("realtime_server_disarmed");
+      if (!access.readiness.sessionAvailable) throw new Error("realtime_session_already_consumed");
+      await prepareRealtimeAudioSession();
 
       const session = new PhilipRealtimeLabSession((patch) => {
         if (patch.micState) setMicState(patch.micState);
@@ -140,11 +192,11 @@ export default function PhilipRealtimeLabScreen() {
         if (patch.evidence) setEvidence(patch.evidence);
       });
       sessionRef.current = session;
-      await session.startConversation();
+      await session.startConversation(access.token);
     } catch (err) {
       const message = String((err as Error)?.message || err);
-      setError(message);
-      appendLog(`Start failed: ${message}`);
+      setError(`Realtime connection failed: ${message}`);
+      appendLog(`Realtime connection failed: ${message}`);
       setConnectionState("failed");
       try {
         await sessionRef.current?.emergencyStop();
@@ -153,7 +205,7 @@ export default function PhilipRealtimeLabScreen() {
     } finally {
       setBusy(false);
     }
-  }, [appendLog, busy]);
+  }, [appendLog, busy, refreshReadiness]);
 
   const onEnd = useCallback(async () => {
     setBusy(true);
@@ -191,9 +243,11 @@ export default function PhilipRealtimeLabScreen() {
       labUrlConfigured &&
       !busy &&
       connectionState !== "running" &&
-      connectionState !== "connecting"
+      connectionState !== "connecting" &&
+      readiness?.armed === true &&
+      readiness.sessionAvailable === true
     );
-  }, [enabled, webrtcOk, labUrlConfigured, busy, connectionState]);
+  }, [enabled, webrtcOk, labUrlConfigured, busy, connectionState, readiness]);
 
   if (!enabled) {
     return (
@@ -214,9 +268,15 @@ export default function PhilipRealtimeLabScreen() {
         <Text style={styles.eyebrow}>Realtime Research Prototype</Text>
         <Text style={styles.title}>Philip Realtime Lab</Text>
         <Text style={styles.subtitle}>
-          Native OpenAI Realtime WebRTC on this iPhone. Separate from the legacy LiveKit Voice Lab.
+          Native OpenAI Realtime WebRTC on this iPhone. No fallback or substitute runtime.
           Voice: {PHILIP_REALTIME_LAB_VOICE}. Model: {PHILIP_REALTIME_LAB_MODEL}. Max{" "}
           {Math.round(PHILIP_REALTIME_LAB_MAX_DURATION_MS / 1000)}s.
+        </Text>
+        <Text style={styles.meta}>
+          Runtime: {readiness?.runtime || "not ready"} · server:{" "}
+          {readiness ? "reachable" : "unavailable"} · armed:{" "}
+          {readiness ? String(readiness.armed) : "unknown"} · sessions used:{" "}
+          {readiness?.sessionsUsed ?? "unknown"}
         </Text>
 
         <View style={styles.flagRow}>
@@ -237,7 +297,22 @@ export default function PhilipRealtimeLabScreen() {
             <Text style={styles.errorText}>
               Lab server URL is not configured yet. You can still open this screen and test
               microphone permission. Start Conversation stays disabled until
-              EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL points at a non-production lab host.
+              EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL points at the isolated lab route.
+            </Text>
+          </View>
+        ) : null}
+
+        {readinessFailure ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{readinessFailure}</Text>
+          </View>
+        ) : null}
+
+        {readiness && !readiness.armed ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>
+              Realtime Lab is reachable but disarmed. Start remains disabled; no provider call can
+              occur.
             </Text>
           </View>
         ) : null}
@@ -262,6 +337,14 @@ export default function PhilipRealtimeLabScreen() {
         </Pressable>
 
         <Pressable
+          style={styles.secondaryBtn}
+          onPress={() => void refreshReadiness()}
+          disabled={busy}
+        >
+          <Text style={styles.secondaryBtnText}>Refresh Realtime Readiness</Text>
+        </Pressable>
+
+        <Pressable
           style={[styles.primaryBtn, !canStart && styles.primaryBtnDisabled]}
           onPress={() => void onStart()}
           disabled={!canStart}
@@ -279,10 +362,6 @@ export default function PhilipRealtimeLabScreen() {
 
         <Pressable style={styles.dangerBtn} onPress={() => void onEmergency()} disabled={busy}>
           <Text style={styles.dangerBtnText}>Emergency Stop</Text>
-        </Pressable>
-
-        <Pressable style={styles.secondaryBtn} onPress={() => router.push("/philip-voice-lab")}>
-          <Text style={styles.secondaryBtnText}>Open Legacy Philip Voice Lab</Text>
         </Pressable>
 
         <Pressable style={styles.secondaryBtn} onPress={() => router.back()}>

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "references": [],
+  "include": [
+    "app/philip-realtime-lab.tsx",
+    "lib/philipRealtimeAudioSession.ts",
+    "lib/philipRealtimeLabApi.ts",
+    "lib/philipRealtimeLabConfig.ts",
+    "lib/philipRealtimeLabSession.ts",
+    "lib/philipRealtimeWebRtc.ts"
+  ]
+}

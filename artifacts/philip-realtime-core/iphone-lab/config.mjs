@@ -5,6 +5,7 @@ import { PHILIP_REALTIME_QUALITY_INSTRUCTIONS } from "../phase2b/config.mjs";
 export const IPHONE_LAB_LIMITS = Object.freeze({
   model: "gpt-realtime-2.1",
   voice: "cedar",
+  transcriptionModel: "gpt-4o-mini-transcribe",
   maximumDurationMs: 115_000,
   absoluteSpendUsd: 1,
   sessionReserveUsd: 0.75,
@@ -38,6 +39,12 @@ export const IPHONE_LAB_REALTIME_SESSION = Object.freeze({
   instructions: IPHONE_LAB_INSTRUCTIONS,
   audio: {
     input: {
+      transcription: {
+        model: IPHONE_LAB_LIMITS.transcriptionModel,
+        language: "en",
+        prompt:
+          "Philip, Shepherd's Path, Brian, caregiving, Scripture. Preserve natural wording and corrections.",
+      },
       turn_detection: {
         type: "semantic_vad",
         eagerness: "auto",

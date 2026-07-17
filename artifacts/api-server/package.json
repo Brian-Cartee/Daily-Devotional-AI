@@ -13,6 +13,7 @@
     "start:philip-lab": "node --enable-source-maps --env-file=.env.philip-lab ./dist/philip-lab-index.mjs",
     "start:prod": "NODE_ENV=production node --enable-source-maps --env-file=.env ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:realtime-lab": "node --import tsx --test src/routes/philipRealtimeLab.test.ts",
     "philip-lab:check": "node ../../scripts/test-philip-voice-simulated-turn.mjs",
     "generate-vapid": "node ../../scripts/generate-vapid-keys.mjs",
     "seed:pastor-videos": "node --enable-source-maps --env-file=.env.development --import tsx/esm ./src/seedPastorVideos.ts"

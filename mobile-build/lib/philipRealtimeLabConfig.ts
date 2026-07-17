@@ -8,7 +8,6 @@ export const PHILIP_REALTIME_LAB_SPEND_CAP_USD = 1;
 type Extra = {
   philipVoiceLabEnabled?: boolean;
   philipRealtimeLabUrl?: string;
-  philipRealtimeLabSecret?: string;
 };
 
 function extra(): Extra {
@@ -32,15 +31,20 @@ export function philipRealtimeLabBaseUrl(): string {
   return fromExtra.replace(/\/$/, "");
 }
 
-export function philipRealtimeLabSecret(): string {
-  const fromEnv = (process.env.EXPO_PUBLIC_PHILIP_REALTIME_LAB_SECRET || "").trim();
-  if (fromEnv) return fromEnv;
-  return String(extra().philipRealtimeLabSecret || "").trim();
-}
-
-export function assertNotProductionRealtimeHost(url: string): void {
-  const host = new URL(url).hostname.replace(/^www\./, "");
-  if (host === "shepherdspathai.com" || host.endsWith(".shepherdspathai.com")) {
-    throw new Error("production_api_forbidden_for_iphone_realtime_lab");
+/**
+ * The public hostname is shared, but this exact path is reverse-proxied directly
+ * to the isolated :3101 lab process. No production API route is accepted.
+ */
+export function assertIsolatedRealtimeLabUrl(url: string): void {
+  const parsed = new URL(url);
+  const path = parsed.pathname.replace(/\/$/, "");
+  if (parsed.protocol !== "https:") {
+    throw new Error("realtime_lab_url_must_use_https");
+  }
+  if (
+    parsed.hostname !== "www.shepherdspathai.com" ||
+    path !== "/api/internal/philip-voice/realtime"
+  ) {
+    throw new Error("realtime_lab_url_must_target_isolated_route");
   }
 }

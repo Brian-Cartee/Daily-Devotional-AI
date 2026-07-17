@@ -13,6 +13,7 @@ import cors from "cors";
 import { registerPhilipVoiceLabRoutes } from "../routes/philipVoiceLab";
 import { registerPhilipVoiceLabGuidanceRoutes } from "../routes/philipVoiceLabGuidance";
 import { registerPhilipVoiceLabTranscribeRoutes } from "../routes/philipVoiceLabTranscribe";
+import { registerPhilipRealtimeLabRoutes } from "../routes/philipRealtimeLab";
 
 if (process.env.PHILIP_VOICE_LAB_ENABLED !== "true") {
   console.error("[philip-lab-api] PHILIP_VOICE_LAB_ENABLED is not true — refusing to start (kill switch).");
@@ -27,6 +28,7 @@ app.use(express.json({ limit: "2mb" }));
 registerPhilipVoiceLabRoutes(app);
 registerPhilipVoiceLabGuidanceRoutes(app);
 registerPhilipVoiceLabTranscribeRoutes(app);
+registerPhilipRealtimeLabRoutes(app);
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -34,6 +36,8 @@ app.get("/api/health", (_req, res) => {
     service: "philip-lab-api",
     isolated: true,
     philipVoiceLabEnabled: true,
+    philipRealtimeLabAvailable: true,
+    philipRealtimeLabArmed: process.env.ALLOW_IPHONE_REALTIME === "1",
   });
 });
 

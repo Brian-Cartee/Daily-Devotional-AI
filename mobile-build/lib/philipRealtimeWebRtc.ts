@@ -11,19 +11,43 @@ export type WebRtcPrimitives = {
     setLocalDescription: (desc: unknown) => Promise<void>;
     setRemoteDescription: (desc: unknown) => Promise<void>;
     close: () => void;
-    ontrack: ((event: { streams: unknown[] }) => void) | null;
+    ontrack: ((event: {
+      streams: unknown[];
+      track?: {
+        id?: string;
+        kind?: string;
+        readyState?: string;
+        stop?: () => void;
+        addEventListener?: (type: string, listener: () => void) => void;
+      };
+    }) => void) | null;
     onconnectionstatechange: (() => void) | null;
     connectionState?: string;
     iceConnectionState?: string;
   };
   mediaDevices: {
     getUserMedia: (constraints: object) => Promise<{
-      getTracks: () => Array<{ stop: () => void; kind: string }>;
-      getAudioTracks: () => Array<{ stop: () => void; kind: string }>;
+      getTracks: () => Array<{
+        stop: () => void;
+        kind: string;
+        id?: string;
+        enabled?: boolean;
+        readyState?: string;
+        addEventListener?: (type: string, listener: () => void) => void;
+      }>;
+      getAudioTracks: () => Array<{
+        stop: () => void;
+        kind: string;
+        id?: string;
+        enabled?: boolean;
+        readyState?: string;
+        addEventListener?: (type: string, listener: () => void) => void;
+      }>;
     }>;
   };
   RTCSessionDescription: new (init: { type: string; sdp: string }) => unknown;
   MediaStream?: new () => unknown;
+  registerGlobals?: () => void;
 };
 
 export const REQUIRED_WEBRTC_EXPORTS = [
@@ -31,6 +55,8 @@ export const REQUIRED_WEBRTC_EXPORTS = [
   "mediaDevices",
   "RTCSessionDescription",
 ] as const;
+
+let globalsRegistered = false;
 
 export function inspectWebRtcModule(mod: Record<string, unknown>) {
   const missing = REQUIRED_WEBRTC_EXPORTS.filter((name) => typeof mod[name] === "undefined");
@@ -64,6 +90,10 @@ export function loadLiveKitReactNativeWebRtc():
         error: `missing_webrtc_exports:${report.missing.join(",")}`,
         report,
       };
+    }
+    if (!globalsRegistered && typeof mod.registerGlobals === "function") {
+      (mod.registerGlobals as () => void)();
+      globalsRegistered = true;
     }
     return {
       ok: true,

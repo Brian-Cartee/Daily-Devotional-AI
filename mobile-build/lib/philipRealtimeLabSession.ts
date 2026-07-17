@@ -3,10 +3,12 @@ import {
   PHILIP_REALTIME_LAB_MODEL,
   PHILIP_REALTIME_LAB_SPEND_CAP_USD,
   PHILIP_REALTIME_LAB_VOICE,
-  assertNotProductionRealtimeHost,
+  assertIsolatedRealtimeLabUrl,
   philipRealtimeLabBaseUrl,
-  philipRealtimeLabSecret,
 } from "@/lib/philipRealtimeLabConfig";
+import { releaseRealtimeAudioSession } from "@/lib/philipRealtimeAudioSession";
+import { applyInputTranscriptEvent } from "@/lib/philipRealtimeTranscript.mjs";
+import { acceptSingleRemoteAudioTrack } from "@/lib/philipRealtimeTrackPolicy.mjs";
 import {
   createPeerConnectionForOpenAi,
   loadLiveKitReactNativeWebRtc,
@@ -98,8 +100,17 @@ function emptyEvidence(): RealtimeLabEvidence {
 export class PhilipRealtimeLabSession {
   private primitives: WebRtcPrimitives | null = null;
   private pc: ReturnType<typeof createPeerConnectionForOpenAi> | null = null;
-  private dc: { readyState?: string; send: (s: string) => void; close?: () => void; onmessage?: ((e: { data: string }) => void) | null } | null = null;
-  private localStream: { getTracks: () => Array<{ stop: () => void }> } | null = null;
+  private dc: {
+    readyState?: string;
+    send: (s: string) => void;
+    close?: () => void;
+    onopen?: (() => void) | null;
+    onclose?: (() => void) | null;
+    onmessage?: ((e: { data: string }) => void) | null;
+  } | null = null;
+  private localStream:
+    | Awaited<ReturnType<WebRtcPrimitives["mediaDevices"]["getUserMedia"]>>
+    | null = null;
   private evidence = emptyEvidence();
   private startedAtMs: number | null = null;
   private hardStopTimer: ReturnType<typeof setTimeout> | null = null;
@@ -109,6 +120,8 @@ export class PhilipRealtimeLabSession {
   private listening = false;
   private currentResponse: Record<string, unknown> | null = null;
   private lastSpeechStoppedAtMs: number | null = null;
+  private runtimeToken: string | null = null;
+  private remoteAudioTrackId: string | null = null;
   private listener: Listener;
 
   constructor(listener: Listener) {
@@ -220,6 +233,8 @@ export class PhilipRealtimeLabSession {
         "output_audio_buffer.cleared",
         "response.created",
         "response.done",
+        "conversation.item.input_audio_transcription.completed",
+        "conversation.item.truncated",
         "error",
       ].includes(type)
     ) {
@@ -256,6 +271,13 @@ export class PhilipRealtimeLabSession {
       const turn = this.evidence.turns[this.evidence.turns.length - 1];
       if (turn) turn.speechStoppedAtMs = atMs;
       this.log("VAD speech_stopped");
+      return;
+    }
+    if (type.startsWith("conversation.item.input_audio_transcription.")) {
+      const result = applyInputTranscriptEvent(this.evidence.turns, event, atMs);
+      if (result.completed && result.turn) {
+        this.log(`Brian: ${result.turn.inputTranscript || "[empty transcript]"}`);
+      }
       return;
     }
     if (type === "output_audio_buffer.started") {
@@ -341,7 +363,7 @@ export class PhilipRealtimeLabSession {
     }
   }
 
-  async startConversation() {
+  async startConversation(runtimeToken: string) {
     if (this.completed || this.pc) throw new Error("session_already_active");
     const loaded = loadLiveKitReactNativeWebRtc();
     if (!loaded.ok) {
@@ -352,16 +374,21 @@ export class PhilipRealtimeLabSession {
     this.evidence.status = "connecting";
     this.evidence.startedAt = new Date().toISOString();
     this.startedAtMs = Date.now();
+    this.runtimeToken = runtimeToken;
     this.emit({ micState: "requesting", error: null, evidence: this.evidence });
 
     const baseUrl = philipRealtimeLabBaseUrl();
     if (!baseUrl) throw new Error("lab_server_url_not_configured");
-    assertNotProductionRealtimeHost(baseUrl);
-    const secret = philipRealtimeLabSecret();
-    if (!secret) throw new Error("lab_secret_not_configured");
+    assertIsolatedRealtimeLabUrl(baseUrl);
+    if (!this.runtimeToken) throw new Error("realtime_runtime_token_missing");
 
     this.localStream = await this.primitives.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+      },
       video: false,
     });
     this.emit({ micState: "open" });
@@ -373,18 +400,84 @@ export class PhilipRealtimeLabSession {
       this.evidence.connection.peerConnectionState = state;
       this.emit({ connectionState: state });
       this.log(`Peer connection: ${state}`);
+      if (!this.completed && (state === "failed" || state === "disconnected")) {
+        void this.end("failed", `peer_connection_${state}`);
+      }
     };
-    this.pc.ontrack = () => {
-      this.log("Remote audio track received.");
+    this.pc.ontrack = (event) => {
+      const track = event.track;
+      const decision = acceptSingleRemoteAudioTrack(this.remoteAudioTrackId, track);
+      if (!decision.accepted) {
+        if (decision.reason !== "duplicate_audio") return;
+        this.evidence.providerErrors.push({
+          atMs: Date.now(),
+          type: "duplicate_remote_audio_track",
+          message: `Stopped duplicate remote audio track ${String(track?.id || "unknown")}`,
+        });
+        this.log("Realtime failure: duplicate remote audio track stopped.");
+        return;
+      }
+      const trackId = decision.trackId;
+      this.remoteAudioTrackId = trackId;
+      this.log("Remote audio track received (single stream).");
       this.evidence.connection.remoteTrackReceived = true;
+      this.evidence.connection.remoteAudioTrackId = trackId;
+      track?.addEventListener?.("mute", () => {
+        this.evidence.events.push({ type: "remote_track_muted", atMs: Date.now(), trackId });
+      });
+      track?.addEventListener?.("unmute", () => {
+        this.evidence.events.push({ type: "remote_track_unmuted", atMs: Date.now(), trackId });
+      });
+      track?.addEventListener?.("ended", () => {
+        this.evidence.events.push({ type: "remote_track_ended", atMs: Date.now(), trackId });
+        if (!this.completed) void this.end("failed", "remote_audio_track_ended");
+      });
     };
 
-    for (const track of this.localStream.getAudioTracks()) {
-      this.pc.addTrack(track, this.localStream);
+    const localAudioTracks = this.localStream.getAudioTracks();
+    if (localAudioTracks.length !== 1) {
+      throw new Error(`expected_one_microphone_track_received_${localAudioTracks.length}`);
     }
+    const microphoneTrack = localAudioTracks[0];
+    this.pc.addTrack(microphoneTrack, this.localStream);
+    this.evidence.connection.localMicrophoneTrackCount = 1;
+    this.evidence.connection.localMicrophoneTrackId = microphoneTrack.id || null;
+    this.evidence.connection.localMicrophoneTrackState = microphoneTrack.readyState || "live";
+    microphoneTrack.addEventListener?.("mute", () => {
+      this.evidence.events.push({
+        type: "microphone_track_muted",
+        atMs: Date.now(),
+        trackId: microphoneTrack.id || null,
+      });
+      this.emit({ micState: "muted" });
+    });
+    microphoneTrack.addEventListener?.("unmute", () => {
+      this.evidence.events.push({
+        type: "microphone_track_unmuted",
+        atMs: Date.now(),
+        trackId: microphoneTrack.id || null,
+      });
+      this.emit({ micState: "open" });
+    });
+    microphoneTrack.addEventListener?.("ended", () => {
+      this.evidence.events.push({
+        type: "microphone_track_ended",
+        atMs: Date.now(),
+        trackId: microphoneTrack.id || null,
+      });
+      if (!this.completed) void this.end("failed", "microphone_track_ended");
+    });
 
     this.dc = this.pc.createDataChannel("oai-events") as typeof this.dc;
     if (this.dc) {
+      this.dc.onopen = () => {
+        this.evidence.connection.dataChannelOpenedAtMs = Date.now();
+        this.log("Realtime data channel open.");
+      };
+      this.dc.onclose = () => {
+        this.evidence.connection.dataChannelClosedAtMs = Date.now();
+        if (!this.completed) void this.end("failed", "data_channel_closed");
+      };
       this.dc.onmessage = (message) => {
         try {
           this.handleProviderEvent(JSON.parse(String(message.data)));
@@ -403,11 +496,11 @@ export class PhilipRealtimeLabSession {
     this.evidence.connection.offerCreatedAtMs = Date.now();
     this.log("Posting SDP offer to lab-only server…");
 
-    const response = await fetch(`${baseUrl}/api/iphone-realtime/session`, {
+    const response = await fetch(`${baseUrl}/session`, {
       method: "POST",
       headers: {
         "content-type": "application/sdp",
-        "x-philip-realtime-lab-secret": secret,
+        Authorization: `Bearer ${this.runtimeToken}`,
       },
       body: offer.sdp || "",
     });
@@ -436,6 +529,7 @@ export class PhilipRealtimeLabSession {
 
   async end(status = "completed", stopReason = "manual_end") {
     if (this.completed) return this.evidence;
+    const runtimeToken = this.runtimeToken;
     this.completed = true;
     this.evidence.status = status;
     this.evidence.stopReason = stopReason;
@@ -465,6 +559,17 @@ export class PhilipRealtimeLabSession {
     this.pc = null;
     this.dc = null;
     this.localStream = null;
+    this.remoteAudioTrackId = null;
+    this.runtimeToken = null;
+    try {
+      await releaseRealtimeAudioSession();
+    } catch (error) {
+      this.evidence.providerErrors.push({
+        atMs: Date.now(),
+        type: "audio_session_teardown",
+        message: String((error as Error)?.message || error),
+      });
+    }
     this.speaking = false;
     this.listening = false;
     this.emit({
@@ -476,15 +581,14 @@ export class PhilipRealtimeLabSession {
     });
 
     const baseUrl = philipRealtimeLabBaseUrl();
-    const secret = philipRealtimeLabSecret();
-    if (baseUrl && secret && this.evidence.sessionId) {
+    if (baseUrl && runtimeToken && this.evidence.sessionId) {
       try {
-        assertNotProductionRealtimeHost(baseUrl);
-        await fetch(`${baseUrl}/api/iphone-realtime/evidence`, {
+        assertIsolatedRealtimeLabUrl(baseUrl);
+        await fetch(`${baseUrl}/evidence`, {
           method: "POST",
           headers: {
             "content-type": "application/json",
-            "x-philip-realtime-lab-secret": secret,
+            Authorization: `Bearer ${runtimeToken}`,
           },
           body: JSON.stringify(this.evidence),
         });

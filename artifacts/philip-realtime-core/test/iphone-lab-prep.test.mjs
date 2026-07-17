@@ -11,12 +11,18 @@ import {
   createPeerConnectionForOpenAi,
   inspectWebRtcModule,
 } from "../iphone-lab/webrtcCapability.mjs";
+import { applyInputTranscriptEvent } from "../../../mobile-build/lib/philipRealtimeTranscript.mjs";
+import { acceptSingleRemoteAudioTrack } from "../../../mobile-build/lib/philipRealtimeTrackPolicy.mjs";
 
 test("pins cedar voice and gpt-realtime-2.1 for the iPhone lab", () => {
   assert.equal(IPHONE_LAB_LIMITS.model, "gpt-realtime-2.1");
   assert.equal(IPHONE_LAB_LIMITS.voice, "cedar");
   assert.equal(IPHONE_LAB_REALTIME_SESSION.audio.output.voice, "cedar");
   assert.equal(IPHONE_LAB_REALTIME_SESSION.model, "gpt-realtime-2.1");
+  assert.equal(
+    IPHONE_LAB_REALTIME_SESSION.audio.input.transcription.model,
+    "gpt-4o-mini-transcribe",
+  );
   assert.equal(
     IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection.interrupt_response,
     true,
@@ -159,6 +165,66 @@ test("mocked peer-connection lifecycle covers offer, data channel, barge-in canc
   assert.equal(events[0], "ok");
 });
 
+test("input transcript deltas and out-of-order completions associate by item_id", () => {
+  const turns = [
+    { turnNumber: 1, itemId: "item-1", speechStoppedAtMs: 1_000 },
+    { turnNumber: 2, itemId: "item-2", speechStoppedAtMs: 2_000 },
+  ];
+  applyInputTranscriptEvent(
+    turns,
+    {
+      type: "conversation.item.input_audio_transcription.delta",
+      item_id: "item-2",
+      delta: "Second ",
+    },
+    2_100,
+  );
+  applyInputTranscriptEvent(
+    turns,
+    {
+      type: "conversation.item.input_audio_transcription.completed",
+      item_id: "item-1",
+      transcript: "First turn.",
+    },
+    1_450,
+  );
+  applyInputTranscriptEvent(
+    turns,
+    {
+      type: "conversation.item.input_audio_transcription.completed",
+      item_id: "item-2",
+      transcript: "Second turn.",
+    },
+    2_650,
+  );
+
+  assert.equal(turns[0].inputTranscript, "First turn.");
+  assert.equal(turns[0].speechEndToTranscriptCompleteMs, 450);
+  assert.equal(turns[1].inputTranscriptDeltas, "Second ");
+  assert.equal(turns[1].inputTranscript, "Second turn.");
+  assert.equal(turns[1].speechEndToTranscriptCompleteMs, 650);
+});
+
+test("false-barge-in-sensitive track policy keeps one remote stream and tears duplicates down", () => {
+  const first = { id: "remote-1", kind: "audio", stopped: false, stop() { this.stopped = true; } };
+  const duplicate = {
+    id: "remote-2",
+    kind: "audio",
+    stopped: false,
+    stop() {
+      this.stopped = true;
+    },
+  };
+  const accepted = acceptSingleRemoteAudioTrack(null, first);
+  const rejected = acceptSingleRemoteAudioTrack(accepted.trackId, duplicate);
+  assert.equal(accepted.accepted, true);
+  assert.equal(first.stopped, false);
+  assert.equal(rejected.accepted, false);
+  assert.equal(rejected.reason, "duplicate_audio");
+  assert.equal(duplicate.stopped, true);
+  assert.equal(rejected.trackId, "remote-1");
+});
+
 test("prep server rejects session creation before counting or provider access", async () => {
   const previousArm = process.env.ALLOW_IPHONE_REALTIME;
   const previousSecret = process.env.PHILIP_REALTIME_LAB_SECRET;
@@ -226,7 +292,7 @@ test("rejects missing lab secret and never returns a provider key", async () => 
   }
 });
 
-test("mobile sources keep Realtime Lab separate from LiveKit Voice Lab and block production hosts", async () => {
+test("mobile sources have no legacy fallback and require the isolated Realtime route", async () => {
   const screen = await readFile(
     new URL("../../../mobile-build/app/philip-realtime-lab.tsx", import.meta.url),
     "utf8",
@@ -252,23 +318,63 @@ test("mobile sources keep Realtime Lab separate from LiveKit Voice Lab and block
     new URL("../../../mobile-build/app.config.js", import.meta.url),
     "utf8",
   );
+  const api = await readFile(
+    new URL("../../../mobile-build/lib/philipRealtimeLabApi.ts", import.meta.url),
+    "utf8",
+  );
+  const audioSession = await readFile(
+    new URL("../../../mobile-build/lib/philipRealtimeAudioSession.ts", import.meta.url),
+    "utf8",
+  );
+  const transcriptHelper = await readFile(
+    new URL("../../../mobile-build/lib/philipRealtimeTranscript.mjs", import.meta.url),
+    "utf8",
+  );
+  const isolatedRoute = await readFile(
+    new URL("../../api-server/src/routes/philipRealtimeLab.ts", import.meta.url),
+    "utf8",
+  );
 
   assert.match(screen, /Philip Realtime Lab/);
   assert.match(screen, /Realtime Research Prototype/);
   assert.match(screen, /Start Conversation/);
   assert.match(screen, /Emergency Stop/);
-  assert.match(screen, /Open Legacy Philip Voice Lab/);
+  assert.match(screen, /Refresh Realtime Readiness/);
+  assert.match(screen, /AppState\.addEventListener/);
+  assert.match(screen, /screen_navigation/);
+  assert.doesNotMatch(screen, /Open Legacy Philip Voice Lab|router\.push\(.philip-voice-lab/);
   assert.match(session, /@livekit\/react-native-webrtc/);
   assert.match(session, /oai-events/);
   assert.match(session, /response\.cancel/);
   assert.match(session, /output_audio_buffer\.clear/);
+  assert.match(transcriptHelper, /conversation\.item\.input_audio_transcription\.delta/);
+  assert.match(transcriptHelper, /conversation\.item\.input_audio_transcription\.completed/);
+  assert.match(transcriptHelper, /speechEndToTranscriptCompleteMs/);
+  assert.match(session, /echoCancellation: true/);
+  assert.match(session, /expected_one_microphone_track/);
+  assert.match(session, /duplicate_remote_audio_track/);
+  assert.match(session, /state === "failed" \|\| state === "disconnected"/);
+  assert.match(session, /`peer_connection_\$\{state\}`/);
   assert.doesNotMatch(session, /livekit\.cloud|wss:\/\/.*livekit/i);
-  assert.match(config, /production_api_forbidden_for_iphone_realtime_lab/);
+  assert.match(config, /realtime_lab_url_must_target_isolated_route/);
+  assert.match(api, /five-minute Realtime bearer token/);
+  assert.match(api, /readiness_isolation_check_failed/);
+  assert.match(audioSession, /audioMode: "voiceChat"/);
+  assert.match(audioSession, /playAndRecord/);
+  assert.doesNotMatch(screen, /Audio\.setAudioModeAsync/);
   assert.match(layout, /philip-realtime-lab/);
   assert.match(voiceLab, /Open Philip Realtime Lab/);
   assert.match(voiceLab, /does not replace this screen/);
   assert.match(eas, /"philip-lab"/);
   assert.match(eas, /PHILIP_VOICE_LAB_BUNDLE_SUFFIX/);
+  assert.match(
+    eas,
+    /https:\/\/www\.shepherdspathai\.com\/api\/internal\/philip-voice\/realtime/,
+  );
   assert.match(appConfig, /philipRealtimeLabUrl/);
-  assert.doesNotMatch(screen + session + config, /OPENAI_API_KEY|sk-/);
+  assert.doesNotMatch(appConfig, /philipRealtimeLabSecret/);
+  assert.match(isolatedRoute, /runtime_token_required/);
+  assert.match(isolatedRoute, /iphone_realtime_not_armed/);
+  assert.match(isolatedRoute, /providerCalled: false/);
+  assert.doesNotMatch(screen + session + config + api, /OPENAI_API_KEY|sk-/);
 });
