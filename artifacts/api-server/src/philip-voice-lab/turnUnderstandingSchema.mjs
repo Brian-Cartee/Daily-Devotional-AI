@@ -94,10 +94,15 @@ export const TURN_UNDERSTANDING_JSON_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["label", "provenance"],
+          // OpenAI strict json_schema requires every properties key in required.
+          // role remains semantically optional via empty string when unknown.
+          required: ["label", "role", "provenance"],
           properties: {
             label: { type: "string" },
-            role: { type: "string" },
+            role: {
+              type: "string",
+              description: "Empty string when none; otherwise concise relational role",
+            },
             provenance: {
               type: "string",
               enum: ["turn_local", "session_anchor", "user_stated"],

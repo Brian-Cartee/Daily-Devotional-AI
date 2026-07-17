@@ -166,6 +166,220 @@ await check("compatibility: TurnUnderstanding schema is strict json_schema shape
   assert.equal(TURN_UNDERSTANDING_JSON_SCHEMA.schema.additionalProperties, false);
 });
 
+/** Recursive OpenAI strict structured-output rules on the live request schema. */
+function collectStrictObjectFindings(node, path, findings = []) {
+  if (!node || typeof node !== "object") return findings;
+  if (node.type === "object" && node.properties && typeof node.properties === "object") {
+    const propKeys = Object.keys(node.properties).sort();
+    const required = Array.isArray(node.required) ? [...node.required].sort() : null;
+    if (node.additionalProperties !== false) {
+      findings.push({ path, kind: "additionalProperties", value: node.additionalProperties });
+    }
+    if (!required) {
+      findings.push({ path, kind: "missing_required", propKeys });
+    } else {
+      const missingFromRequired = propKeys.filter((k) => !required.includes(k));
+      const extraInRequired = required.filter((k) => !propKeys.includes(k));
+      if (missingFromRequired.length || extraInRequired.length) {
+        findings.push({ path, kind: "required_mismatch", missingFromRequired, extraInRequired });
+      }
+    }
+    for (const [key, child] of Object.entries(node.properties)) {
+      collectStrictObjectFindings(child, `${path}.properties.${key}`, findings);
+    }
+  }
+  if (node.items) {
+    if (Array.isArray(node.items)) {
+      node.items.forEach((item, i) => collectStrictObjectFindings(item, `${path}.items[${i}]`, findings));
+    } else {
+      collectStrictObjectFindings(node.items, `${path}.items`, findings);
+    }
+  }
+  for (const combinator of ["anyOf", "oneOf", "allOf"]) {
+    if (Array.isArray(node[combinator])) {
+      node[combinator].forEach((child, i) =>
+        collectStrictObjectFindings(child, `${path}.${combinator}[${i}]`, findings),
+      );
+    }
+  }
+  return findings;
+}
+
+await check("compatibility: recursive strict required covers every object property", () => {
+  const findings = collectStrictObjectFindings(
+    TURN_UNDERSTANDING_JSON_SCHEMA.schema,
+    "TURN_UNDERSTANDING.schema",
+  );
+  assert.deepEqual(findings, [], JSON.stringify(findings, null, 2));
+
+  const entityItems = TURN_UNDERSTANDING_JSON_SCHEMA.schema.properties.relationalEntities.items;
+  assert.equal(entityItems.type, "object");
+  assert.equal(entityItems.additionalProperties, false);
+  assert.deepEqual([...entityItems.required].sort(), ["label", "provenance", "role"]);
+  assert.deepEqual(Object.keys(entityItems.properties).sort(), ["label", "provenance", "role"]);
+  assert.equal(entityItems.properties.role.type, "string");
+  assert.equal(entityItems.properties.label.type, "string");
+  assert.equal(entityItems.properties.provenance.type, "string");
+
+  const provenance = TURN_UNDERSTANDING_JSON_SCHEMA.schema.properties.provenance;
+  assert.equal(provenance.type, "object");
+  assert.equal(provenance.additionalProperties, false);
+  assert.deepEqual(provenance.required, ["source"]);
+  assert.deepEqual(Object.keys(provenance.properties), ["source"]);
+
+  // practicalRequest / factualFreshnessRequired stay primitives (not object-valued).
+  assert.equal(TURN_UNDERSTANDING_JSON_SCHEMA.schema.properties.practicalRequest.type, "string");
+  assert.equal(
+    TURN_UNDERSTANDING_JSON_SCHEMA.schema.properties.factualFreshnessRequired.type,
+    "boolean",
+  );
+  // Interruption is prompt context only — not a structured-output field.
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      TURN_UNDERSTANDING_JSON_SCHEMA.schema.properties,
+      "interruptionInput",
+    ),
+    false,
+  );
+});
+
+await check("compatibility: empty role string remains valid optional semantics", () => {
+  const withEmptyRole = validateTurnUnderstanding(
+    mockT2Understanding({
+      relationalEntities: [{ label: "mother", role: "", provenance: "user_stated" }],
+    }),
+  );
+  assert.equal(withEmptyRole.ok, true, withEmptyRole.errors?.join(","));
+  assert.equal(withEmptyRole.plan.relationalEntities[0].role, "");
+});
+
+await check("live OpenAI request: strict schema + terra knobs (mocked client)", async () => {
+  let sawArgs = null;
+  const plan = mockT2Understanding({ provenance: { source: "model_structured" } });
+  const gen = makeGliteContributionGenerator({
+    resolveClient: async () => ({
+      chat: {
+        completions: {
+          create: async (args) => {
+            sawArgs = args;
+            return { choices: [{ message: { content: JSON.stringify(plan) } }] };
+          },
+        },
+      },
+    }),
+  });
+  const result = await gen({
+    transcript: LOCKED_40BC24A8_T2_TRANSCRIPT,
+    rawTranscript: LOCKED_40BC24A8_T2_TRANSCRIPT,
+    history: [],
+    intent: "casual",
+  });
+
+  assert.ok(sawArgs);
+  assert.equal(sawArgs.model, "gpt-5.6-terra");
+  assert.equal(sawArgs.response_format?.type, "json_schema");
+  assert.equal(sawArgs.response_format?.json_schema?.strict, true);
+  assert.equal(sawArgs.response_format?.json_schema?.name, "philip_turn_understanding");
+  assert.equal(sawArgs.response_format?.json_schema, TURN_UNDERSTANDING_JSON_SCHEMA);
+  assert.equal(typeof sawArgs.max_completion_tokens, "number");
+  assert.ok(sawArgs.max_completion_tokens > 0);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "max_tokens"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(sawArgs, "temperature"), false);
+  assert.equal(sawArgs.reasoning_effort, "low");
+
+  const liveFindings = collectStrictObjectFindings(
+    sawArgs.response_format.json_schema.schema,
+    "live.request.json_schema.schema",
+  );
+  assert.deepEqual(liveFindings, [], JSON.stringify(liveFindings, null, 2));
+  assert.deepEqual(
+    [...sawArgs.response_format.json_schema.schema.properties.relationalEntities.items.required].sort(),
+    ["label", "provenance", "role"],
+  );
+
+  assert.equal(result.schemaValid, true);
+  assert.equal(result.orchestrationPath, "glite");
+  assert.equal(result.text, plan.spokenResponse);
+  assert.equal(result.faithRole || result.turnUnderstanding?.faithRole, "grounding_alongside_life");
+  assert.ok(result.spokenLength?.words >= 10);
+  assert.equal(result.privatePlanLogged, false);
+  assert.ok(Array.isArray(result.relationalEntities || result.turnUnderstanding?.relationalEntities));
+});
+
+await check("mocked schema-valid response: parse, assembly, spoken, JSONL", async () => {
+  const plan = mockT2Understanding({
+    provenance: { source: "model_structured" },
+    relationalEntities: [
+      { label: "mother", role: "caregiving", provenance: "user_stated" },
+    ],
+  });
+  const validation = parseAndValidateGliteContent(JSON.stringify(plan));
+  assert.equal(validation.ok, true, validation.errors?.join(","));
+  const assembled = assembleGliteDeepResult({
+    plan: validation.plan,
+    validation,
+    ctx: {
+      transcript: LOCKED_40BC24A8_T2_TRANSCRIPT,
+      rawTranscript: LOCKED_40BC24A8_T2_TRANSCRIPT,
+      history: [],
+      intent: "casual",
+    },
+    model: "gpt-5.6-terra",
+    timing: { generationLatencyMs: 42 },
+  });
+  assert.equal(assembled.schemaValid, true);
+  assert.equal(assembled.orchestrationPath, "glite");
+  assert.equal(assembled.text, plan.spokenResponse);
+  assert.ok(!/\b(primaryBurden|recommendedEngine|TurnUnderstanding)\b/i.test(assembled.text));
+
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "philip-glite-schema-jsonl-"));
+  const prev = process.env.PHILIP_VOICE_LAB_LOG_DIR;
+  process.env.PHILIP_VOICE_LAB_LOG_DIR = dir;
+  try {
+    await recordTurnObservation({
+      conversationId: "glite-schema-compat-conv",
+      sessionId: "sess-schema",
+      voiceTurnNumber: 1,
+      transcript: LOCKED_40BC24A8_T2_TRANSCRIPT,
+      responseText: assembled.text,
+      intent: "casual",
+      lane: "ordinary_meaningful",
+      engine: "gpt-5.6-terra",
+      runtimeVersion: "candidate-front-door-1.2",
+      decision: {
+        orchestrationVersion: GLITE_ORCHESTRATION_VERSION,
+        orchestrationPath: "glite",
+        understandingProducer: ORDINARY_ENGINE_LABEL,
+        selectedEngine: "ordinary_structured",
+        schemaValid: true,
+        faithRole: plan.faithRole,
+        primaryBurden: plan.primaryBurden,
+        primaryMeaning: plan.primaryMeaning,
+        relationalEntities: plan.relationalEntities,
+        commitments: plan.commitments,
+        restorativeElements: plan.restorativeElements,
+        privatePlanLogged: false,
+        ...understandingObservability(plan, validation),
+      },
+    });
+    const raw = await fs.readFile(
+      path.join(dir, "glite-schema-compat-conv.turns.jsonl"),
+      "utf8",
+    );
+    const row = JSON.parse(raw.trim());
+    assert.equal(row.orchestrationPath, "glite");
+    assert.equal(row.schemaValid, true);
+    assert.equal(row.faithRole, "grounding_alongside_life");
+    assert.ok((row.relationalEntities || []).some((e) => /mother/i.test(e.label || "")));
+    assert.equal(row.privatePlanLogged, false);
+    assert.ok(!/OPENAI|sk-|secretReasoning|chain-of-thought/i.test(raw));
+  } finally {
+    if (prev === undefined) delete process.env.PHILIP_VOICE_LAB_LOG_DIR;
+    else process.env.PHILIP_VOICE_LAB_LOG_DIR = prev;
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 await check("flag default off; readiness reports engines", async () => {
   await withGlite(false, () => {
     assert.equal(isGliteOrchestrationEnabled(), false);
