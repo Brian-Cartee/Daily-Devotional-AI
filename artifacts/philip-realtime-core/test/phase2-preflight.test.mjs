@@ -62,7 +62,9 @@ describe("Phase 2 paid-session preflight (no provider calls)", () => {
 
   it("refuses a paid attempt before counting when the key is absent", async () => {
     const original = process.env.OPENAI_API_KEY;
+    const originalArm = process.env.ALLOW_ATTEMPT3;
     delete process.env.OPENAI_API_KEY;
+    process.env.ALLOW_ATTEMPT3 = "1"; // arm so missing-key path is reachable past prep gate
     const running = await startPhase2Server();
     try {
       const before = await fetch(`${running.origin}/api/ledger`).then((r) => r.json());
@@ -77,6 +79,9 @@ describe("Phase 2 paid-session preflight (no provider calls)", () => {
     } finally {
       await running.close();
       if (original) process.env.OPENAI_API_KEY = original;
+      else delete process.env.OPENAI_API_KEY;
+      if (originalArm == null) delete process.env.ALLOW_ATTEMPT3;
+      else process.env.ALLOW_ATTEMPT3 = originalArm;
     }
   });
 });

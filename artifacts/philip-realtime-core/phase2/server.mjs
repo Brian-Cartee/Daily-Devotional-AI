@@ -9,7 +9,7 @@ import {
   isAttempt3Armed,
 } from "./config.mjs";
 import { getPhase2Scenario } from "./scenarios.mjs";
-import { scrubSecrets } from "./loadCredential.mjs";
+import { scrubSecrets, applyPhase2OpenAiApiKey } from "./loadCredential.mjs";
 import { ATTEMPT3_PAID_LIMITS } from "./localVad.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -371,7 +371,9 @@ export async function startPhase2Server({ port = 0 } = {}) {
           absoluteSpendUsd: PHASE2_LIMITS.absoluteSpendUsd,
           model: PHASE2_LIMITS.model,
           maxPaidDurationMs: PHASE2_LIMITS.attempt3MaxDurationMs,
-          banner: "Attempt 3 of 3 — paid connection not started",
+          banner: isAttempt3Armed()
+            ? "Attempt 3 of 3 — ARMED. Complete local mic test, then press Begin."
+            : "Attempt 3 of 3 — paid connection not started",
         });
       }
       if (req.method === "GET" && url.pathname === "/api/ledger") {
@@ -407,6 +409,17 @@ export async function startPhase2Server({ port = 0 } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (isAttempt3Armed()) {
+    applyPhase2OpenAiApiKey();
+    console.log("PHASE2_ATTEMPT3_ARMED credential_loaded_in_process");
+  } else {
+    console.log("PHASE2_PREP_ONLY attempt3_not_armed");
+  }
   const running = await startPhase2Server({ port: Number(process.env.PORT || 4317) });
   console.log(`PHASE2_SERVER_READY ${running.origin}`);
+  console.log(
+    isAttempt3Armed()
+      ? "Open http://127.0.0.1:4317/manual-canary — Attempt 3 armed; wait for Brian to press Begin"
+      : "Open http://127.0.0.1:4317/manual-canary — unpaid prep only",
+  );
 }

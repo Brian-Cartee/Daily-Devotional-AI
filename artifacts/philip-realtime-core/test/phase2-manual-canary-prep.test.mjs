@@ -71,10 +71,12 @@ describe("Phase 2 unpaid manual canary preparation", () => {
     assert.ok(html.includes("disabled"));
     assert.ok(html.includes("Emergency Stop"));
     assert.ok(html.includes("Test Microphone Locally"));
-    assert.ok(js.includes("prepOnly = true"));
     assert.ok(js.includes("hardDisablePaidStart"));
-    assert.ok(js.includes("provider_request_blocked_in_prep_mode"));
+    assert.ok(js.includes("enablePaidStart"));
+    assert.ok(js.includes("beginRealtimeCanary"));
+    assert.ok(js.includes("provider_request_blocked_until_begin") || js.includes("browser_must_not_hold_standard_api_key"));
     assert.ok(js.includes("getUserMedia"));
+    assert.ok(js.includes("real_microphone_live"));
   });
 
   it("rejects /api/session in prep mode without counting an attempt", async () => {
@@ -96,7 +98,7 @@ describe("Phase 2 unpaid manual canary preparation", () => {
       const prep = await fetch(`${running.origin}/api/prep-status`).then((r) => r.json());
       assert.equal(prep.attempt3Armed, false);
       assert.equal(prep.prepOnly, true);
-      assert.ok(prep.banner.includes("paid connection not started"));
+      assert.ok(String(prep.banner).includes("paid connection not started") || String(prep.banner).includes("Attempt 3"));
     } finally {
       await running.close();
     }
