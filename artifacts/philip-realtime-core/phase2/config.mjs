@@ -7,7 +7,14 @@ export const PHASE2_LIMITS = Object.freeze({
   absoluteSpendUsd: 5,
   sessionReserveUsd: 1.5,
   spendStopBufferUsd: 0.1,
+  /** Unpaid preparation: /api/session rejected unless ALLOW_ATTEMPT3=1. */
+  prepOnlyDefault: true,
+  attempt3MaxDurationMs: 115_000,
 });
+
+export function isAttempt3Armed() {
+  return process.env.ALLOW_ATTEMPT3 === "1";
+}
 
 const PHASE2_ADDENDUM = [
   "",

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Philip Phase 2 — Manual Canary Prep</title>
+    <style>
+      :root {
+        --bg: #14110f;
+        --panel: #1f1a17;
+        --ink: #f4efe8;
+        --muted: #b9aea3;
+        --ok: #6fbf73;
+        --warn: #d4a017;
+        --danger: #d64545;
+        --accent: #c4a484;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 16px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+        background:
+          radial-gradient(1200px 600px at 10% -10%, rgba(196,164,132,0.18), transparent),
+          radial-gradient(900px 500px at 100% 0%, rgba(214,69,69,0.08), transparent),
+          var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+      main { max-width: 920px; margin: 0 auto; padding: 1.5rem; }
+      h1 { font-size: 1.7rem; margin: 0 0 0.4rem; }
+      .banner {
+        border: 1px solid rgba(214,69,69,0.55);
+        background: rgba(214,69,69,0.12);
+        color: #ffd7d7;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0 1.25rem;
+        font-weight: 600;
+      }
+      .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.75rem 0; }
+      button {
+        font: inherit;
+        border: 0;
+        border-radius: 4px;
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      #micTest { background: var(--accent); color: #1a1410; }
+      #stop { background: var(--danger); color: white; }
+      #beginRealtime {
+        background: #3a342f;
+        color: var(--muted);
+        border: 1px dashed rgba(255,255,255,0.2);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 1rem;
+        margin: 1rem 0;
+      }
+      .meter {
+        height: 14px;
+        background: #2a2420;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .meter > span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #6fbf73, #d4a017, #d64545);
+      }
+      .flags { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+      .flag {
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        background: #2a2420;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .flag.on-speech { background: rgba(111,191,115,0.2); color: var(--ok); }
+      .flag.on-silence { background: rgba(212,160,23,0.2); color: var(--warn); }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #100e0c;
+        padding: 0.75rem;
+        min-height: 10rem;
+        max-height: 18rem;
+        overflow: auto;
+        font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .muted { color: var(--muted); }
+      .timer { font-size: 1.25rem; letter-spacing: 0.04em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Philip Realtime — Attempt 3 Prep</h1>
+      <p class="muted">
+        Local microphone validation only. No OpenAI connection in this preparation phase.
+        No audio is recorded or saved.
+      </p>
+      <div class="banner" id="attemptBanner">
+        Attempt 3 of 3 — paid connection not started
+      </div>
+
+      <div class="row">
+        <button id="micTest" type="button">Test Microphone Locally</button>
+        <button id="stop" type="button">Emergency Stop</button>
+        <button id="beginRealtime" type="button" disabled title="Disabled during unpaid preparation">
+          Begin Authorized Realtime Canary (disabled)
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="timer">Elapsed: <span id="elapsed">00:00</span></div>
+        <p class="muted" style="margin:0.5rem 0 0.75rem">Input level (local only)</p>
+        <div class="meter" aria-label="input level"><span id="levelBar"></span></div>
+        <div class="flags">
+          <span class="flag" id="speechFlag">speech detected: no</span>
+          <span class="flag" id="silenceFlag">silence detected: no</span>
+          <span class="flag" id="micFlag">microphone: closed</span>
+          <span class="flag" id="netFlag">provider requests: 0</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <strong>Local status</strong>
+        <pre id="status">Ready. Press “Test Microphone Locally”. Speak, then stay quiet for ≥1.5s.</pre>
+      </div>
+    </main>
+    <script type="module" src="/manual-canary.mjs"></script>
+  </body>
+</html>

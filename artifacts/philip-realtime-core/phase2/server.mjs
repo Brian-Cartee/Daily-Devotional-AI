@@ -6,9 +6,11 @@ import {
   PHASE2_LIMITS,
   SANITIZED_REALTIME_SESSION,
   sanitizedPreflightConfig,
+  isAttempt3Armed,
 } from "./config.mjs";
 import { getPhase2Scenario } from "./scenarios.mjs";
 import { scrubSecrets } from "./loadCredential.mjs";
+import { ATTEMPT3_PAID_LIMITS } from "./localVad.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(HERE, "..");
@@ -98,15 +100,33 @@ async function serveStatic(req, res, pathname) {
     return;
   }
 
-  const file = pathname === "/" ? "index.html" : path.basename(pathname);
-  if (!["index.html", "app.mjs"].includes(file)) return text(res, 404, "not found");
+  if (pathname === "/localVad.mjs") {
+    try {
+      const contents = await readFile(path.join(HERE, "localVad.mjs"));
+      return text(res, 200, contents, "text/javascript; charset=utf-8");
+    } catch {
+      return text(res, 404, "not found");
+    }
+  }
+
+  const route =
+    pathname === "/" || pathname === "/manual" || pathname === "/manual-canary"
+      ? "manual-canary.html"
+      : path.basename(pathname);
+  const allowed = new Set([
+    "index.html",
+    "app.mjs",
+    "manual-canary.html",
+    "manual-canary.mjs",
+  ]);
+  if (!allowed.has(route)) return text(res, 404, "not found");
   try {
-    const contents = await readFile(path.join(PUBLIC_ROOT, file));
+    const contents = await readFile(path.join(PUBLIC_ROOT, route));
     text(
       res,
       200,
       contents,
-      file.endsWith(".mjs")
+      route.endsWith(".mjs")
         ? "text/javascript; charset=utf-8"
         : "text/html; charset=utf-8",
     );
@@ -182,6 +202,17 @@ function buildBearerAuthorization(apiKey) {
 }
 
 async function createRealtimeCall(req, res, sessionNumber) {
+  if (!isAttempt3Armed()) {
+    // Prep mode: never count an attempt and never call the provider.
+    return json(res, 423, {
+      error: "attempt3_not_armed",
+      message:
+        "Unpaid preparation mode. Set ALLOW_ATTEMPT3=1 only after Brian explicitly authorizes Attempt 3.",
+      attemptCounted: false,
+      providerCalled: false,
+    });
+  }
+
   const key = resolveServerApiKey();
   if (!key.ok) {
     return json(res, 412, { error: key.error });
@@ -323,6 +354,24 @@ export async function startPhase2Server({ port = 0 } = {}) {
             }
             return true;
           })(),
+          prepOnly: !isAttempt3Armed(),
+          attempt3Armed: isAttempt3Armed(),
+          attempt3Limits: ATTEMPT3_PAID_LIMITS,
+        });
+      }
+      if (req.method === "GET" && url.pathname === "/api/prep-status") {
+        const ledger = await loadLedger();
+        return json(res, 200, {
+          prepOnly: !isAttempt3Armed(),
+          attempt3Armed: isAttempt3Armed(),
+          attemptsUsed: ledger.attempts.length,
+          attemptsMax: PHASE2_LIMITS.maxAttempts,
+          remainingAttempts: PHASE2_LIMITS.maxAttempts - ledger.attempts.length,
+          cumulativeEstimatedCostUsd: ledger.cumulativeEstimatedCostUsd,
+          absoluteSpendUsd: PHASE2_LIMITS.absoluteSpendUsd,
+          model: PHASE2_LIMITS.model,
+          maxPaidDurationMs: PHASE2_LIMITS.attempt3MaxDurationMs,
+          banner: "Attempt 3 of 3 — paid connection not started",
         });
       }
       if (req.method === "GET" && url.pathname === "/api/ledger") {
