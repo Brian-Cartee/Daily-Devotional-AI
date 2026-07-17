@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "phase": "2B",
+  "model": "gpt-realtime-2.1",
+  "transcriptionModel": "gpt-4o-mini-transcribe",
+  "maximumNewSessions": 3,
+  "absoluteCumulativeSpendUsd": 3,
+  "sessions": [],
+  "cumulativeEstimatedCostUsd": 0
+}

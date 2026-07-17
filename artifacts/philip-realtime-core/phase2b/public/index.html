@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Philip Realtime Phase 2B — Session 1</title>
+    <style>
+      :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+      body { max-width: 880px; margin: 0 auto; padding: 28px; background: #111713; color: #e8eee9; }
+      h1 { font-size: 1.55rem; margin-bottom: 6px; }
+      p { color: #b7c5ba; line-height: 1.5; }
+      .card { background: rgba(255,255,255,.045); border: 1px solid #344239; border-radius: 14px; padding: 18px; margin: 16px 0; }
+      .banner { font-weight: 700; color: #ffd782; }
+      .flags { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+      .flag { border: 1px solid #4a5b50; border-radius: 999px; padding: 5px 9px; font-size: .85rem; }
+      button { border: 1px solid #718277; background: #202b24; color: #fff; border-radius: 8px; padding: 10px 14px; margin: 5px 5px 5px 0; cursor: pointer; }
+      button.primary { background: #6fbf73; color: #102010; border: 0; font-weight: 700; }
+      button.danger { background: #8d3636; border: 0; }
+      button:disabled { opacity: .42; cursor: not-allowed; }
+      .meter { height: 10px; background: #263129; border-radius: 5px; overflow: hidden; }
+      .meter > div { height: 100%; width: 0; background: #72c17b; transition: width .08s; }
+      pre { background: #0b100d; border-radius: 8px; padding: 12px; max-height: 310px; overflow: auto; white-space: pre-wrap; font-size: .82rem; }
+      #elapsed { font-variant-numeric: tabular-nums; font-size: 1.3rem; }
+      .privacy { color: #9fbeaa; font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Phase 2B — Natural Conversation Session 1</h1>
+    <p class="banner" id="banner">Loading prep status…</p>
+    <p class="privacy">Real microphone only. No audio is recorded or persisted. Sanitized transcripts and timing evidence are saved locally.</p>
+
+    <section class="card">
+      <h2>1. Local microphone check (unpaid)</h2>
+      <p>Speak normally, then pause. This local check makes no provider request.</p>
+      <div class="meter"><div id="level"></div></div>
+      <div class="flags">
+        <span class="flag" id="micFlag">microphone: not tested</span>
+        <span class="flag" id="speechFlag">speech: no</span>
+        <span class="flag" id="silenceFlag">silence after speech: no</span>
+        <span class="flag" id="networkFlag">provider requests: 0</span>
+      </div>
+      <button id="micTest">Start Local Mic Check</button>
+      <button id="stopMic" disabled>Stop Local Check</button>
+    </section>
+
+    <section class="card">
+      <h2>2. Authorized Session 1</h2>
+      <p>Only your manual press starts the provider session. Talk naturally for up to five minutes. After a natural goodbye and Philip’s closing, press End &amp; Save.</p>
+      <div id="elapsed">00:00</div>
+      <button id="begin" class="primary" disabled>Begin Session 1 (disabled)</button>
+      <button id="end" disabled>End &amp; Save</button>
+      <button id="emergency" class="danger">Emergency Stop</button>
+    </section>
+
+    <section class="card">
+      <h2>Live evidence status</h2>
+      <pre id="status">No provider call made.</pre>
+    </section>
+
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>

@@ -9,14 +9,16 @@
     "test:phase2-preflight": "node --test test/phase2-preflight.test.mjs",
     "test:phase2-credential": "node --test test/phase2-credential-loader.test.mjs",
     "test:phase2-manual-prep": "node --test test/phase2-manual-canary-prep.test.mjs",
+    "test:phase2b-prep": "node --test test/phase2b-prep.test.mjs",
     "phase2:auth-check": "node phase2/auth-check.mjs",
     "phase2:validate-local-mic": "node phase2/validate-local-mic.mjs",
     "phase2:manual-server": "node phase2/server.mjs",
+    "phase2b:manual-server": "node phase2b/server.mjs",
     "cost-model": "node test/cost-model.mjs",
     "phase2:config": "node phase2/run-session.mjs",
     "phase2:session1": "node phase2/run-session.mjs 1",
     "phase2:session2": "node phase2/run-session.mjs 2",
     "phase2:session3": "node phase2/run-session.mjs 3",
-    "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs && node --check phase2/config.mjs && node --check phase2/scenarios.mjs && node --check phase2/server.mjs && node --check phase2/run-session.mjs && node --check phase2/public/app.mjs && node --check phase2/loadCredential.mjs && node --check phase2/auth-check.mjs && node --check phase2/localVad.mjs && node --check phase2/public/manual-canary.mjs && node --check phase2/validate-local-mic.mjs"
+    "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs && node --check phase2/config.mjs && node --check phase2/scenarios.mjs && node --check phase2/server.mjs && node --check phase2/run-session.mjs && node --check phase2/public/app.mjs && node --check phase2/loadCredential.mjs && node --check phase2/auth-check.mjs && node --check phase2/localVad.mjs && node --check phase2/public/manual-canary.mjs && node --check phase2/validate-local-mic.mjs && node --check phase2b/config.mjs && node --check phase2b/server.mjs && node --check phase2b/public/app.mjs && node --check test/phase2b-prep.test.mjs"
   }
 }
