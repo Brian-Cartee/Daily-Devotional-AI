@@ -138,7 +138,19 @@ console.log("\nPhilip G-lite Spoken Orchestration Phase 1\n");
 
 await check("engine evidence: Terra structured selected; Sol schema unproven", () => {
   assert.equal(ENGINE_SELECTION_EVIDENCE.selectedOrdinary, ORDINARY_ENGINE_LABEL);
-  assert.equal(ENGINE_SELECTION_EVIDENCE.blindHumanScores, "unavailable_packet_blanks_not_recorded");
+  assert.equal(
+    ENGINE_SELECTION_EVIDENCE.blindHumanScores,
+    "not_reproducible_from_committed_bakeoff_artifacts",
+  );
+  assert.deepEqual(ENGINE_SELECTION_EVIDENCE.transcriptOnlyBlindHumanAverages, {
+    A_control_gpt4o: 24.5,
+    B_sol_single_pass: 38.83,
+    C_terra_structured: 39,
+    D_terra_to_mini: 38.17,
+    evidenceStatus: "external_chat_only_not_committed",
+  });
+  assert.equal(ENGINE_SELECTION_EVIDENCE.phase1Scope, "semantic_judgment_only");
+  assert.equal(ENGINE_SELECTION_EVIDENCE.physicalModelSplit, false);
   assert.equal(ENGINE_SELECTION_EVIDENCE.terraArmCPlanValidRate, "6/6");
   assert.equal(ENGINE_SELECTION_EVIDENCE.structuredOutputProven.B_gpt56_sol, false);
   assert.equal(ENGINE_SELECTION_EVIDENCE.structuredOutputProven.C_gpt56_terra, true);
@@ -168,6 +180,8 @@ await check("flag default off; readiness reports engines", async () => {
     const r = gliteReadinessFields();
     assert.equal(r.orchestrationVersion, GLITE_ORCHESTRATION_VERSION);
     assert.equal(r.orchestrationPath, "glite");
+    assert.equal(r.phase1Scope, "semantic_judgment_only");
+    assert.equal(r.fasterOrdinaryEngine, false);
   });
 });
 
@@ -443,18 +457,6 @@ await check("crisis / prayer / closing remain deterministic under G-lite", async
   });
 });
 
-/** Locked session turn lists (routing expectations). */
-const SESSION_40BC = [
-  "for you today.",
-  LOCKED_40BC24A8_T2_TRANSCRIPT,
-  "So, that's a long thing.",
-  "Well, thank you… dedication to prayer and reflection… giving God what he wants… makes the rest of your life have more meaning…",
-  "…looking forward to World Cup Championship on Sunday. Today is Friday. …daily… today's word on social… getting ready to start working.",
-  "Absolutely… I got to run. Is it OK if we connect later?",
-  "Yeah, the match isn't till Sunday, but yes, I will probably speak to you definitely before then.",
-  "All right, thank you very much. You have a great day.",
-];
-
 const SESSION_518 = [
   "Hi Philip, how are you?",
   "I've got a full plate — work, World Cup, workouts, and taking care of my mom. It's a lot.",
@@ -465,62 +467,6 @@ const SESSION_518 = [
   "France already lost. Argentina and Spain are in the final.",
   "No problem. I look forward to speaking later — we can pick up the World Cup and different topics then.",
 ];
-
-await check("40bc24a8 replay: zero faith-template on T2; ~1 ordinary contribution; T7 not rare", async () => {
-  await withGlite(true, async () => {
-    let state = createFrontDoorState("Brian");
-    let contributionCalls = 0;
-    let rareCalls = 0;
-    let faithTemplates = 0;
-    const deepGenerate = async (ctx) => {
-      contributionCalls += 1;
-      if (ctx.engineSelection?.engine === "rare_depth" || ctx.spokenBudget?.weighty) {
-        rareCalls += 1;
-      }
-      const plan = mockT2Understanding({
-        spokenResponse:
-          ctx.spokenBudget?.weighty
-            ? "That kind of weight asks for careful company — I'm here with you in it, without rushing a tidy answer."
-            : "Care for your mom and the pressure to make the app matter sit under a full plate — faith grounding that load.",
-        recommendedEngine: ctx.engineSelection?.engine === "rare_depth" ? "rare_depth" : "ordinary_structured",
-        spokenDepth: ctx.spokenBudget?.weighty ? "weighty" : "ordinary",
-      });
-      return gliteDeepStub(plan)(ctx);
-    };
-
-    const outs = [];
-    for (let i = 0; i < SESSION_40BC.length; i++) {
-      const out = await runFrontDoorTurn({
-        transcript: SESSION_40BC[i],
-        state,
-        deepGenerate,
-        interruptionInput:
-          i === 2
-            ? buildInterruptionInput({
-                previousResponseInterrupted: true,
-                previousResponseAbandoned: true,
-                previousResponseTopic: "missed_full_plate",
-                estimatedAudioPublishedMs: 8000,
-                estimatedAudioHeardMs: 1300,
-              })
-            : undefined,
-      });
-      state = out.state;
-      outs.push(out);
-      if (out.meta?.composedLane === "descriptive_faith" || /morning anchors|no small discipline/i.test(out.text)) {
-        faithTemplates += 1;
-      }
-    }
-
-    assert.equal(faithTemplates, 0, "descriptive faith templates should be zero");
-    assert.ok(outs[1].meta.requiresTurnUnderstanding || outs[1].meta.routedDeep, "T2 must enter understanding");
-    assert.ok(contributionCalls >= 1, "at least one contribution call");
-    // T7 calendar reopen should prefer continuity / not rare depth
-    assert.ok(rareCalls === 0 || outs[6].meta.spokenTurnTier !== SPOKEN_TURN_TIER.SUBSTANTIVE || !outs[6].meta.terraValueJustified || outs[6].intent === INTENT.CLOSING || outs[6].meta.responseMode === RESPONSE_MODE.FRONT_DOOR || outs[6].meta.sessionContinuityAsk);
-    // Soft: T7 should not be glite_rare
-    assert.notEqual(outs[6].meta.responseMode, RESPONSE_MODE.GLITE_RARE);
-  });
-});
 
 await check("518acebf multi-topic routes to understanding under G-lite", async () => {
   await withGlite(true, async () => {
@@ -627,16 +573,19 @@ await check("before/after projection metrics for 40bc24a8 (deterministic + mocke
     unnecessaryQuestions: 0,
     interruptedAbandoned: 1,
   };
-  // Deterministic replay + mocked model (this suite): zero faith templates; ordinary path.
+  // Exact corrected counts are enforced by test-philip-40bc-replay.mjs.
   const after = {
-    source: "deterministic_replay_model_mocked",
-    templateResponses: 0,
-    ordinaryContributionCalls: "approx_1+",
+    source: "turn_specific_deterministic_replay_model_mocked",
+    descriptiveFaithCaptures: 0,
+    ordinaryContributionCalls: 3,
     rareTerraCalls: 0,
-    projectionNote: "latency not promised; bakeoff Terra med ~2558ms full completion",
+    physicalTerraCalls: 3,
+    projectedMedianGenerationMs: 3 * 2558,
+    projectionNote: "semantic-only Phase 1; no end-to-end latency claim",
   };
   assert.ok(before.templateResponses >= 1);
-  assert.equal(after.templateResponses, 0);
+  assert.equal(after.descriptiveFaithCaptures, 0);
+  assert.equal(after.physicalTerraCalls, 3);
   assert.notEqual(before.source, after.source);
 });
 

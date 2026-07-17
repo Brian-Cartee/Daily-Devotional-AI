@@ -117,6 +117,9 @@ export async function recordTurnObservation(obs) {
     pendingPrayerOfferAfter: Boolean(obs.pendingPrayerOfferAfter),
     shortAnswerGate: Boolean(obs.shortAnswerGate),
     vadReason: obs.vadReason,
+    ttsStarted: obs.ttsStarted ?? Boolean(obs.latency?.ttsStartAt),
+    audioPublished: obs.audioPublished ?? Boolean(obs.latency?.firstAudioAt),
+    discardReason: obs.discardReason ?? obs.latency?.discardReason ?? null,
     latency: obs.latency,
     latencyStages: obs.latencyStages || buildLatencyStages(obs.latency || {}),
     // Front Door + contribution decision labels (no secrets / no CoT)
@@ -191,6 +194,7 @@ export async function recordTurnObservation(obs) {
     primaryBurden: merged.primaryBurden ?? null,
     primaryMeaning: merged.primaryMeaning ?? null,
     secondaryThreads: merged.secondaryThreads ?? null,
+    relationalEntities: merged.relationalEntities ?? null,
     faithRole: merged.faithRole ?? null,
     emotionalWeight: merged.emotionalWeight ?? null,
     responseWorthiness: merged.responseWorthiness ?? null,

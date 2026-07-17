@@ -180,6 +180,25 @@ export function detectSessionContinuityAsk(rawText) {
 }
 
 /**
+ * Brief correction after a latched closing: acknowledge timing and preserve
+ * availability without invoking semantic generation. This is state/lifecycle
+ * routing, not a topic phrase package.
+ */
+export function detectPostClosingContinuityCorrection(rawText, state = null) {
+  if (!state?.sentOff) return false;
+  const t = norm(rawText);
+  if (!t || wordCount(t) > 30) return false;
+  const correction = /\b(actually|isn'?t|not until|before then|got ahead|rather)\b/.test(t);
+  const timing = /\b(today|tonight|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday|later|before then|until)\b/.test(t);
+  const continuity = /\b(speak|talk|connect|reconnect|come back|before then)\b/.test(t);
+  return correction && timing && continuity;
+}
+
+export function composePostClosingContinuityCorrectionResponse() {
+  return "You're right — I got ahead of the timing. I'll be here before then.";
+}
+
+/**
  * User correcting a prior assistant factual claim.
  */
 export function detectFactualCorrection(rawText, state = null) {
@@ -304,7 +323,10 @@ export function spokenBudgetForTier(tier, { weighty = false } = {}) {
 export function classifySpokenTurnTier(opts = {}) {
   const transcript = String(opts.transcript || "");
   const freshness = detectFactualFreshness(transcript);
-  const sessionContinuity = detectSessionContinuityAsk(transcript);
+  const postClosingContinuityCorrection =
+    detectPostClosingContinuityCorrection(transcript, opts.state);
+  const sessionContinuity =
+    postClosingContinuityCorrection || detectSessionContinuityAsk(transcript);
   const factualCorrection = detectFactualCorrection(transcript, opts.state);
 
   const signals = [];
@@ -349,8 +371,14 @@ export function classifySpokenTurnTier(opts = {}) {
       );
     if (!inlineSubstance) {
       tier = SPOKEN_TURN_TIER.SOCIAL;
-      reason = "session_continuity_ask";
-      signals.push("session_continuity");
+      reason = postClosingContinuityCorrection
+        ? "post_closing_continuity_correction"
+        : "session_continuity_ask";
+      signals.push(
+        postClosingContinuityCorrection
+          ? "post_closing_continuity_correction"
+          : "session_continuity",
+      );
     } else {
       tier = SPOKEN_TURN_TIER.SUBSTANTIVE;
       reason = "session_continuity_with_inline_substance";
@@ -440,6 +468,7 @@ export function classifySpokenTurnTier(opts = {}) {
     factualGroundingAvailable,
     factualCorrection,
     sessionContinuityAsk: sessionContinuity,
+    postClosingContinuityCorrection,
     timelessStrategy: Boolean(freshness.timelessStrategy),
     responseMode,
     orchestrationPath,

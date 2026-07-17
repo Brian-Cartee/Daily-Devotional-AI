@@ -45,6 +45,7 @@ import {
   composeFactualCapabilityBoundary,
   composeFactualCorrectionAck,
   composeSessionContinuityResponse,
+  composePostClosingContinuityCorrectionResponse,
   composeContinuityAcknowledgment,
 } from "./spokenTurnRouter.mjs";
 import {
@@ -1860,6 +1861,9 @@ export function classifyOpeningRepair(rawText, state) {
   if (words >= 4) return false;
   if (matchesAny(t, CASUAL_PATTERNS) && words >= 2) return false;
   if (words <= 2) return "unclear";
+  // A tiny opening that begins mid-clause is likely truncated STT. Do not
+  // invent the missing subject or meaning.
+  if (/^(for|about|to|with|because|from)\b/.test(t)) return "unclear";
   return false;
 }
 
@@ -3081,6 +3085,69 @@ export async function runFrontDoorTurn(input) {
     };
   }
 
+  // If Brian interrupted the previous response and follows with a short
+  // reaction, acknowledge the miss/length without resuming abandoned prose or
+  // paying for another semantic call.
+  const interruptionInput = buildInterruptionInput(
+    input.interruptionInput || state.interruptionInput || {},
+  );
+  if (
+    interruptionInput.previousResponseInterrupted &&
+    wordCount(transcript) <= 10 &&
+    !crisisFirst &&
+    !isClosingTurn(transcript, state)
+  ) {
+    const text = "It was too much at once. I'll leave that response behind.";
+    const nextState = advanceState(state, {
+      intent: INTENT.CASUAL,
+      conduct: null,
+      transcript,
+      replyText: text,
+      personalMeaning: false,
+      reopened: false,
+      faithOffered: false,
+      usedName: false,
+      pendingPrayerOffer: state.pendingPrayerOffer,
+      prayerCompleted: state.prayerCompleted,
+      prayerOfferedAtTurn: state.prayerOfferedAtTurn,
+      prayerContext: state.prayerContext,
+      interruptionInput: null,
+      clearInterruptionInput: true,
+    });
+    return {
+      text,
+      intent: INTENT.CASUAL,
+      conduct: null,
+      lane: "interruption_followup",
+      engine: "front_door",
+      reopened: false,
+      personalMeaning: false,
+      faithOffered: false,
+      state: nextState,
+      meta: {
+        sentenceCount: sentenceCount(text),
+        usedName: false,
+        sentOff: nextState.sentOff,
+        sentOffBefore: Boolean(state.sentOff),
+        sentOffAfter: nextState.sentOff,
+        turnCount: nextState.turnCount,
+        pendingPrayerOffer: nextState.pendingPrayerOffer,
+        spokenTurnTier: SPOKEN_TURN_TIER.SOCIAL,
+        spokenTurnTierReason: "interruption_context_followup",
+        responseMode: RESPONSE_MODE.FRONT_DOOR,
+        routedDeep: false,
+        terraValueJustified: false,
+        orchestrationVersion: isGliteOrchestrationEnabled()
+          ? GLITE_ORCHESTRATION_VERSION
+          : null,
+        orchestrationPath: isGliteOrchestrationEnabled()
+          ? "glite"
+          : "legacy_spoken_v1",
+        interruptionInput,
+      },
+    };
+  }
+
   // Conversational control / presence — Front Door only, never Terra.
   const conversationControlEarly = detectConversationControl(transcript);
   if (conversationControlEarly) {
@@ -3535,11 +3602,15 @@ export async function runFrontDoorTurn(input) {
     spokenDecision.spokenTurnTier === SPOKEN_TURN_TIER.SOCIAL &&
     intent !== INTENT.CLOSING
   ) {
-    text = composeSessionContinuityResponse(workingTranscript, {
-      closingDominant: false,
-    });
+    text = spokenDecision.postClosingContinuityCorrection
+      ? composePostClosingContinuityCorrectionResponse()
+      : composeSessionContinuityResponse(workingTranscript, {
+          closingDominant: false,
+        });
     engine = "front_door";
-    composedLane = "session_continuity";
+    composedLane = spokenDecision.postClosingContinuityCorrection
+      ? "post_closing_continuity_correction"
+      : "session_continuity";
   } else if (!isDeep) {
     const composed = composeFrontDoorResponse({
       intent,
@@ -3605,6 +3676,10 @@ export async function runFrontDoorTurn(input) {
       primaryBurden: result?.turnUnderstanding?.primaryBurden ?? null,
       primaryMeaning: result?.turnUnderstanding?.primaryMeaning ?? null,
       secondaryThreads: result?.turnUnderstanding?.secondaryThreads ?? null,
+      relationalEntities: result?.turnUnderstanding?.relationalEntities ?? null,
+      commitments: result?.turnUnderstanding?.commitments ?? null,
+      restorativeElements: result?.turnUnderstanding?.restorativeElements ?? null,
+      conversationalActs: result?.turnUnderstanding?.conversationalActs ?? null,
       faithRole: result?.faithRole ?? result?.turnUnderstanding?.faithRole ?? null,
       emotionalWeight: result?.emotionalWeight ?? result?.turnUnderstanding?.emotionalWeight ?? null,
       responseWorthiness:
@@ -3662,7 +3737,7 @@ export async function runFrontDoorTurn(input) {
   }
 
   // Scrub clumsy reopen openers; then add a natural return ack if still needed.
-  if (reopened) {
+  if (reopened && composedLane !== "post_closing_continuity_correction") {
     text = scrubReopenOpener(text);
     if (!/^\s*(of course|yes|i'?m still|i am still)/i.test(text)) {
       text = `${reopenPrefix({ ...state, reopened: true })}${text}`.trim();
@@ -3753,6 +3828,8 @@ export async function runFrontDoorTurn(input) {
 
   const lane = conduct
     ? `conduct:${conduct}`
+    : composedLane === "post_closing_continuity_correction"
+      ? composedLane
     : reopened
       ? "reopen"
       : composedLane
@@ -3870,7 +3947,9 @@ export async function runFrontDoorTurn(input) {
         contributionQuality?.genericPraiseRisk ?? detectGenericPraiseRisk(text),
       praiseSoftened,
       orderMode: resolved.orderMode || null,
-      conversationalActs: (resolved.conversationalActs || []).map((a) => a.type),
+      conversationalActs:
+        deepCtx._terraResultMeta?.conversationalActs ??
+        (resolved.conversationalActs || []).map((a) => a.type),
       closingFollowedBySubstance: Boolean(resolved.closingFollowedBySubstance),
       substanceFollowedByClosing: Boolean(resolved.substanceFollowedByClosing),
       bareGratitude: Boolean(resolved.bareGratitude),
@@ -3953,6 +4032,9 @@ export async function runFrontDoorTurn(input) {
       primaryBurden: deepCtx._terraResultMeta?.primaryBurden ?? null,
       primaryMeaning: deepCtx._terraResultMeta?.primaryMeaning ?? null,
       secondaryThreads: deepCtx._terraResultMeta?.secondaryThreads ?? null,
+      relationalEntities: deepCtx._terraResultMeta?.relationalEntities ?? null,
+      commitments: deepCtx._terraResultMeta?.commitments ?? null,
+      restorativeElements: deepCtx._terraResultMeta?.restorativeElements ?? null,
       faithRole: deepCtx._terraResultMeta?.faithRole ?? null,
       emotionalWeight: deepCtx._terraResultMeta?.emotionalWeight ?? null,
       responseWorthiness: deepCtx._terraResultMeta?.responseWorthiness ?? null,

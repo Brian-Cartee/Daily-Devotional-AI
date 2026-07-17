@@ -2,21 +2,26 @@
  * Philip Spoken Orchestration Phase 1 — G-lite flag, engine evidence, and
  * Front Door → TurnUnderstanding boundary helpers.
  *
- * Ordinary contribution engine (evidence-selected, bakeoff 20260716 only):
- * gpt-5.6-terra via strict structured output — NOT labeled "ordinary_fast".
+ * Honest Phase 1 scope: semantic judgment first. Both ordinary and rare-depth
+ * contracts use gpt-5.6-terra via strict structured output. The labels describe
+ * depth contracts, not different physical engines or latency classes.
+ *
+ * No existing bakeoff proves a faster combined understanding+speech engine:
  * Sol was freeform in Arm B; no measured Sol+json_schema cells. GPT-4o failed
- * mechanical gates (0/6). Serial Terra→mini was worst latency.
+ * mechanical gates (0/6). Serial Terra→mini had the worst latency.
  */
 
 export const GLITE_ORCHESTRATION_VERSION = "philip-spoken-orchestration-glite-v1";
 
-/** Truthful ordinary engine label — Terra structured one-call understanding+speech. */
-export const ORDINARY_ENGINE_ID = "gpt-5.6-terra";
-export const ORDINARY_ENGINE_LABEL = "philip-ordinary-terra-structured-v1";
+export const GLITE_PHASE1_SCOPE = "semantic_judgment_only";
 
-/** Rare depth uses the same model with weighty criteria — not a different endpoint. */
+/** Terra structured one-call understanding+speech, ordinary-depth contract. */
+export const ORDINARY_ENGINE_ID = "gpt-5.6-terra";
+export const ORDINARY_ENGINE_LABEL = "philip-semantic-terra-ordinary-depth-v1";
+
+/** Same physical model, rare-depth contract — not a faster/slower model split. */
 export const RARE_DEPTH_ENGINE_ID = "gpt-5.6-terra";
-export const RARE_DEPTH_ENGINE_LABEL = "philip-rare-terra-depth-v1";
+export const RARE_DEPTH_ENGINE_LABEL = "philip-semantic-terra-rare-depth-v1";
 
 /**
  * Measured bakeoff summary only — no new paid calls.
@@ -24,7 +29,16 @@ export const RARE_DEPTH_ENGINE_LABEL = "philip-rare-terra-depth-v1";
  */
 export const ENGINE_SELECTION_EVIDENCE = Object.freeze({
   bakeoffId: "contribution-model-bakeoff-20260716",
-  blindHumanScores: "unavailable_packet_blanks_not_recorded",
+  blindHumanScores: "not_reproducible_from_committed_bakeoff_artifacts",
+  blindHumanScoreReconciliation:
+    "Prior chat supplied a manual blinded score map and reported arm averages A=24.5, B=38.83, C=39.0, D=38.17; those inputs/results were never committed. The committed packet score fields remain blank, so the numbers are transcript-only and not reproducible from disk.",
+  transcriptOnlyBlindHumanAverages: Object.freeze({
+    A_control_gpt4o: 24.5,
+    B_sol_single_pass: 38.83,
+    C_terra_structured: 39.0,
+    D_terra_to_mini: 38.17,
+    evidenceStatus: "external_chat_only_not_committed",
+  }),
   mechanicalGatePasses: Object.freeze({
     A_gpt4o: "0/6",
     B_gpt56_sol_single: "2/6",
@@ -61,6 +75,9 @@ export const ENGINE_SELECTION_EVIDENCE = Object.freeze({
   officialSolStructuredSupport: "documented_but_unmeasured_in_this_bakeoff",
   selectedOrdinary: ORDINARY_ENGINE_LABEL,
   selectedRareDepth: RARE_DEPTH_ENGINE_LABEL,
+  phase1Scope: GLITE_PHASE1_SCOPE,
+  physicalModelSplit: false,
+  latencyClaim: "none_phase1_validates_semantic_judgment",
   rejected: Object.freeze([
     "gpt-4o_quality",
     "serial_terra_to_mini_ordinary_latency",
@@ -221,6 +238,10 @@ export function requiresTurnUnderstanding(rawText, opts = {}) {
   if (life.purposePressure && life.threads.length >= 2) return true;
   if (opts.descriptiveFaith && life.nonFaithSubstance) return true;
   if (opts.descriptiveFaith && life.multiTopic) return true;
+  // A longer completed descriptive-faith reflection is substantive meaning, not
+  // an ultra-thin routine acknowledgment. Route it semantically without adding
+  // phrase-specific Front Door cases.
+  if (opts.descriptiveFaith && wordCount(t) >= 16) return true;
 
   // Pure descriptive faith routine only (no other life threads) → FD may thin-ack / template.
   if (opts.descriptiveFaith && !life.nonFaithSubstance && life.threads.length <= 1) {
@@ -345,12 +366,15 @@ export function gliteReadinessFields(env = process.env) {
     orchestrationVersion: GLITE_ORCHESTRATION_VERSION,
     orchestrationEnabled: enabled,
     orchestrationPath: enabled ? "glite" : "legacy_spoken_v1",
+    phase1Scope: GLITE_PHASE1_SCOPE,
+    fasterOrdinaryEngine: false,
     ordinaryEngine: ORDINARY_ENGINE_LABEL,
     ordinaryEngineId: ORDINARY_ENGINE_ID,
     rareDepthEngine: RARE_DEPTH_ENGINE_LABEL,
     rareDepthEngineId: RARE_DEPTH_ENGINE_ID,
+    physicalModelSplit: false,
     engineSelectionEvidenceSummary:
-      "bakeoff-20260716: Terra structured selected for one-call schema (6/6 planValid); Sol freeform unproven for contract; GPT-4o 0/6; serial path rejected",
+      "semantic-only Phase 1: Terra structured selected for both depth contracts (6/6 planValid); no faster combined engine proven; Sol schema unmeasured; GPT-4o 0/6; serial path rejected",
   };
 }
 

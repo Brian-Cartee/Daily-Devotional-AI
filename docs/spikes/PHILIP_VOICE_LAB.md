@@ -27,6 +27,45 @@ Reuses existing **`POST /api/guidance/phase1`** and **`POST /api/tts`** — no n
 - No merge to `main` without approval
 - No `scripts/deploy.sh` for this spike until approved
 
+## Phase 1 semantic orchestration scope
+
+`philip-spoken-orchestration-glite-v1` is a **semantic-judgment prototype**.
+Both `ordinary_structured` and `rare_depth` use the same physical
+`gpt-5.6-terra` model and one-call TurnUnderstanding + `spokenResponse`
+contract. The labels represent ordinary- versus rare-depth response contracts;
+they do not represent different model-speed classes.
+
+Phase 1 makes no faster-ordinary-engine or end-to-end latency claim. A later,
+separately approved Phase 2 would be responsible for proving any lower-latency
+model or transport path.
+
+### Human-review evidence status
+
+The committed contribution bakeoff (`c2fcadd2`) is explicitly pending blinded
+human review, and its 24 score-sheet entries are blank. Prior chat history
+contains a manually supplied blinded score map and reported arm averages
+(A 24.5, B 38.83, C 39.0, D 38.17), but neither the entered scores nor the
+unblinded report were committed. Those numbers are transcript-only evidence,
+not reproducible committed evidence; earlier reports that presented them
+without that qualification overstated disk reproducibility.
+
+## Safe future isolated candidate deployment (only after approval)
+
+This isolated candidate is not deployed with the production-oriented
+`scripts/deploy.sh` path.
+
+1. Fast-forward the candidate branch normally; do not force-push.
+2. Update only `/home/ubuntu/Daily-Devotional-AI-philip-lab`.
+3. Preserve the existing `.env.philip-lab`; do not copy or replace secrets.
+4. Run `CI=true pnpm install --frozen-lockfile` in that isolated checkout.
+5. Run the complete Philip lab test matrix there.
+6. Run the full API build.
+7. Run `build:philip-lab` last.
+8. Restart only `philip-lab-api` and `philip-voice-agent`.
+9. Do not run `pm2 save`.
+10. Do not restart the production API server.
+11. Make no nginx, EAS, LiveKit Cloud, mobile, or production-environment changes.
+
 ## Run locally
 
 ### 1. API server

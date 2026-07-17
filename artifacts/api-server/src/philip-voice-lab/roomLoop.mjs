@@ -109,6 +109,15 @@ export function createConversationState(conversationId, opts = {}) {
   };
 }
 
+/** Isolated-lab lifecycle guard; tests may inject isSessionActive. */
+export function isTurnSessionActive(job) {
+  if (typeof job?.isSessionActive === "function") {
+    return job.isSessionActive() !== false;
+  }
+  if (job?.sessionAbortSignal?.aborted) return false;
+  return true;
+}
+
 async function callTts(text, sessionId) {
   const res = await fetch(`${mediaApiBase()}/api/tts`, {
     method: "POST",
@@ -215,7 +224,11 @@ export async function runPhilipLabTurn(job) {
         likelyHeardRatio: job.likelyHeardRatio ?? null,
       };
     }
-    const brain = await callCandidateGuidanceTurn({
+    const guidanceTurn =
+      typeof job.callGuidanceTurn === "function"
+        ? job.callGuidanceTurn
+        : callCandidateGuidanceTurn;
+    const brain = await guidanceTurn({
       transcript,
       firstName: state.firstName,
       state: stateBefore,
@@ -224,6 +237,94 @@ export async function runPhilipLabTurn(job) {
     });
     guidanceEndAt = Date.now();
     const replyText = brain.text;
+    const stateTransition = `${stateBefore?.lastIntent ?? "start"} -> ${brain.intent}${
+      brain.reopened ? " (reopened)" : ""
+    }${brain.lane ? ` [${brain.lane}]` : ""}${
+      brain.meta?.reciprocalCasual ? " [reciprocal_casual]" : ""
+    }${brain.meta?.repeatedFarewell ? " [repeated_farewell]" : ""}${
+      brain.meta?.sentOffTransition ? ` {${brain.meta.sentOffTransition}}` : ""
+    }${brain.state?.sentOff ? " [sent_off]" : ""}`;
+
+    const discardObsoleteTurn = async (stage, { audioGenerated = false } = {}) => {
+      const discardReason = `session_inactive_before_${stage}`;
+      job.timeline.mark("turn_discarded", {
+        discardReason,
+        ttsStarted,
+        audioGenerated,
+        audioPublished: false,
+      });
+      await recordTurnObservation({
+        conversationId: state.conversationId,
+        sessionId,
+        voiceTurnNumber,
+        turnAttemptId: voiceTurnNumber,
+        turnOutcome: "turn_discarded",
+        transcript,
+        responseText: replyText,
+        intent: brain.intent,
+        conduct: brain.conduct ?? null,
+        lane: brain.lane,
+        engine: brain.engine,
+        runtimeVersion: CANDIDATE_RUNTIME_VERSION,
+        genomeVersion: CANDIDATE_GENOME_VERSION,
+        promptVersion: brain.meta?.promptVersion ?? null,
+        contributionContractVersion: brain.meta?.contributionContractVersion ?? null,
+        stateTransition,
+        reopened: brain.reopened,
+        personalMeaning: brain.personalMeaning,
+        faithOffered: brain.faithOffered,
+        pendingPrayerOfferBefore: pendingBefore,
+        pendingPrayerOfferAfter: Boolean(brain.state?.pendingPrayerOffer),
+        shortAnswerGate: Boolean(job.shortAnswerGate),
+        vadReason: job.vadReason ?? "vad_silence",
+        meta: brain.meta || {},
+        ttsStarted,
+        audioPublished: false,
+        discardReason,
+        latency: {
+          sttMs,
+          guidanceMs: guidanceEndAt - guidanceStartAt,
+          ttsMs: audioGenerated ? ttsMs : null,
+          playbackMs: null,
+          totalTurnMs: Date.now() - turnStartAt,
+          utteranceMs,
+          userSpeechEndAt,
+          vadCloseAt,
+          sttStartAt,
+          sttEndAt,
+          guidanceStartAt,
+          guidanceEndAt,
+          ttsStartAt: audioGenerated ? ttsStartAt : null,
+          ttsEndAt: audioGenerated ? ttsEndAt : null,
+          firstAudioAt: null,
+          playbackCompleteAt: null,
+          pcmDurationMs: null,
+          discardReason,
+        },
+      });
+      job.timeline.endTurn({
+        ok: true,
+        turnOutcome: "turn_discarded",
+        discardReason,
+        ttsStarted,
+        audioGenerated,
+        audioPublished: false,
+      });
+      return {
+        phase1Text: replyText,
+        audioBytes: 0,
+        discarded: true,
+        discardReason,
+        metrics: turn.metrics,
+      };
+    };
+
+    // Participant/room left while STT/guidance was in flight: do not synthesize
+    // obsolete speech and do not advance the audible conversation state.
+    if (!isTurnSessionActive(job)) {
+      return await discardObsoleteTurn("tts");
+    }
+
     state.brainState = brain.state;
     state.messages = brain.state?.history ?? [
       ...state.messages,
@@ -250,14 +351,6 @@ export async function runPhilipLabTurn(job) {
       genomeVersion: CANDIDATE_GENOME_VERSION,
       runtimeLabel: CANDIDATE_RUNTIME_LABEL,
     };
-
-    const stateTransition = `${stateBefore?.lastIntent ?? "start"} -> ${brain.intent}${
-      brain.reopened ? " (reopened)" : ""
-    }${brain.lane ? ` [${brain.lane}]` : ""}${
-      brain.meta?.reciprocalCasual ? " [reciprocal_casual]" : ""
-    }${brain.meta?.repeatedFarewell ? " [repeated_farewell]" : ""}${
-      brain.meta?.sentOffTransition ? ` {${brain.meta.sentOffTransition}}` : ""
-    }${brain.state?.sentOff ? " [sent_off]" : ""}`;
 
     job.timeline.mark("guidance_response_complete", {
       lane: brain.lane,
@@ -291,6 +384,12 @@ export async function runPhilipLabTurn(job) {
     job.timeline.mark("tts_end", { mp3Bytes: audio.length, ttsMs });
     job.timeline.metric("ttsCompleteAt");
 
+    // Disconnect during TTS cannot undo the completed request, but it must
+    // suppress obsolete playback publication.
+    if (!isTurnSessionActive(job)) {
+      return await discardObsoleteTurn("playback_publish", { audioGenerated: true });
+    }
+
     job.timeline.mark("playback_publish_start");
     failureStage = "playback";
     job.timeline.metric("playbackPublishStartAt");
@@ -299,6 +398,9 @@ export async function runPhilipLabTurn(job) {
     audioPublished = true;
 
     await job.playbackQueue.pending.catch(() => {});
+    if (!isTurnSessionActive(job)) {
+      return await discardObsoleteTurn("playback_publish", { audioGenerated: true });
+    }
     // Cancel any still-publishing prior generation before starting a new one.
     if (job.activePlayback?.abortController && !job.activePlayback.abortController.signal.aborted) {
       job.timeline.mark("playback_supersede", {
@@ -778,6 +880,9 @@ export async function runPhilipVoiceRoom(opts) {
               },
               overlapOrInterruption: interruptedPrior,
               interruptionKind: interruptedPrior ? "user_interrupt" : null,
+              isSessionActive: () =>
+                !sessionTerminateReason && !opts.abortSignal?.aborted,
+              sessionAbortSignal: opts.abortSignal,
             });
           } catch (err) {
             log("turn error:", err);

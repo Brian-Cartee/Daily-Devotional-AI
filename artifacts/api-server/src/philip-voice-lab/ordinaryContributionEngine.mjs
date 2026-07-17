@@ -1,10 +1,11 @@
 /**
- * G-lite ordinary / rare-depth contribution engine.
+ * G-lite semantic contribution engine.
  *
  * One gpt-5.6-terra call returns TurnUnderstanding + spokenResponse via strict
  * json_schema. Only spokenResponse reaches TTS. No serial understanding→render.
  *
- * Engine label: philip-ordinary-terra-structured-v1 (evidence-backed; not "fast").
+ * Both ordinary- and rare-depth contracts use the same physical Terra model.
+ * Phase 1 validates semantic judgment; it makes no faster-engine claim.
  */
 import {
   COMPACT_PHILIP_GENOME,
