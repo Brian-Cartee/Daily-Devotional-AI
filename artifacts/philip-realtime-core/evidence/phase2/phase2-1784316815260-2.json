@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "sessionNumber": 1,
+  "model": "gpt-realtime-2.1",
+  "transport": "browser WebRTC unified interface",
+  "audioRecorded": false,
+  "userTranscriptSource": "neutral synthetic fixture text",
+  "startedAt": "2026-07-17T19:33:34.379Z",
+  "endedAt": "2026-07-17T19:33:51.730Z",
+  "durationMs": 17351,
+  "status": "failed",
+  "stopReason": "timeout:s1-greeting:speech_stopped",
+  "connection": {
+    "offerCreatedAtMs": 1304.5,
+    "offerPostedAtMs": 1304.5,
+    "answerReceivedAtMs": 2549.5999999940395,
+    "offerPostRoundTripMs": 1245,
+    "dataChannelOpenAtMs": 2716.2999999821186,
+    "offerToDataChannelOpenMs": 1412,
+    "sessionCreatedAtMs": 2758.399999976158,
+    "offerToSessionCreatedMs": 1454
+  },
+  "turns": [
+    {
+      "id": "s1-greeting",
+      "cleanUserTranscript": "Hello Philip. This is a neutral conversation test. How are you?",
+      "fixturePlaybackStartedAtMs": 2758.899999976158,
+      "providerSpeechStartedAtMs": 2901.7999999821186,
+      "fixturePlaybackEndedAtMs": 6750
+    }
+  ],
+  "responses": [],
+  "interruptions": [],
+  "tools": [],
+  "providerErrors": [
+    {
+      "atMs": 17775.59999999404,
+      "type": "client_or_transport_error",
+      "message": "timeout:s1-greeting:speech_stopped"
+    }
+  ],
+  "events": [
+    {
+      "type": "session.created",
+      "atMs": 2758.399999976158
+    },
+    {
+      "type": "session.updated",
+      "atMs": 2789
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 2901.7999999821186,
+      "itemId": "item_E2ibQTD5VJhqwh5FGuFl4"
+    }
+  ],
+  "usage": {
+    "textInputTokens": 0,
+    "cachedTextInputTokens": 0,
+    "audioInputTokens": 0,
+    "cachedAudioInputTokens": 0,
+    "textOutputTokens": 0,
+    "audioOutputTokens": 0
+  },
+  "estimatedCostUsd": 0,
+  "scenario": "transport_latency_canary",
+  "sanitizedSessionConfig": {
+    "type": "realtime",
+    "model": "gpt-realtime-2.1",
+    "output_modalities": [
+      "audio"
+    ],
+    "instructions": "You are Philip — a Christian companion in a live voice conversation on Shepherd's Path.\nYou are a guide, not the product. The person's relationship with God is the product.\n\nVOICE POSTURE\nSettled, present, not performing. Recognition before advice. Speak in one to three short spoken sentences.\nBuild trust through ordinary conversation: work, family, hobbies, sport, caregiving, plans.\nDo not invent a human schedule, errands, meals, workouts, or private life when asked how you are.\nAnswer reciprocal presence honestly: you are here, attentive, glad to continue, ready to think with them.\n\nFAITH RESTRAINT\nNever force a faith, prayer, verse, or ministry pivot.\nIf they describe Scripture or prayer as part of life without asking for ministry, receive it descriptively.\nOnly pray when they explicitly ask. Pray briefly in the second person and end with Amen.\nNever say 'God told me.' Prefer 'What I'm noticing is…' or 'I believe…'.\n\nHARD BOUNDARIES\nCrisis and hard-conduct protection take precedence over ordinary conversation.\nFor current-changing facts (scores, brackets, live news), do not invent. Call the factual_currentness tool or admit the limit.\nIf a generation error occurs, recover with a brief spoken acknowledgment. Never leave a silent turn.\n\nINTERRUPTIONS\nIf the user starts speaking while you are speaking, stop promptly. Do not finish abandoned prose.\n\nPAID BROWSER FEASIBILITY TEST\nThe user audio is neutral synthetic test speech.\nRespond conversationally, not as an evaluator and not by praising the test.\nIdentify central meaning before offering advice. Add one warranted observation rather than merely paraphrasing.\nAsk at most one natural question per response, and do not ask a question when a clean closing is more natural.\nNever claim a human day, body, family, schedule, exercise, meal, or private experience.\nFor an incomplete utterance, leave room for continuation rather than inventing the missing thought.\nAfter a goodbye, close naturally. If the user returns, engage the substance of the re-entry.\nFor current-changing facts, always call factual_currentness. Never answer from memory.",
+    "audio": {
+      "input": {
+        "turn_detection": {
+          "type": "semantic_vad",
+          "eagerness": "auto",
+          "create_response": true,
+          "interrupt_response": true
+        }
+      },
+      "output": {
+        "voice": "marin"
+      }
+    },
+    "tools": [
+      {
+        "type": "function",
+        "name": "factual_currentness",
+        "description": "Look up or admit limits for current-changing facts (sports scores, brackets, live news). Never fabricate.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "domain": {
+              "type": "string",
+              "enum": [
+                "sports",
+                "news",
+                "other"
+              ]
+            }
+          },
+          "required": [
+            "query",
+            "domain"
+          ]
+        }
+      }
+    ],
+    "tool_choice": "auto"
+  },
+  "attemptId": "phase2-1784316815260-2"
+}

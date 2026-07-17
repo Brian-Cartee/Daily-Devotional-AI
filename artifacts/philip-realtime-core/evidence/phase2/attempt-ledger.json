@@ -19,6 +19,25 @@
       "failureCategory": "authentication_or_protocol",
       "providerStatus": 401,
       "finishedAt": "2026-07-17T19:04:38.152Z"
+    },
+    {
+      "attemptId": "phase2-1784316815260-2",
+      "ordinal": 2,
+      "requestedSessionNumber": 1,
+      "scenario": "transport_latency_canary",
+      "model": "gpt-realtime-2.1",
+      "attemptedAt": "2026-07-17T19:33:35.260Z",
+      "status": "failed",
+      "success": false,
+      "maxDurationMs": 115000,
+      "reservedUsd": 1.5,
+      "estimatedCostUsd": 0,
+      "providerStatus": 201,
+      "providerRequestId": null,
+      "durationMs": 17351,
+      "finishedAt": "2026-07-17T19:33:51.746Z",
+      "evidenceFile": "evidence/phase2/phase2-1784316815260-2.json",
+      "stopReason": "timeout:s1-greeting:speech_stopped"
     }
   ],
   "cumulativeEstimatedCostUsd": 0

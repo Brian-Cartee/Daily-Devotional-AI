@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "phase2_auth_check",
+  "endpoint": "GET https://api.openai.com/v1/models",
+  "startedAt": "2026-07-17T19:33:11.546Z",
+  "finishedAt": "2026-07-17T19:33:12.586Z",
+  "httpStatus": 200,
+  "authenticationPassed": true,
+  "providerErrorType": null,
+  "providerErrorCode": null,
+  "providerRequestId": "7df912a2-3ea7-48bb-a6a1-4acb5cd0e49f",
+  "consumesRealtimeAttempt": false,
+  "estimatedCostUsd": 0
+}
