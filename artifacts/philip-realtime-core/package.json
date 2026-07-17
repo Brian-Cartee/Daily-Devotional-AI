@@ -1,0 +1,12 @@
+{
+  "name": "@philip/realtime-core",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Phase 1 unpaid local/mock native realtime speech-to-speech feasibility harness",
+  "scripts": {
+    "test": "node --test test/run-phase1-suite.mjs",
+    "cost-model": "node test/cost-model.mjs",
+    "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs"
+  }
+}
