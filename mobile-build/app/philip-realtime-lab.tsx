@@ -73,6 +73,34 @@ export default function PhilipRealtimeLabScreen() {
     }
   }, [enabled, appendLog]);
 
+  const onTestMic = useCallback(async () => {
+    try {
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        setMicState("denied");
+        setError("Microphone permission denied.");
+        appendLog("Microphone permission denied.");
+        Alert.alert(
+          "Microphone access needed",
+          "Enable the microphone in Settings to use Philip Realtime Lab.",
+          [
+            { text: "Not now", style: "cancel" },
+            { text: "Open Settings", onPress: () => void Linking.openSettings() },
+          ],
+        );
+        return;
+      }
+      setMicState("granted");
+      setError(null);
+      appendLog("Microphone permission granted (local unpaid check).");
+    } catch (err) {
+      const message = String((err as Error)?.message || err);
+      setMicState("error");
+      setError(message);
+      appendLog(`Microphone check failed: ${message}`);
+    }
+  }, [appendLog]);
+
   const onStart = useCallback(async () => {
     if (busy) return;
     setBusy(true);
@@ -207,8 +235,9 @@ export default function PhilipRealtimeLabScreen() {
         {!labUrlConfigured ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>
-              Lab server URL is not configured. Set EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL to a
-              non-production lab host before Start Conversation. Production API hosts are blocked.
+              Lab server URL is not configured yet. You can still open this screen and test
+              microphone permission. Start Conversation stays disabled until
+              EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL points at a non-production lab host.
             </Text>
           </View>
         ) : null}
@@ -227,6 +256,10 @@ export default function PhilipRealtimeLabScreen() {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
+
+        <Pressable style={styles.secondaryBtn} onPress={() => void onTestMic()} disabled={busy}>
+          <Text style={styles.secondaryBtnText}>Test Microphone Permission</Text>
+        </Pressable>
 
         <Pressable
           style={[styles.primaryBtn, !canStart && styles.primaryBtnDisabled]}
