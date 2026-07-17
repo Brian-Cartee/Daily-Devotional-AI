@@ -76,6 +76,10 @@ function RootLayoutNav() {
             options={{ headerShown: false, presentation: "fullScreenModal" }}
           />
           <Stack.Screen
+            name="philip-realtime-lab"
+            options={{ headerShown: false, presentation: "fullScreenModal" }}
+          />
+          <Stack.Screen
             name="philip-voice-eval"
             options={{ headerShown: false, presentation: "fullScreenModal" }}
           />

@@ -18,6 +18,11 @@ module.exports = () => {
       ...expo.extra,
       philipVoiceLabEnabled: true,
       philipVoiceLabKey: (process.env.EXPO_PUBLIC_PHILIP_VOICE_LAB_KEY || "").trim(),
+      // Lab-only Realtime session host. Must remain empty or a non-production URL.
+      philipRealtimeLabUrl: (process.env.EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL || "").trim(),
+      philipRealtimeLabSecret: (
+        process.env.EXPO_PUBLIC_PHILIP_REALTIME_LAB_SECRET || ""
+      ).trim(),
     };
     if (enableLab && process.env.EXPO_PUBLIC_PHILIP_VOICE_LAB_BUNDLE_SUFFIX === "lab") {
       expo.name = "Philip Voice Lab";

@@ -444,11 +444,19 @@ export default function PhilipVoiceLabScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.eyebrow}>Internal spike</Text>
+        <Text style={styles.eyebrow}>Internal spike · Legacy LiveKit path</Text>
         <Text style={styles.title}>Philip Voice Lab</Text>
         <Text style={styles.subtitle}>
           Gate B: speak → rate immediately after disconnect. Proving Philip, not LiveKit.
+          The separate Philip Realtime Lab uses OpenAI Realtime WebRTC and does not replace this screen.
         </Text>
+
+        <Pressable
+          style={styles.secondaryBtn}
+          onPress={() => router.push("/philip-realtime-lab")}
+        >
+          <Text style={styles.secondaryBtnText}>Open Philip Realtime Lab</Text>
+        </Pressable>
 
         {sessionId ? (
           <Text style={styles.meta}>Session: {sessionId.slice(0, 24)}…</Text>
