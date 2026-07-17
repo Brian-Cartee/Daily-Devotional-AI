@@ -33,8 +33,21 @@ import {
   TERRA_CONTRIBUTION_ENGINE_VERSION,
   TERRA_CONTRIBUTION_MODEL_DEFAULT,
 } from "./terraContributionEngine.mjs";
+import {
+  makeGliteContributionGenerator,
+  configureGliteEngineHooks,
+  ORDINARY_CONTRIBUTION_ENGINE_VERSION,
+} from "./ordinaryContributionEngine.mjs";
+import {
+  isGliteOrchestrationEnabled,
+  gliteReadinessFields,
+  GLITE_ORCHESTRATION_VERSION,
+  ORDINARY_ENGINE_LABEL,
+  RARE_DEPTH_ENGINE_LABEL,
+  ENGINE_SELECTION_EVIDENCE,
+} from "./gliteOrchestration.mjs";
 
-/** The model that generates Philip's live substantive contribution responses (Arm C). */
+/** The model that generates Philip's live substantive contribution responses (Arm C / G-lite). */
 export function brainModel() {
   return terraContributionModel();
 }
@@ -60,17 +73,29 @@ export function candidateGuidanceReadiness() {
   const configured = isLiveBrainConfigured();
   const deterministic = deterministicModeAllowed(false);
   const genome = genomeObservability();
+  const glite = gliteReadinessFields();
   return {
     ready: configured || deterministic,
     configured,
     deterministicDiagnostics: deterministic,
     model: brainModel(),
-    contributionEngineVersion: TERRA_CONTRIBUTION_ENGINE_VERSION,
+    contributionEngineVersion: glite.orchestrationEnabled
+      ? ORDINARY_ENGINE_LABEL
+      : TERRA_CONTRIBUTION_ENGINE_VERSION,
     contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
     contributionRegenDefault: false,
     contributionRegenNote:
-      "Arm C Terra structured path does not regenerate or fall back to GPT-4o. Schema/provider failure yields turn_failed.",
+      "Arm C / G-lite Terra structured path does not regenerate or fall back to GPT-4o. Schema/provider failure yields turn_failed.",
     ...genome,
+    ...glite,
+    ordinaryEngine: ORDINARY_ENGINE_LABEL,
+    rareDepthEngine: RARE_DEPTH_ENGINE_LABEL,
+    engineSelectionEvidence: {
+      bakeoffId: ENGINE_SELECTION_EVIDENCE.bakeoffId,
+      selectedOrdinary: ENGINE_SELECTION_EVIDENCE.selectedOrdinary,
+      blindHumanScores: ENGINE_SELECTION_EVIDENCE.blindHumanScores,
+      terraStructuredProven: ENGINE_SELECTION_EVIDENCE.terraArmCPlanValidRate,
+    },
     reason: configured
       ? null
       : deterministic
@@ -217,8 +242,12 @@ export function guidanceInstruction(input = {}) {
   return lines.join(" ");
 }
 
-// Wire Terra engine hooks after guidanceInstruction / deterministicModeAllowed exist.
+// Wire Terra / G-lite engine hooks after guidanceInstruction / deterministicModeAllowed exist.
 configureTerraEngineHooks({
+  deterministicModeAllowed,
+  guidanceInstruction,
+});
+configureGliteEngineHooks({
   deterministicModeAllowed,
   guidanceInstruction,
 });
@@ -226,13 +255,18 @@ configureTerraEngineHooks({
 /**
  * Build a deep-generation adapter for substantive contribution turns.
  *
- * Arm C: gpt-5.6-terra strict structured private plan + spokenResponse.
- * Only spokenResponse is returned as `text` for TTS. Schema/provider failure
- * throws TerraContributionError (no GPT-4o fallback, no canned prose).
- *
- * Tests may inject `opts.complete` or `opts.resolveClient` with mocked JSON.
+ * Legacy: Arm C gpt-5.6-terra plan + spokenResponse.
+ * G-lite (PHILIP_VOICE_LAB_ORCHESTRATION_GLITE): TurnUnderstanding + spokenResponse
+ * in one call (ordinary Terra structured; rare depth same model/weighty budget).
  */
 export function makeLlmDeepGenerator(opts = {}) {
+  if (isGliteOrchestrationEnabled()) {
+    return makeGliteContributionGenerator({
+      model: opts.model || brainModel(),
+      resolveClient: opts.resolveClient,
+      complete: opts.complete,
+    });
+  }
   return makeTerraDeepGenerator({
     model: opts.model || brainModel(),
     resolveClient: opts.resolveClient,
@@ -251,7 +285,9 @@ export async function runCandidateGuidanceTurn(input) {
     firstName: input.firstName,
     state: input.state,
     deepGenerate,
+    interruptionInput: input.interruptionInput,
   });
+  const gliteOn = isGliteOrchestrationEnabled();
   return {
     ...result,
     meta: {
@@ -259,15 +295,23 @@ export async function runCandidateGuidanceTurn(input) {
       genomeVersion: PHILIP_VOICE_GENOME_VERSION,
       genomeApproxTokens: estimateGenomeTokens(),
       contributionContractVersion: CONTRIBUTION_CONTRACT_VERSION,
+      orchestrationVersion: gliteOn
+        ? GLITE_ORCHESTRATION_VERSION
+        : result.meta?.orchestrationVersion ?? null,
+      orchestrationPath: gliteOn ? "glite" : result.meta?.orchestrationPath || "legacy_spoken_v1",
       contributionEngineVersion:
         result.meta?.contributionEngineVersion ??
-        (result.engine && String(result.engine).includes("terra")
-          ? TERRA_CONTRIBUTION_ENGINE_VERSION
-          : result.engine === TERRA_CONTRIBUTION_MODEL_DEFAULT ||
-              result.engine === terraContributionModel()
+        (gliteOn
+          ? ORDINARY_CONTRIBUTION_ENGINE_VERSION
+          : result.engine && String(result.engine).includes("terra")
             ? TERRA_CONTRIBUTION_ENGINE_VERSION
-            : result.meta?.contributionEngineVersion ?? null),
-      promptVersion: `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}+${TERRA_CONTRIBUTION_ENGINE_VERSION}`,
+            : result.engine === TERRA_CONTRIBUTION_MODEL_DEFAULT ||
+                result.engine === terraContributionModel()
+              ? TERRA_CONTRIBUTION_ENGINE_VERSION
+              : result.meta?.contributionEngineVersion ?? null),
+      promptVersion: gliteOn
+        ? `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}+${GLITE_ORCHESTRATION_VERSION}`
+        : `${PHILIP_VOICE_GENOME_VERSION}+${CONTRIBUTION_CONTRACT_VERSION}+${TERRA_CONTRIBUTION_ENGINE_VERSION}`,
     },
   };
 }
@@ -285,5 +329,10 @@ export {
   TerraContributionError,
   makeTerraDeepGenerator,
   terraContributionModel,
+  GLITE_ORCHESTRATION_VERSION,
+  ORDINARY_ENGINE_LABEL,
+  RARE_DEPTH_ENGINE_LABEL,
+  isGliteOrchestrationEnabled,
+  makeGliteContributionGenerator,
 };
 

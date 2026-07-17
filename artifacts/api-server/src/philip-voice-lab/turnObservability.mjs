@@ -182,6 +182,26 @@ export async function recordTurnObservation(obs) {
     conversationControl: merged.conversationControl ?? null,
     conversationControlType: merged.conversationControlType ?? null,
     relationalAnchorProvenance: merged.relationalAnchorProvenance ?? null,
+    // G-lite Phase 1 — orchestration + understanding observability (no CoT / secrets)
+    orchestrationVersion: merged.orchestrationVersion ?? null,
+    orchestrationPath: merged.orchestrationPath ?? null,
+    understandingProducer: merged.understandingProducer ?? null,
+    selectedEngine: merged.selectedEngine ?? null,
+    engineSelectionReason: merged.engineSelectionReason ?? null,
+    primaryBurden: merged.primaryBurden ?? null,
+    primaryMeaning: merged.primaryMeaning ?? null,
+    secondaryThreads: merged.secondaryThreads ?? null,
+    faithRole: merged.faithRole ?? null,
+    emotionalWeight: merged.emotionalWeight ?? null,
+    responseWorthiness: merged.responseWorthiness ?? null,
+    recommendedResponseAct: merged.recommendedResponseAct ?? null,
+    spokenDepth: merged.spokenDepth ?? null,
+    interruptionInput: merged.interruptionInput ?? null,
+    lifeThreads: merged.lifeThreads ?? null,
+    requiresTurnUnderstanding: merged.requiresTurnUnderstanding ?? null,
+    gliteEnabled: merged.gliteEnabled ?? null,
+    commitments: merged.commitments ?? null,
+    restorativeElements: merged.restorativeElements ?? null,
   };
   await appendTurnRecord(obs.conversationId, record);
   return record;

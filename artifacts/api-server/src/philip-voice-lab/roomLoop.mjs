@@ -201,7 +201,20 @@ export async function runPhilipLabTurn(job) {
     failureStage = "guidance";
     guidanceStartAt = Date.now();
 
-    const stateBefore = state.brainState;
+    const stateBefore = {
+      ...(state.brainState || {}),
+    };
+    if (job.overlapOrInterruption || job.interruptionKind === "user_interrupt") {
+      stateBefore.interruptionInput = {
+        previousResponseInterrupted: true,
+        previousResponseAbandoned: true,
+        userBeganSpeakingBeforeCompletion: true,
+        previousResponseTopic: state.brainState?.lastIntent || null,
+        estimatedAudioPublishedMs: job.interruptedPublishedMs ?? null,
+        estimatedAudioHeardMs: job.interruptedHeardMs ?? null,
+        likelyHeardRatio: job.likelyHeardRatio ?? null,
+      };
+    }
     const brain = await callCandidateGuidanceTurn({
       transcript,
       firstName: state.firstName,

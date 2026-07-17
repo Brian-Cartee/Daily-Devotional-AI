@@ -23,6 +23,10 @@ export const RESPONSE_MODE = Object.freeze({
   FACTUAL_BOUNDARY: "factual_boundary",
   TERRA: "terra",
   SAFETY: "safety_contract",
+  /** G-lite Phase 1 — ordinary structured understanding+speech (Terra model). */
+  GLITE_ORDINARY: "glite_ordinary",
+  /** G-lite Phase 1 — rare weighty depth (same Terra model, weighty budget). */
+  GLITE_RARE: "glite_rare_depth",
 });
 
 /** Spoken budgets by tier (words + approximate audible seconds @ ~135 wpm). */
@@ -293,6 +297,9 @@ export function spokenBudgetForTier(tier, { weighty = false } = {}) {
  * @param {boolean} opts.isIncomplete
  * @param {boolean} opts.weightyRelational
  * @param {boolean} opts.weightyDescriptiveFaith
+ * @param {boolean} opts.gliteEnabled
+ * @param {boolean} opts.requiresTurnUnderstanding
+ * @param {boolean} opts.gliteRareDepth
  */
 export function classifySpokenTurnTier(opts = {}) {
   const transcript = String(opts.transcript || "");
@@ -306,6 +313,9 @@ export function classifySpokenTurnTier(opts = {}) {
   let terraValueJustified = false;
   let responseMode = RESPONSE_MODE.FRONT_DOOR;
   let factualGroundingAvailable = false; // no live tool in this package
+  let orchestrationPath = opts.gliteEnabled ? "glite" : "legacy_spoken_v1";
+  let selectedEngine = null;
+  let engineSelectionReason = null;
 
   if (opts.isCrisis || opts.isPrayer || opts.isConduct) {
     tier = SPOKEN_TURN_TIER.SAFETY;
@@ -356,6 +366,22 @@ export function classifySpokenTurnTier(opts = {}) {
     tier = SPOKEN_TURN_TIER.SOCIAL;
     reason = opts.isThinAck ? "thin_acknowledgment" : "low_substance_deferral";
     signals.push(reason);
+  } else if (opts.gliteEnabled && opts.requiresTurnUnderstanding) {
+    // Hard Front Door boundary: multi-topic / faith+life → TurnUnderstanding.
+    tier = SPOKEN_TURN_TIER.SUBSTANTIVE;
+    reason = "glite_turn_understanding";
+    terraValueJustified = true;
+    if (opts.gliteRareDepth) {
+      responseMode = RESPONSE_MODE.GLITE_RARE;
+      selectedEngine = "rare_depth";
+      engineSelectionReason = "rare_terra_depth_criteria";
+      signals.push("glite_rare_depth", reason);
+    } else {
+      responseMode = RESPONSE_MODE.GLITE_ORDINARY;
+      selectedEngine = "ordinary_structured";
+      engineSelectionReason = "ordinary_contribution_criteria";
+      signals.push("glite_ordinary", reason);
+    }
   } else if (opts.routeDeepCandidate || opts.weightyRelational || opts.weightyDescriptiveFaith) {
     tier = SPOKEN_TURN_TIER.SUBSTANTIVE;
     reason = opts.weightyDescriptiveFaith
@@ -364,8 +390,17 @@ export function classifySpokenTurnTier(opts = {}) {
         ? "weighty_relational"
         : "substantive_ordinary";
     terraValueJustified = true;
-    responseMode = RESPONSE_MODE.TERRA;
-    signals.push("terra_value_justified", reason);
+    if (opts.gliteEnabled) {
+      responseMode = opts.gliteRareDepth ? RESPONSE_MODE.GLITE_RARE : RESPONSE_MODE.GLITE_ORDINARY;
+      selectedEngine = opts.gliteRareDepth ? "rare_depth" : "ordinary_structured";
+      engineSelectionReason = opts.gliteRareDepth
+        ? "rare_terra_depth_criteria"
+        : "ordinary_contribution_criteria";
+      signals.push("glite_substantive", reason);
+    } else {
+      responseMode = RESPONSE_MODE.TERRA;
+      signals.push("terra_value_justified", reason);
+    }
   } else if (freshness.timelessStrategy) {
     tier = SPOKEN_TURN_TIER.FACTUAL_LIGHT;
     reason = "timeless_strategy_question";
@@ -407,9 +442,14 @@ export function classifySpokenTurnTier(opts = {}) {
     sessionContinuityAsk: sessionContinuity,
     timelessStrategy: Boolean(freshness.timelessStrategy),
     responseMode,
+    orchestrationPath,
+    selectedEngine,
+    engineSelectionReason,
     spokenBudget: {
       ...budget,
-      weighty: weighty && tier === SPOKEN_TURN_TIER.SUBSTANTIVE,
+      weighty:
+        (weighty || Boolean(opts.gliteRareDepth)) &&
+        tier === SPOKEN_TURN_TIER.SUBSTANTIVE,
       tier,
     },
   };
@@ -439,5 +479,8 @@ export function serializeSpokenTurnDecision(decision) {
           exempt: Boolean(decision.spokenBudget.exempt),
         }
       : null,
+    orchestrationPath: decision.orchestrationPath ?? null,
+    selectedEngine: decision.selectedEngine ?? null,
+    engineSelectionReason: decision.engineSelectionReason ?? null,
   };
 }

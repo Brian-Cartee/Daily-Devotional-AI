@@ -47,6 +47,17 @@ import {
   composeSessionContinuityResponse,
   composeContinuityAcknowledgment,
 } from "./spokenTurnRouter.mjs";
+import {
+  isGliteOrchestrationEnabled,
+  requiresTurnUnderstanding,
+  detectLifeThreads,
+  selectContributionEngine,
+  gliteSpeechBudget,
+  buildInterruptionInput,
+  GLITE_ORCHESTRATION_VERSION,
+  ORDINARY_ENGINE_LABEL,
+  RARE_DEPTH_ENGINE_LABEL,
+} from "./gliteOrchestration.mjs";
 
 export const INTENT = Object.freeze({
   GREETING: "greeting",
@@ -720,11 +731,19 @@ export function resolveFrontDoorClassification(rawText, state) {
   const descriptiveFaith = isDescriptiveFaithPractice(classifyText);
   const weightyDescriptiveFaith =
     descriptiveFaith && isWeightyDescriptiveFaithContext(classifyText, state);
+  const gliteEnabled = isGliteOrchestrationEnabled();
+  const lifeThreads = detectLifeThreads(classifyText);
+  const needsUnderstanding = requiresTurnUnderstanding(classifyText, {
+    descriptiveFaith,
+  });
   // Multi-topic turns that mix descriptive faith + reciprocal, OR weighty faith tied to
   // caregiving/recovery/answered prayer, need contribution (deep) — not a short template.
+  // G-lite: any multi-topic / faith+life disclosure must enter TurnUnderstanding.
   const descriptiveFaithNeedsContribution =
     descriptiveFaith &&
-    ((reciprocalAsk && wordCount(classifyText) >= 18) || weightyDescriptiveFaith);
+    ((reciprocalAsk && wordCount(classifyText) >= 18) ||
+      weightyDescriptiveFaith ||
+      (gliteEnabled && needsUnderstanding));
   const ordinarySubstance =
     !conversationControl &&
     !lowSubstance &&
@@ -739,7 +758,8 @@ export function resolveFrontDoorClassification(rawText, state) {
           detectPersonalMeaning(classifyText) &&
           !isThinSocialAcknowledgment(classifyText) &&
           !isLowSubstanceDeferral(classifyText)) ||
-        descriptiveFaithNeedsContribution)) ||
+        descriptiveFaithNeedsContribution ||
+        (gliteEnabled && needsUnderstanding))) ||
     conversationalRepair;
   const thinBlocked =
     Boolean(conversationControl) ||
@@ -749,25 +769,33 @@ export function resolveFrontDoorClassification(rawText, state) {
     isHighConfidenceIncompleteSpeech(classifyText, state) ||
     isLikelyFragmentTranscript(classifyText, state);
   // Conversation control and incomplete speech never deep-route even for DEEP_INTENTS.
+  // G-lite hard boundary: multi-topic / faith+life cannot stay on descriptive-faith template.
   const routeDeep =
     ![INTENT.CRISIS, INTENT.CLOSING, INTENT.GREETING].includes(intent) &&
     !conversationControl &&
     !isHybridGreetingReciprocal(classifyText) &&
     (!isReciprocalSmallTalk(classifyText) || descriptiveFaithNeedsContribution) &&
-    (!descriptiveFaith || descriptiveFaithNeedsContribution) &&
+    (!descriptiveFaith || descriptiveFaithNeedsContribution || (gliteEnabled && needsUnderstanding)) &&
     !thinBlocked &&
-    (DEEP_INTENTS.includes(intent) || ordinarySubstance || intent === INTENT.INFORMATIONAL);
+    (DEEP_INTENTS.includes(intent) ||
+      ordinarySubstance ||
+      intent === INTENT.INFORMATIONAL ||
+      (gliteEnabled && needsUnderstanding));
   let deepRoutingReason = null;
   let terraQualification = null;
   const substanceSignals = [];
   if (ordinarySubstance) substanceSignals.push("ordinary_substance");
+  if (gliteEnabled && needsUnderstanding) substanceSignals.push("glite_turn_understanding");
+  if (lifeThreads.multiTopic) substanceSignals.push("multi_topic");
+  if (lifeThreads.faithMixedWithLife) substanceSignals.push("faith_mixed_with_life");
   if (DEEP_INTENTS.includes(intent) && !conversationControl && !thinBlocked) {
     substanceSignals.push(`deep_intent:${intent}`);
   }
   if (detectPersonalMeaning(classifyText)) substanceSignals.push("personal_meaning");
   if (conversationalRepair) substanceSignals.push("conversational_repair");
   if (routeDeep) {
-    if (weightyDescriptiveFaith) deepRoutingReason = "weighty_descriptive_faith";
+    if (gliteEnabled && needsUnderstanding) deepRoutingReason = "glite_turn_understanding";
+    else if (weightyDescriptiveFaith) deepRoutingReason = "weighty_descriptive_faith";
     else if (descriptiveFaithNeedsContribution) deepRoutingReason = "descriptive_faith_needs_contribution";
     else if (DEEP_INTENTS.includes(intent)) deepRoutingReason = `deep_intent:${intent}`;
     else if (ordinarySubstance) deepRoutingReason = "ordinary_substance";
@@ -777,7 +805,7 @@ export function resolveFrontDoorClassification(rawText, state) {
       terraQualified: true,
       reason: deepRoutingReason,
       terraQualificationReason: deepRoutingReason,
-      substance: Boolean(ordinarySubstance || DEEP_INTENTS.includes(intent)),
+      substance: Boolean(ordinarySubstance || DEEP_INTENTS.includes(intent) || needsUnderstanding),
       substanceSignals,
       terraRejectedReason: null,
     };
@@ -795,6 +823,7 @@ export function resolveFrontDoorClassification(rawText, state) {
         ? "thin_acknowledgment"
         : "incomplete_fragment";
     } else if (descriptiveFaith && !descriptiveFaithNeedsContribution) {
+      // Legacy only — G-lite must not deny multi-topic faith+life as template.
       denyReason = "descriptive_faith_template";
     } else if (!ordinarySubstance && !DEEP_INTENTS.includes(intent)) {
       denyReason = "insufficient_substance";
@@ -827,6 +856,9 @@ export function resolveFrontDoorClassification(rawText, state) {
     socialFarewellReciprocal: false,
     descriptiveFaithNeedsContribution: Boolean(descriptiveFaithNeedsContribution),
     weightyDescriptiveFaith: Boolean(weightyDescriptiveFaith),
+    gliteEnabled,
+    requiresTurnUnderstanding: Boolean(gliteEnabled && needsUnderstanding),
+    lifeThreads,
     deepRoutingReason,
     terraQualification,
   };
@@ -1987,6 +2019,11 @@ export function createFrontDoorState(firstName = "") {
      * { text, askCount, createdAtTurn } | null
      */
     pendingFragment: null,
+    /**
+     * Prior-turn interruption input for G-lite understanding (no private prompts).
+     * Cleared after consumed on the next substantive turn.
+     */
+    interruptionInput: null,
     history: [], // [{ role: "user"|"assistant", content }]
   };
 }
@@ -2013,6 +2050,10 @@ export function hydrateFrontDoorState(raw, firstName = "") {
             askCount: Number(raw.pendingFragment.askCount || 0) || 0,
             createdAtTurn: Number(raw.pendingFragment.createdAtTurn || 0) || 0,
           }
+        : null,
+    interruptionInput:
+      raw.interruptionInput && typeof raw.interruptionInput === "object"
+        ? buildInterruptionInput(raw.interruptionInput)
         : null,
     history: Array.isArray(raw.history) ? raw.history : [],
   };
@@ -2609,6 +2650,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
         };
       }
       if (isDescriptiveFaithPractice(transcript)) {
+        // G-lite hard boundary: never compose faith templates for multi-topic / faith+life.
+        if (
+          isGliteOrchestrationEnabled() &&
+          requiresTurnUnderstanding(transcript, { descriptiveFaith: true })
+        ) {
+          return null;
+        }
         return {
           text: composeDescriptiveFaithReply(transcript, state),
           engine: "front_door",
@@ -2658,6 +2706,13 @@ export function composeFrontDoorResponse({ intent, state, transcript, personalMe
     }
     case INTENT.SPIRITUAL: {
       if (isDescriptiveFaithPractice(transcript)) {
+        // G-lite hard boundary: never compose faith templates for multi-topic / faith+life.
+        if (
+          isGliteOrchestrationEnabled() &&
+          requiresTurnUnderstanding(transcript, { descriptiveFaith: true })
+        ) {
+          return null;
+        }
         return {
           text: composeDescriptiveFaithReply(transcript, state),
           engine: "front_door",
@@ -2772,6 +2827,8 @@ function advanceState(state, {
   prayerOfferedAtTurn,
   prayerCompleted,
   relationalAnchors,
+  interruptionInput = null,
+  clearInterruptionInput = true,
 }) {
   const next = { ...state, history: [...state.history] };
   next.turnCount = state.turnCount + 1;
@@ -2791,6 +2848,13 @@ function advanceState(state, {
   if (prayerContext != null) next.prayerContext = String(prayerContext).slice(0, 240);
   if (prayerOfferedAtTurn !== undefined) next.prayerOfferedAtTurn = prayerOfferedAtTurn;
   if (typeof prayerCompleted === "boolean") next.prayerCompleted = prayerCompleted;
+
+  // G-lite: consume interruption input this turn (do not leave stale interrupt for forever).
+  if (clearInterruptionInput) {
+    next.interruptionInput = interruptionInput || null;
+  } else if (interruptionInput) {
+    next.interruptionInput = interruptionInput;
+  }
 
   // Closing / re-entry semantics: goodbye latches sentOff; substantive re-entry clears it.
   if (intent === INTENT.CLOSING) {
@@ -3254,11 +3318,27 @@ export async function runFrontDoorTurn(input) {
     /\b(how (are|about) (you|yourself)|how'?s it going with you)\b/i.test(resolved.classifyText);
 
   // Spoken Interaction v1 — value router reserves Terra for worth-the-delay turns.
+  // G-lite: multi-topic / faith+life force TurnUnderstanding (ordinary or rare).
+  const gliteEnabled = Boolean(resolved.gliteEnabled || isGliteOrchestrationEnabled());
+  const needsUnderstanding = Boolean(resolved.requiresTurnUnderstanding);
+  const engineSelectionEarly = needsUnderstanding
+    ? selectContributionEngine({
+        transcript: workingTranscript,
+        intent,
+        emotionalWeight: relational.weightyRelationalContext ? "medium" : "light",
+        spokenDepth: resolved.weightyDescriptiveFaith ? "weighty" : "ordinary",
+        responseWorthiness: "contribute",
+        confidence: 1,
+      })
+    : null;
+  const gliteRareDepth = Boolean(
+    gliteEnabled && engineSelectionEarly?.engine === "rare_depth",
+  );
   const spokenDecision = classifySpokenTurnTier({
     transcript: workingTranscript,
     state,
     intent,
-    routeDeepCandidate: Boolean(resolved.routeDeep),
+    routeDeepCandidate: Boolean(resolved.routeDeep) || needsUnderstanding,
     isCrisis: intent === INTENT.CRISIS,
     isPrayer: intent === INTENT.PRAYER,
     isConduct: Boolean(conduct),
@@ -3270,7 +3350,19 @@ export async function runFrontDoorTurn(input) {
     isIncomplete: false,
     weightyRelational: Boolean(relational.weightyRelationalContext),
     weightyDescriptiveFaith: Boolean(resolved.weightyDescriptiveFaith),
+    gliteEnabled,
+    requiresTurnUnderstanding: needsUnderstanding,
+    gliteRareDepth,
   });
+  if (gliteEnabled && needsUnderstanding && engineSelectionEarly) {
+    spokenDecision.spokenBudget = {
+      ...gliteSpeechBudget(engineSelectionEarly.spokenDepth),
+      weighty: engineSelectionEarly.spokenDepth === "weighty",
+      tier: SPOKEN_TURN_TIER.SUBSTANTIVE,
+    };
+    spokenDecision.selectedEngine = engineSelectionEarly.recommendedEngine;
+    spokenDecision.engineSelectionReason = engineSelectionEarly.engineSelectionReason;
+  }
 
   // Mixed farewell + light agenda: latch closing without Terra.
   if (spokenDecision.spokenTurnTierReason === "farewell_with_light_agenda") {
@@ -3369,6 +3461,14 @@ export async function runFrontDoorTurn(input) {
     spokenTurnTier: spokenDecision.spokenTurnTier,
     spokenBudget: spokenDecision.spokenBudget,
     terraValueJustified: spokenDecision.terraValueJustified,
+    orchestrationVersion: gliteEnabled ? GLITE_ORCHESTRATION_VERSION : null,
+    orchestrationPath: gliteEnabled ? "glite" : "legacy_spoken_v1",
+    engineSelection: engineSelectionEarly,
+    interruptionInput: buildInterruptionInput(
+      input.interruptionInput || state.interruptionInput || {},
+    ),
+    gliteEnabled,
+    requiresTurnUnderstanding: needsUnderstanding,
   };
 
   if (conduct) {
@@ -3499,6 +3599,21 @@ export async function runFrontDoorTurn(input) {
       modelCompletionAt: result?.timing?.modelCompletionAt ?? null,
       spokenLength: result?.spokenLength ?? null,
       spokenTrimmed: Boolean(result?.spokenTrimmed),
+      understandingProducer: result?.understandingProducer ?? result?.contributionEngineVersion ?? null,
+      selectedEngine: result?.selectedEngine ?? null,
+      engineSelectionReason: result?.engineSelectionReason ?? null,
+      primaryBurden: result?.turnUnderstanding?.primaryBurden ?? null,
+      primaryMeaning: result?.turnUnderstanding?.primaryMeaning ?? null,
+      secondaryThreads: result?.turnUnderstanding?.secondaryThreads ?? null,
+      faithRole: result?.faithRole ?? result?.turnUnderstanding?.faithRole ?? null,
+      emotionalWeight: result?.emotionalWeight ?? result?.turnUnderstanding?.emotionalWeight ?? null,
+      responseWorthiness:
+        result?.responseWorthiness ?? result?.turnUnderstanding?.responseWorthiness ?? null,
+      recommendedResponseAct:
+        result?.recommendedResponseAct ?? result?.turnUnderstanding?.recommendedResponseAct ?? null,
+      spokenDepth: result?.spokenDepth ?? result?.turnUnderstanding?.spokenDepth ?? null,
+      orchestrationVersion: result?.orchestrationVersion ?? null,
+      orchestrationPath: result?.orchestrationPath ?? null,
     };
     const isTerraEngine =
       Boolean(result?.contributionEngineVersion) ||
@@ -3631,6 +3746,9 @@ export async function runFrontDoorTurn(input) {
     prayerOfferedAtTurn,
     prayerCompleted,
     relationalAnchors: nextAnchors,
+    // Consumed this turn — do not leave stale interrupt for the following turn.
+    interruptionInput: null,
+    clearInterruptionInput: true,
   });
 
   const lane = conduct
@@ -3818,6 +3936,32 @@ export async function runFrontDoorTurn(input) {
       spokenBudget: spokenDecision.spokenBudget || null,
       conversationControl: false,
       conversationControlType: null,
+      // G-lite Phase 1 observability
+      orchestrationVersion: gliteEnabled ? GLITE_ORCHESTRATION_VERSION : null,
+      orchestrationPath: gliteEnabled ? "glite" : "legacy_spoken_v1",
+      understandingProducer: deepCtx._terraResultMeta?.understandingProducer ?? null,
+      selectedEngine:
+        deepCtx._terraResultMeta?.selectedEngine ??
+        spokenDecision.selectedEngine ??
+        engineSelectionEarly?.recommendedEngine ??
+        null,
+      engineSelectionReason:
+        deepCtx._terraResultMeta?.engineSelectionReason ??
+        spokenDecision.engineSelectionReason ??
+        engineSelectionEarly?.engineSelectionReason ??
+        null,
+      primaryBurden: deepCtx._terraResultMeta?.primaryBurden ?? null,
+      primaryMeaning: deepCtx._terraResultMeta?.primaryMeaning ?? null,
+      secondaryThreads: deepCtx._terraResultMeta?.secondaryThreads ?? null,
+      faithRole: deepCtx._terraResultMeta?.faithRole ?? null,
+      emotionalWeight: deepCtx._terraResultMeta?.emotionalWeight ?? null,
+      responseWorthiness: deepCtx._terraResultMeta?.responseWorthiness ?? null,
+      recommendedResponseAct: deepCtx._terraResultMeta?.recommendedResponseAct ?? null,
+      spokenDepth: deepCtx._terraResultMeta?.spokenDepth ?? null,
+      interruptionInput: deepCtx.interruptionInput || null,
+      lifeThreads: resolved.lifeThreads || null,
+      requiresTurnUnderstanding: needsUnderstanding,
+      gliteEnabled,
     },
   };
 }
