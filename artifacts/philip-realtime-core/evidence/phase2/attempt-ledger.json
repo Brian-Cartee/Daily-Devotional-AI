@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "model": "gpt-realtime-2.1",
+  "maximumAttempts": 3,
+  "absoluteSpendUsd": 5,
+  "attempts": [
+    {
+      "attemptId": "phase2-1784315077809-1",
+      "ordinal": 1,
+      "requestedSessionNumber": 1,
+      "scenario": "transport_latency_canary",
+      "model": "gpt-realtime-2.1",
+      "attemptedAt": "2026-07-17T19:04:37.809Z",
+      "status": "provider_rejected",
+      "success": false,
+      "maxDurationMs": 115000,
+      "reservedUsd": 1.5,
+      "estimatedCostUsd": 0,
+      "failureCategory": "authentication_or_protocol",
+      "providerStatus": 401,
+      "finishedAt": "2026-07-17T19:04:38.152Z"
+    }
+  ],
+  "cumulativeEstimatedCostUsd": 0
+}

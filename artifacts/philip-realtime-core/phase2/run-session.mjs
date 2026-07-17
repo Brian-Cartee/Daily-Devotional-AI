@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { accessSync, constants as fsConstants } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,19 +15,24 @@ const LEDGER_PATH = path.join(PACKAGE_ROOT, "evidence", "phase2", "attempt-ledge
 const CHROME =
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-function commandOk(command, args = []) {
-  return spawnSync(command, args, { stdio: "ignore" }).status === 0;
+function isExecutable(binaryPath) {
+  try {
+    accessSync(binaryPath, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function assertRuntimePreflight() {
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not present");
-  if (!commandOk("/usr/bin/test", ["-x", CHROME])) {
+  if (!isExecutable(CHROME)) {
     throw new Error("Google Chrome executable not found");
   }
-  if (!commandOk("/usr/bin/test", ["-x", "/usr/bin/say"])) {
+  if (!isExecutable("/usr/bin/say")) {
     throw new Error("macOS say executable not found");
   }
-  if (!commandOk("/usr/bin/test", ["-x", "/opt/homebrew/bin/ffmpeg"])) {
+  if (!isExecutable("/opt/homebrew/bin/ffmpeg")) {
     throw new Error("ffmpeg executable not found");
   }
 }
