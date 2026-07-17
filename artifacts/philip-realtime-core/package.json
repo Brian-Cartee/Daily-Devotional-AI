@@ -6,7 +6,12 @@
   "description": "Phase 1 unpaid local/mock native realtime speech-to-speech feasibility harness",
   "scripts": {
     "test": "node --test test/run-phase1-suite.mjs",
+    "test:phase2-preflight": "node --test test/phase2-preflight.test.mjs",
     "cost-model": "node test/cost-model.mjs",
-    "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs"
+    "phase2:config": "node phase2/run-session.mjs",
+    "phase2:session1": "node phase2/run-session.mjs 1",
+    "phase2:session2": "node phase2/run-session.mjs 2",
+    "phase2:session3": "node phase2/run-session.mjs 3",
+    "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs && node --check phase2/config.mjs && node --check phase2/scenarios.mjs && node --check phase2/server.mjs && node --check phase2/run-session.mjs && node --check phase2/public/app.mjs"
   }
 }
