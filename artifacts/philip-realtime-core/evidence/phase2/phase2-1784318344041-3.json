@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "sessionNumber": 1,
+  "attemptOrdinal": 3,
+  "model": "gpt-realtime-2.1",
+  "transport": "browser WebRTC unified interface",
+  "audioRecorded": false,
+  "userTranscriptSource": "real_microphone_live",
+  "syntheticAudio": false,
+  "startedAt": "2026-07-17T19:59:03.774Z",
+  "endedAt": "2026-07-17T19:59:33.497Z",
+  "durationMs": 29723,
+  "status": "stopped",
+  "stopReason": "emergency_stop",
+  "connection": {
+    "offerCreatedAtMs": 61442,
+    "offerPostedAtMs": 61442,
+    "answerReceivedAtMs": 62232,
+    "offerPostRoundTripMs": 790,
+    "dataChannelOpenAtMs": 62418,
+    "offerToDataChannelOpenMs": 976,
+    "sessionCreatedAtMs": 62465,
+    "offerToSessionCreatedMs": 1023
+  },
+  "turns": [
+    {
+      "id": "live-1",
+      "providerSpeechStartedAtMs": 69849,
+      "cleanUserTranscript": "(live microphone; provider transcript not mirrored)",
+      "providerSpeechStoppedAtMs": 71304,
+      "detectedSpeechDurationMs": 1455,
+      "firstAudibleAtMs": 72265,
+      "speechEndToFirstAudibleMs": 961
+    },
+    {
+      "id": "live-2",
+      "providerSpeechStartedAtMs": 73346,
+      "cleanUserTranscript": "(live microphone; provider transcript not mirrored)",
+      "providerSpeechStoppedAtMs": 74203,
+      "detectedSpeechDurationMs": 857,
+      "firstAudibleAtMs": 74833,
+      "speechEndToFirstAudibleMs": 630
+    },
+    {
+      "id": "live-3",
+      "providerSpeechStartedAtMs": 82143,
+      "cleanUserTranscript": "(live microphone; provider transcript not mirrored)",
+      "providerSpeechStoppedAtMs": 88342,
+      "detectedSpeechDurationMs": 6199,
+      "firstAudibleAtMs": 89112,
+      "speechEndToFirstAudibleMs": 770
+    }
+  ],
+  "responses": [
+    {
+      "responseId": "resp_E2j0DThujoFOWBs9H5Cff",
+      "createdAtMs": 71311,
+      "transcriptDeltas": "I’m here and attentive, glad to keep you company and think with you. What’s on your mind today?",
+      "audioStartAtMs": 72265,
+      "audioStopAtMs": 72842,
+      "speechEndToFirstAudibleMs": 961,
+      "doneAtMs": 73109,
+      "status": "completed",
+      "transcript": "I’m here and attentive, glad to keep you company and think with you. What’s on your mind today?",
+      "words": 18,
+      "characters": 95,
+      "estimatedAudibleDurationMs": 7200,
+      "usage": {
+        "total_tokens": 990,
+        "input_tokens": 811,
+        "output_tokens": 179,
+        "input_token_details": {
+          "text_tokens": 793,
+          "audio_tokens": 18,
+          "image_tokens": 0,
+          "cached_tokens": 0,
+          "cached_tokens_details": {
+            "text_tokens": 0,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 70,
+          "audio_tokens": 109,
+          "reasoning_tokens": 31
+        }
+      },
+      "functionCallOnly": false
+    },
+    {
+      "responseId": "resp_E2j0GSl5HjqxM5AlaVsKw",
+      "createdAtMs": 74206,
+      "transcriptDeltas": "I hear you starting something, but it sounds like it didn’t come through fully. If you want to continue, I’m listening.",
+      "audioStartAtMs": 74833,
+      "audioStopAtMs": null,
+      "speechEndToFirstAudibleMs": 630,
+      "doneAtMs": 75988,
+      "status": "completed",
+      "transcript": "I hear you starting something, but it sounds like it didn’t come through fully. If you want to continue, I’m listening.",
+      "words": 21,
+      "characters": 119,
+      "estimatedAudibleDurationMs": 8400,
+      "usage": {
+        "total_tokens": 1030,
+        "input_tokens": 842,
+        "output_tokens": 188,
+        "input_token_details": {
+          "text_tokens": 812,
+          "audio_tokens": 30,
+          "image_tokens": 0,
+          "cached_tokens": 768,
+          "cached_tokens_details": {
+            "text_tokens": 768,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 62,
+          "audio_tokens": 126,
+          "reasoning_tokens": 19
+        }
+      },
+      "functionCallOnly": false
+    },
+    {
+      "responseId": "resp_E2j0UJ7TNZ043anzriYT6",
+      "createdAtMs": 88352,
+      "transcriptDeltas": "I’m here, attentive, and glad to continue with you. If there’s something on your mind, we can walk through it together.",
+      "audioStartAtMs": 89112,
+      "audioStopAtMs": 89620,
+      "speechEndToFirstAudibleMs": 770,
+      "doneAtMs": 90211,
+      "status": "completed",
+      "transcript": "I’m here, attentive, and glad to continue with you. If there’s something on your mind, we can walk through it together.",
+      "words": 21,
+      "characters": 119,
+      "estimatedAudibleDurationMs": 8400,
+      "usage": {
+        "total_tokens": 1121,
+        "input_tokens": 910,
+        "output_tokens": 211,
+        "input_token_details": {
+          "text_tokens": 853,
+          "audio_tokens": 57,
+          "image_tokens": 0,
+          "cached_tokens": 832,
+          "cached_tokens_details": {
+            "text_tokens": 832,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 76,
+          "audio_tokens": 135,
+          "reasoning_tokens": 32
+        }
+      },
+      "functionCallOnly": false
+    }
+  ],
+  "interruptions": [
+    {
+      "detectedAtMs": 73346,
+      "assistantWasAudible": true,
+      "assistantStoppedAtMs": 73348,
+      "interruptionToAudioStoppedMs": 2
+    }
+  ],
+  "tools": [],
+  "providerErrors": [],
+  "events": [
+    {
+      "type": "session.created",
+      "atMs": 62465
+    },
+    {
+      "type": "session.updated",
+      "atMs": 62490
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 69849,
+      "itemId": "item_E2j0CQaZ8qoCrpWODoouy"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 71304,
+      "itemId": "item_E2j0CQaZ8qoCrpWODoouy"
+    },
+    {
+      "type": "response.created",
+      "atMs": 71311,
+      "responseId": "resp_E2j0DThujoFOWBs9H5Cff"
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 72152,
+      "responseId": "resp_E2j0DThujoFOWBs9H5Cff"
+    },
+    {
+      "type": "response.done",
+      "atMs": 73109,
+      "responseId": "resp_E2j0DThujoFOWBs9H5Cff"
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 73346,
+      "itemId": "item_E2j0Fbp9HRYbGH1L6Z3EA"
+    },
+    {
+      "type": "output_audio_buffer.cleared",
+      "atMs": 73348,
+      "responseId": "resp_E2j0DThujoFOWBs9H5Cff"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 74203,
+      "itemId": "item_E2j0Fbp9HRYbGH1L6Z3EA"
+    },
+    {
+      "type": "response.created",
+      "atMs": 74206,
+      "responseId": "resp_E2j0GSl5HjqxM5AlaVsKw"
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 74736,
+      "responseId": "resp_E2j0GSl5HjqxM5AlaVsKw"
+    },
+    {
+      "type": "response.done",
+      "atMs": 75988,
+      "responseId": "resp_E2j0GSl5HjqxM5AlaVsKw"
+    },
+    {
+      "type": "output_audio_buffer.stopped",
+      "atMs": 81022,
+      "responseId": "resp_E2j0GSl5HjqxM5AlaVsKw"
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 82143,
+      "itemId": "item_E2j0OPeNFZsuEmat6q3j6"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 88342,
+      "itemId": "item_E2j0OPeNFZsuEmat6q3j6"
+    },
+    {
+      "type": "response.created",
+      "atMs": 88352,
+      "responseId": "resp_E2j0UJ7TNZ043anzriYT6"
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 88984.00000000001,
+      "responseId": "resp_E2j0UJ7TNZ043anzriYT6"
+    },
+    {
+      "type": "response.done",
+      "atMs": 90211,
+      "responseId": "resp_E2j0UJ7TNZ043anzriYT6"
+    }
+  ],
+  "usage": {
+    "textInputTokens": 2458,
+    "cachedTextInputTokens": 1600,
+    "audioInputTokens": 105,
+    "cachedAudioInputTokens": 0,
+    "textOutputTokens": 208,
+    "audioOutputTokens": 370
+  },
+  "estimatedCostUsd": 0.042504,
+  "attemptId": "phase2-1784318344041-3"
+}

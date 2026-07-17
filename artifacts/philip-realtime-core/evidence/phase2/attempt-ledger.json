@@ -38,7 +38,26 @@
       "finishedAt": "2026-07-17T19:33:51.746Z",
       "evidenceFile": "evidence/phase2/phase2-1784316815260-2.json",
       "stopReason": "timeout:s1-greeting:speech_stopped"
+    },
+    {
+      "attemptId": "phase2-1784318344041-3",
+      "ordinal": 3,
+      "requestedSessionNumber": 1,
+      "scenario": "transport_latency_canary",
+      "model": "gpt-realtime-2.1",
+      "attemptedAt": "2026-07-17T19:59:04.041Z",
+      "status": "stopped",
+      "success": false,
+      "maxDurationMs": 115000,
+      "reservedUsd": 1.5,
+      "estimatedCostUsd": 0.042504,
+      "providerStatus": 201,
+      "providerRequestId": null,
+      "durationMs": 29723,
+      "finishedAt": "2026-07-17T19:59:33.532Z",
+      "evidenceFile": "evidence/phase2/phase2-1784318344041-3.json",
+      "stopReason": "emergency_stop"
     }
   ],
-  "cumulativeEstimatedCostUsd": 0
+  "cumulativeEstimatedCostUsd": 0.042504
 }
