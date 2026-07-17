@@ -27,9 +27,7 @@
       "env": {
         "EXPO_PUBLIC_ENABLE_PHILIP_VOICE_LAB": "true",
         "EXPO_PUBLIC_PHILIP_VOICE_LAB_BUNDLE_SUFFIX": "lab",
-        "EXPO_PUBLIC_API_URL": "https://www.shepherdspathai.com",
-        "EXPO_PUBLIC_PHILIP_REALTIME_LAB_URL": "",
-        "EXPO_PUBLIC_PHILIP_REALTIME_LAB_SECRET": ""
+        "EXPO_PUBLIC_API_URL": "https://www.shepherdspathai.com"
       }
     },
     "production": {
