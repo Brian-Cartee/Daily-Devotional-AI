@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { startPhase2Server } from "./server.mjs";
 import { allSyntheticUtterances, getPhase2Scenario } from "./scenarios.mjs";
 import { sanitizedPreflightConfig } from "./config.mjs";
+import { applyPhase2OpenAiApiKey } from "./loadCredential.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(HERE, "..");
@@ -96,6 +97,10 @@ async function main() {
     console.log(JSON.stringify(sanitizedPreflightConfig(), null, 2));
     return;
   }
+  // Load gitignored .env.phase2.local inside the runtime. Do not rely on shell
+  // command-substitution parsers that can turn an empty assignment into a
+  // literal "OPENAI_API_KEY=" bearer token.
+  applyPhase2OpenAiApiKey();
   const scenario = getPhase2Scenario(sessionNumber);
   assertRuntimePreflight();
   const before = await loadLedger();

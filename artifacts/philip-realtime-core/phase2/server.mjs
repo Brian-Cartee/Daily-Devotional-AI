@@ -159,9 +159,31 @@ async function updateAttempt(attemptId, patch) {
   return { ledger, attempt };
 }
 
+function resolveServerApiKey() {
+  const value = process.env.OPENAI_API_KEY;
+  if (!value || !String(value).trim()) {
+    return { ok: false, error: "OPENAI_API_KEY is not present" };
+  }
+  const trimmed = String(value).trim();
+  // Refuse the Session 1 local-loader failure mode before any provider call.
+  if (trimmed === "OPENAI_API_KEY" || trimmed.startsWith("OPENAI_API_KEY=")) {
+    return {
+      ok: false,
+      error: "OPENAI_API_KEY looks like a malformed local env assignment, not a secret",
+    };
+  }
+  return { ok: true, value: trimmed };
+}
+
+function buildBearerAuthorization(apiKey) {
+  // Construct exactly once. Official docs use Authorization: Bearer <standard key>.
+  return `Bearer ${apiKey}`;
+}
+
 async function createRealtimeCall(req, res, sessionNumber) {
-  if (!process.env.OPENAI_API_KEY) {
-    return json(res, 412, { error: "OPENAI_API_KEY is not present" });
+  const key = resolveServerApiKey();
+  if (!key.ok) {
+    return json(res, 412, { error: key.error });
   }
 
   const sdp = await readBody(req, { asText: true });
@@ -178,12 +200,13 @@ async function createRealtimeCall(req, res, sessionNumber) {
   const form = new FormData();
   form.set("sdp", sdp);
   form.set("session", JSON.stringify(SANITIZED_REALTIME_SESSION));
+  const authorization = buildBearerAuthorization(key.value);
 
   try {
     const providerResponse = await fetch("https://api.openai.com/v1/realtime/calls", {
       method: "POST",
       headers: {
-        authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: authorization,
         "OpenAI-Safety-Identifier": "philip-realtime-phase2-neutral-synthetic",
       },
       body: form,
@@ -191,17 +214,33 @@ async function createRealtimeCall(req, res, sessionNumber) {
     });
     const answer = await providerResponse.text();
     if (!providerResponse.ok) {
+      let providerErrorType = null;
+      let providerErrorCode = null;
+      try {
+        const parsed = JSON.parse(answer);
+        providerErrorType = parsed?.error?.type || null;
+        providerErrorCode = parsed?.error?.code || null;
+      } catch {
+        // Provider may return SDP/text on success paths; failures are often JSON.
+      }
       await updateAttempt(attempt.attemptId, {
         status: "provider_rejected",
         failureCategory: "authentication_or_protocol",
         providerStatus: providerResponse.status,
+        providerErrorType,
+        providerErrorCode,
+        providerHost: "api.openai.com",
+        providerPath: "/v1/realtime/calls",
         finishedAt: new Date().toISOString(),
       });
       return json(res, providerResponse.status, {
         error: "realtime call rejected",
         providerStatus: providerResponse.status,
+        providerErrorType,
+        providerErrorCode,
         attemptId: attempt.attemptId,
-        providerBodySanitized: answer.slice(0, 300),
+        // Never include Authorization or secret material. Keep a short sanitized body.
+        providerBodySanitized: answer.slice(0, 300).replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]"),
       });
     }
     await updateAttempt(attempt.attemptId, {
@@ -273,7 +312,15 @@ export async function startPhase2Server({ port = 0 } = {}) {
           config: sanitizedPreflightConfig(),
           scenario: getPhase2Scenario(sessionNumber),
           ledger: await loadLedger(),
-          apiKeyPresent: Boolean(process.env.OPENAI_API_KEY),
+          apiKeyPresent: (() => {
+            const value = process.env.OPENAI_API_KEY;
+            if (!value || !String(value).trim()) return false;
+            const trimmed = String(value).trim();
+            if (trimmed === "OPENAI_API_KEY" || trimmed.startsWith("OPENAI_API_KEY=")) {
+              return false;
+            }
+            return true;
+          })(),
         });
       }
       if (req.method === "GET" && url.pathname === "/api/ledger") {
