@@ -33,7 +33,7 @@ test("pins the authorized conversational and transcription models", () => {
 test("keeps the identity compact and covers binding conversational behavior", () => {
   assert.ok(PHILIP_REALTIME_QUALITY_INSTRUCTIONS.length < 7_500);
   for (const required of [
-    "one to three short spoken sentences",
+    "roughly 20 to 35 spoken words",
     "central meaning across multiple topics",
     "Caregiving is a relationship",
     "Never invent a body",

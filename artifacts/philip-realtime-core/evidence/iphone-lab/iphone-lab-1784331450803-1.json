@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "phase": "iphone-realtime-lab",
+  "model": "gpt-realtime-2.1",
+  "voice": "cedar",
+  "transport": "native WebRTC @livekit/react-native-webrtc",
+  "liveKitCloud": false,
+  "audioRecorded": false,
+  "audioPersisted": false,
+  "startedAt": "2026-07-17T23:37:30.746Z",
+  "endedAt": "2026-07-17T23:39:27.375Z",
+  "durationMs": 116629,
+  "status": "duration_stop",
+  "stopReason": "two_minute_hard_stop",
+  "sessionId": "iphone-lab-1784331450803-1",
+  "connection": {
+    "localMicrophoneTrackCount": 1,
+    "localMicrophoneTrackId": "7552E684-605E-42E4-9124-0A7FBFDAE403",
+    "localMicrophoneTrackState": "live",
+    "offerCreatedAtMs": 1784331450773,
+    "remoteTrackReceived": true,
+    "remoteAudioTrackId": "33d498d7-dc3a-4c12-bd53-d9d2c6abbb19",
+    "answerAppliedAtMs": 1784331452368,
+    "peerConnectionState": "connected",
+    "dataChannelOpenedAtMs": 1784331452541
+  },
+  "events": [
+    {
+      "type": "remote_track_unmuted",
+      "atMs": 1784331452368,
+      "trackId": "33d498d7-dc3a-4c12-bd53-d9d2c6abbb19"
+    },
+    {
+      "type": "session.created",
+      "atMs": 1784331452612,
+      "itemId": null
+    },
+    {
+      "type": "session.updated",
+      "atMs": 1784331452644,
+      "itemId": null
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 1784331457888,
+      "itemId": "item_E2mPZXrfvzxxvuPlf1OfO"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 1784331458054,
+      "itemId": "item_E2mPZXrfvzxxvuPlf1OfO"
+    },
+    {
+      "type": "response.created",
+      "atMs": 1784331458064,
+      "itemId": null
+    },
+    {
+      "type": "conversation.item.input_audio_transcription.completed",
+      "atMs": 1784331458813,
+      "itemId": "item_E2mPZXrfvzxxvuPlf1OfO"
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 1784331458936,
+      "itemId": null
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 1784331459852,
+      "itemId": "item_E2mPb7vnZl0A1NIR3oJ7d"
+    },
+    {
+      "type": "output_audio_buffer.cleared",
+      "atMs": 1784331459852,
+      "itemId": null
+    },
+    {
+      "type": "response.done",
+      "atMs": 1784331459888,
+      "itemId": null
+    },
+    {
+      "type": "conversation.item.truncated",
+      "atMs": 1784331459889,
+      "itemId": "item_E2mPaffU7SqhRpoboUqOA"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 1784331465055,
+      "itemId": "item_E2mPb7vnZl0A1NIR3oJ7d"
+    },
+    {
+      "type": "response.created",
+      "atMs": 1784331465063,
+      "itemId": null
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 1784331465675,
+      "itemId": null
+    },
+    {
+      "type": "conversation.item.input_audio_transcription.completed",
+      "atMs": 1784331466718,
+      "itemId": "item_E2mPb7vnZl0A1NIR3oJ7d"
+    },
+    {
+      "type": "response.done",
+      "atMs": 1784331468162,
+      "itemId": null
+    },
+    {
+      "type": "output_audio_buffer.stopped",
+      "atMs": 1784331477869,
+      "itemId": null
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 1784331478674,
+      "itemId": "item_E2mPuqRDOvQCuYlBdSw4b"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 1784331504101,
+      "itemId": "item_E2mPuqRDOvQCuYlBdSw4b"
+    },
+    {
+      "type": "response.created",
+      "atMs": 1784331504110,
+      "itemId": null
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 1784331505446,
+      "itemId": null
+    },
+    {
+      "type": "conversation.item.input_audio_transcription.completed",
+      "atMs": 1784331506174,
+      "itemId": "item_E2mPuqRDOvQCuYlBdSw4b"
+    },
+    {
+      "type": "response.done",
+      "atMs": 1784331508936,
+      "itemId": null
+    },
+    {
+      "type": "output_audio_buffer.stopped",
+      "atMs": 1784331523432,
+      "itemId": null
+    },
+    {
+      "type": "input_audio_buffer.speech_started",
+      "atMs": 1784331525710,
+      "itemId": "item_E2mQfUOgoBRCabPNjyNYN"
+    },
+    {
+      "type": "input_audio_buffer.speech_stopped",
+      "atMs": 1784331553108,
+      "itemId": "item_E2mQfUOgoBRCabPNjyNYN"
+    },
+    {
+      "type": "response.created",
+      "atMs": 1784331553118,
+      "itemId": null
+    },
+    {
+      "type": "output_audio_buffer.started",
+      "atMs": 1784331554096,
+      "itemId": null
+    },
+    {
+      "type": "conversation.item.input_audio_transcription.completed",
+      "atMs": 1784331555196,
+      "itemId": "item_E2mQfUOgoBRCabPNjyNYN"
+    },
+    {
+      "type": "response.done",
+      "atMs": 1784331557722,
+      "itemId": null
+    }
+  ],
+  "turns": [
+    {
+      "turnNumber": 1,
+      "speechStartedAtMs": 1784331457888,
+      "itemId": "item_E2mPZXrfvzxxvuPlf1OfO",
+      "speechStoppedAtMs": 1784331458054,
+      "inputTranscriptDeltas": "Hello, Philip, how are you?",
+      "inputTranscriptStatus": "completed",
+      "inputTranscript": "Hello, Philip, how are you?",
+      "inputTranscriptCompletedAtMs": 1784331458813,
+      "speechEndToTranscriptCompleteMs": 759
+    },
+    {
+      "turnNumber": 2,
+      "speechStartedAtMs": 1784331459852,
+      "itemId": "item_E2mPb7vnZl0A1NIR3oJ7d",
+      "speechStoppedAtMs": 1784331465055,
+      "inputTranscriptDeltas": "What did you have to say?",
+      "inputTranscriptStatus": "completed",
+      "inputTranscript": "What did you have to say?",
+      "inputTranscriptCompletedAtMs": 1784331466718,
+      "speechEndToTranscriptCompleteMs": 1663
+    },
+    {
+      "turnNumber": 3,
+      "speechStartedAtMs": 1784331478674,
+      "itemId": "item_E2mPuqRDOvQCuYlBdSw4b",
+      "speechStoppedAtMs": 1784331504101,
+      "inputTranscriptDeltas": "Just got done at the gym and just been a stressful day. Next week, we've got to take my mom to the doctor and just, we've got, she's got to get a watchman and then also check her blood pressure and everything by another her doctor, her leukemia doctor.",
+      "inputTranscriptStatus": "completed",
+      "inputTranscript": "Just got done at the gym and just been a stressful day. Next week, we've got to take my mom to the doctor and just, we've got, she's got to get a watchman and then also check her blood pressure and everything by another her doctor, her leukemia doctor.",
+      "inputTranscriptCompletedAtMs": 1784331506174,
+      "speechEndToTranscriptCompleteMs": 2073
+    },
+    {
+      "turnNumber": 4,
+      "speechStartedAtMs": 1784331525710,
+      "itemId": "item_E2mQfUOgoBRCabPNjyNYN",
+      "speechStoppedAtMs": 1784331553108,
+      "inputTranscriptDeltas": "I would just say just keeping consistent with the eating right and the fitness, you know, that definitely keeps my endorphins and keeps my stress level down. And also, if I can read the word of God at least daily, whether it's one scripture, two scripture, and pray, those three or four things seem to keep me better than not.",
+      "inputTranscriptStatus": "completed",
+      "inputTranscript": "I would just say just keeping consistent with the eating right and the fitness, you know, that definitely keeps my endorphins and keeps my stress level down. And also, if I can read the word of God at least daily, whether it's one scripture, two scripture, and pray, those three or four things seem to keep me better than not.",
+      "inputTranscriptCompletedAtMs": 1784331555196,
+      "speechEndToTranscriptCompleteMs": 2088
+    }
+  ],
+  "responses": [
+    {
+      "responseId": "resp_E2mPaCcjy4KWUuwaopPhd",
+      "createdAtMs": 1784331458064,
+      "transcriptDeltas": "I don’t really have a day or a personal state the way you do. But I’m here with you in this moment,",
+      "audioStartAtMs": 1784331458936,
+      "speechEndToFirstAudibleMs": 882,
+      "doneAtMs": 1784331459888,
+      "status": "cancelled",
+      "transcript": "I don’t really have a day or a personal state the way you do. But I’m here with you in this moment,",
+      "usage": {
+        "total_tokens": 1479,
+        "input_tokens": 1300,
+        "output_tokens": 179,
+        "input_token_details": {
+          "text_tokens": 1279,
+          "audio_tokens": 21,
+          "image_tokens": 0,
+          "cached_tokens": 0,
+          "cached_tokens_details": {
+            "text_tokens": 0,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 59,
+          "audio_tokens": 120,
+          "reasoning_tokens": 18
+        }
+      }
+    },
+    {
+      "responseId": "resp_E2mPhIf8UtvALwgBzlMaN",
+      "createdAtMs": 1784331465063,
+      "transcriptDeltas": "Just that I don’t have a personal day or feelings like a person does, so I can’t answer “how are you” in the usual way. I can, though, help you think through what you’re carrying, or just talk a bit. What’s on your mind right now?",
+      "audioStartAtMs": 1784331465675,
+      "speechEndToFirstAudibleMs": 620,
+      "doneAtMs": 1784331468162,
+      "status": "completed",
+      "transcript": "Just that I don’t have a personal day or feelings like a person does, so I can’t answer “how are you” in the usual way. I can, though, help you think through what you’re carrying, or just talk a bit. What’s on your mind right now?",
+      "usage": {
+        "total_tokens": 1714,
+        "input_tokens": 1389,
+        "output_tokens": 325,
+        "input_token_details": {
+          "text_tokens": 1337,
+          "audio_tokens": 52,
+          "image_tokens": 0,
+          "cached_tokens": 1280,
+          "cached_tokens_details": {
+            "text_tokens": 1280,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 81,
+          "audio_tokens": 244
+        }
+      }
+    },
+    {
+      "responseId": "resp_E2mQKyDumx87HG56nV9EI",
+      "createdAtMs": 1784331504110,
+      "transcriptDeltas": "That’s a lot to hold at once—your mom’s heart procedure, blood pressure, and leukemia follow-up, all layered on top of a stressful day. The gym might be one of the few places you get to breathe like yourself. What’s one small, steady thing that could help you keep a bit of recovery space as next week ramps up?",
+      "audioStartAtMs": 1784331505446,
+      "speechEndToFirstAudibleMs": 1345,
+      "doneAtMs": 1784331508936,
+      "status": "completed",
+      "transcript": "That’s a lot to hold at once—your mom’s heart procedure, blood pressure, and leukemia follow-up, all layered on top of a stressful day. The gym might be one of the few places you get to breathe like yourself. What’s one small, steady thing that could help you keep a bit of recovery space as next week ramps up?",
+      "usage": {
+        "total_tokens": 2185,
+        "input_tokens": 1663,
+        "output_tokens": 522,
+        "input_token_details": {
+          "text_tokens": 1392,
+          "audio_tokens": 271,
+          "image_tokens": 0,
+          "cached_tokens": 832,
+          "cached_tokens_details": {
+            "text_tokens": 832,
+            "audio_tokens": 0,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 162,
+          "audio_tokens": 360,
+          "reasoning_tokens": 65
+        }
+      }
+    },
+    {
+      "responseId": "resp_E2mR7B6AkoCNFl3zoEbVn",
+      "createdAtMs": 1784331553118,
+      "transcriptDeltas": "That sounds like a healthy bundle of anchors: steady food, movement, and a simple rhythm of Scripture and prayer. It’s not about doing everything perfectly; it’s about keeping those small, repeatable touches that steady you. And when next week gets noisy, even one verse and a short prayer can still count.",
+      "audioStartAtMs": 1784331554096,
+      "speechEndToFirstAudibleMs": 988,
+      "doneAtMs": 1784331557722,
+      "status": "completed",
+      "transcript": "That sounds like a healthy bundle of anchors: steady food, movement, and a simple rhythm of Scripture and prayer. It’s not about doing everything perfectly; it’s about keeping those small, repeatable touches that steady you. And when next week gets noisy, even one verse and a short prayer can still count.",
+      "usage": {
+        "total_tokens": 2500,
+        "input_tokens": 1986,
+        "output_tokens": 514,
+        "input_token_details": {
+          "text_tokens": 1477,
+          "audio_tokens": 509,
+          "image_tokens": 0,
+          "cached_tokens": 1664,
+          "cached_tokens_details": {
+            "text_tokens": 1408,
+            "audio_tokens": 256,
+            "image_tokens": 0
+          }
+        },
+        "output_token_details": {
+          "text_tokens": 123,
+          "audio_tokens": 391,
+          "reasoning_tokens": 32
+        }
+      }
+    }
+  ],
+  "interruptions": [
+    {
+      "detectedAtMs": 1784331459852,
+      "assistantWasAudible": true,
+      "assistantStoppedAtMs": 1784331459852,
+      "interruptionToAudioStoppedMs": 0
+    }
+  ],
+  "providerErrors": [],
+  "tools": [],
+  "usage": {
+    "textInputTokens": 1965,
+    "cachedTextInputTokens": 3520,
+    "audioInputTokens": 597,
+    "cachedAudioInputTokens": 256,
+    "textOutputTokens": 425,
+    "audioOutputTokens": 1115
+  },
+  "estimatedCostUsd": 0.110034
+}

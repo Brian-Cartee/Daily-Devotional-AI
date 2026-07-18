@@ -1,4 +1,5 @@
 import {
+  PHILIP_REALTIME_LAB_CLOSING_NOTICE_MS,
   PHILIP_REALTIME_LAB_MAX_DURATION_MS,
   PHILIP_REALTIME_LAB_MODEL,
   PHILIP_REALTIME_LAB_SPEND_CAP_USD,
@@ -7,6 +8,10 @@ import {
   philipRealtimeLabBaseUrl,
 } from "@/lib/philipRealtimeLabConfig";
 import { releaseRealtimeAudioSession } from "@/lib/philipRealtimeAudioSession";
+import {
+  buildClosingNoticeEvent,
+  closingNoticeDelayMs,
+} from "@/lib/philipRealtimeClosingNotice.mjs";
 import { applyInputTranscriptEvent } from "@/lib/philipRealtimeTranscript.mjs";
 import { acceptSingleRemoteAudioTrack } from "@/lib/philipRealtimeTrackPolicy.mjs";
 import {
@@ -114,6 +119,7 @@ export class PhilipRealtimeLabSession {
   private evidence = emptyEvidence();
   private startedAtMs: number | null = null;
   private hardStopTimer: ReturnType<typeof setTimeout> | null = null;
+  private closingNoticeTimer: ReturnType<typeof setTimeout> | null = null;
   private elapsedTimer: ReturnType<typeof setInterval> | null = null;
   private completed = false;
   private speaking = false;
@@ -179,6 +185,21 @@ export class PhilipRealtimeLabSession {
       throw new Error("data_channel_not_open");
     }
     this.dc.send(JSON.stringify(event));
+  }
+
+  /**
+   * Non-forcing near-limit context: adds a system item the model will see on
+   * its next turn. Never cancels active audio and never triggers a response.
+   */
+  private sendClosingNotice() {
+    if (this.completed) return;
+    try {
+      this.send(buildClosingNoticeEvent());
+      this.evidence.events.push({ type: "closing_notice_sent", atMs: Date.now(), itemId: null });
+      this.log("Near-limit closing notice sent (context only).");
+    } catch {
+      // Data channel not open; the hard stop remains the safety boundary.
+    }
   }
 
   private handleToolCall(item: { name?: string; call_id?: string; arguments?: string }) {
@@ -521,6 +542,11 @@ export class PhilipRealtimeLabSession {
     this.hardStopTimer = setTimeout(() => {
       void this.end("duration_stop", "two_minute_hard_stop");
     }, PHILIP_REALTIME_LAB_MAX_DURATION_MS);
+    // Give the model a chance to close naturally before the hard stop. This is
+    // context only: it never cancels an active response or forces a new one.
+    this.closingNoticeTimer = setTimeout(() => {
+      this.sendClosingNotice();
+    }, closingNoticeDelayMs(PHILIP_REALTIME_LAB_MAX_DURATION_MS, PHILIP_REALTIME_LAB_CLOSING_NOTICE_MS));
     this.elapsedTimer = setInterval(() => {
       if (this.startedAtMs == null) return;
       this.emit({ elapsedMs: Date.now() - this.startedAtMs });
@@ -540,6 +566,7 @@ export class PhilipRealtimeLabSession {
     );
     this.recomputeCost();
     if (this.hardStopTimer) clearTimeout(this.hardStopTimer);
+    if (this.closingNoticeTimer) clearTimeout(this.closingNoticeTimer);
     if (this.elapsedTimer) clearInterval(this.elapsedTimer);
     try {
       if (this.dc?.readyState === "open") {

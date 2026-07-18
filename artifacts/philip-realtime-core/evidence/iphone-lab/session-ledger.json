@@ -3,7 +3,26 @@
   "phase": "iphone-realtime-lab",
   "model": "gpt-realtime-2.1",
   "voice": "cedar",
-  "sessions": [],
-  "cumulativeEstimatedCostUsd": 0,
+  "sessions": [
+    {
+      "sessionId": "iphone-lab-1784331450803-1",
+      "ordinal": 1,
+      "model": "gpt-realtime-2.1",
+      "voice": "cedar",
+      "attemptedAt": "2026-07-17T23:37:30.803Z",
+      "status": "duration_stop",
+      "success": false,
+      "maxDurationMs": 115000,
+      "reservedUsd": 0.75,
+      "estimatedCostUsd": 0.110034,
+      "providerStatus": 201,
+      "providerRequestId": null,
+      "durationMs": 116629,
+      "stopReason": "two_minute_hard_stop",
+      "finishedAt": "2026-07-17T23:39:27.481Z",
+      "evidenceFile": "../philip-realtime-core/evidence/iphone-lab/iphone-lab-1784331450803-1.json"
+    }
+  ],
+  "cumulativeEstimatedCostUsd": 0.110034,
   "absoluteSpendUsd": 1
 }

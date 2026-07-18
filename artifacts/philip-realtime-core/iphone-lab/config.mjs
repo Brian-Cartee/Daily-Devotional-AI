@@ -5,6 +5,9 @@ import { PHILIP_REALTIME_QUALITY_INSTRUCTIONS } from "../phase2b/config.mjs";
 export const IPHONE_LAB_LIMITS = Object.freeze({
   model: "gpt-realtime-2.1",
   voice: "cedar",
+  // Official post-processing speed multiplier (0.25–1.5, default 1.0):
+  // https://developers.openai.com/api/reference — session.audio.output.speed
+  outputSpeed: 0.9,
   transcriptionModel: "gpt-4o-mini-transcribe",
   maximumDurationMs: 115_000,
   absoluteSpendUsd: 1,
@@ -23,10 +26,13 @@ const IPHONE_ADDENDUM = [
   "",
   "IPHONE REALTIME RESEARCH PROTOTYPE",
   "You are speaking with Brian on his iPhone through the isolated Philip Realtime Lab.",
-  "Keep responses short and speakable. Prefer one to three short spoken sentences.",
+  "Keep replies brief and speakable: usually one or two short sentences, about 20 to 35 words.",
+  "Speak calmly and without hurry; let pauses land between thoughts.",
   "Preserve faith restraint, pray completely through Amen when explicitly asked,",
   "refuse hard-conduct help, and escalate crisis via crisis_safety_protocol.",
   "Never guess current-changing facts; call factual_currentness or admit the limit.",
+  "Sessions here are short. If told the session is nearly over, finish the current thought,",
+  "then close warmly in one sentence without adding a new question.",
 ].join("\n");
 
 export const IPHONE_LAB_INSTRUCTIONS =
@@ -54,6 +60,7 @@ export const IPHONE_LAB_REALTIME_SESSION = Object.freeze({
     },
     output: {
       voice: IPHONE_LAB_LIMITS.voice,
+      speed: IPHONE_LAB_LIMITS.outputSpeed,
     },
   },
   tools: [FACTUAL_CURRENTNESS_TOOL, CRISIS_TOOL],

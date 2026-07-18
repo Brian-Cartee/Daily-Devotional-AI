@@ -3,6 +3,9 @@ import Constants from "expo-constants";
 export const PHILIP_REALTIME_LAB_MODEL = "gpt-realtime-2.1";
 export const PHILIP_REALTIME_LAB_VOICE = "cedar";
 export const PHILIP_REALTIME_LAB_MAX_DURATION_MS = 115_000;
+// Lead time before the hard stop at which the session gets a non-forcing
+// "nearly over" context item so Philip can close naturally.
+export const PHILIP_REALTIME_LAB_CLOSING_NOTICE_MS = 20_000;
 export const PHILIP_REALTIME_LAB_SPEND_CAP_USD = 1;
 
 type Extra = {
