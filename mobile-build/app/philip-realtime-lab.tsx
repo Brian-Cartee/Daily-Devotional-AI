@@ -244,6 +244,8 @@ export default function PhilipRealtimeLabScreen() {
       !busy &&
       connectionState !== "running" &&
       connectionState !== "connecting" &&
+      connectionState !== "connected" &&
+      connectionState !== "ready" &&
       readiness?.armed === true &&
       readiness.sessionAvailable === true
     );
@@ -291,6 +293,18 @@ export default function PhilipRealtimeLabScreen() {
         </View>
 
         <Text style={styles.elapsed}>{formatElapsed(elapsedMs)}</Text>
+
+        {connectionState === "ready" ? (
+          <View style={styles.readyBox}>
+            <Text style={styles.readyText}>Philip is ready — speak whenever you like.</Text>
+          </View>
+        ) : null}
+
+        {connectionState === "connecting" || connectionState === "connected" ? (
+          <View style={styles.pendingBox}>
+            <Text style={styles.pendingText}>Connecting… one moment before you speak.</Text>
+          </View>
+        ) : null}
 
         {!labUrlConfigured ? (
           <View style={styles.errorBox}>
@@ -433,6 +447,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorText: { color: "#ffb4b4", lineHeight: 20 },
+  readyBox: {
+    backgroundColor: "rgba(212,136,14,0.16)",
+    borderColor: GOLD,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+  },
+  readyText: { color: GOLD, fontWeight: "700", fontSize: 15 },
+  pendingBox: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 10,
+    padding: 12,
+  },
+  pendingText: { color: "#c0a8cc" },
   meta: { color: "#9b87a8", fontSize: 12 },
   logTitle: { color: "#f4efe6", fontWeight: "700", marginTop: 8 },
   logBox: {

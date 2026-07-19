@@ -124,6 +124,10 @@ export class PhilipRealtimeLabSession {
   private completed = false;
   private speaking = false;
   private listening = false;
+  private dataChannelReady = false;
+  private providerSessionCreated = false;
+  private remoteAudioReady = false;
+  private conversationallyReady = false;
   private currentResponse: Record<string, unknown> | null = null;
   private lastSpeechStoppedAtMs: number | null = null;
   private runtimeToken: string | null = null;
@@ -185,6 +189,22 @@ export class PhilipRealtimeLabSession {
       throw new Error("data_channel_not_open");
     }
     this.dc.send(JSON.stringify(event));
+  }
+
+  /**
+   * Conversational readiness requires the data channel, the provider session,
+   * and the remote audio path together. Genuine session
+   * iphone-lab-1784427478402-1 showed the "speak" invitation landing before
+   * the data channel opened, so the invitation now waits for all three.
+   * No artificial delay is added after readiness.
+   */
+  private maybeMarkConversationallyReady() {
+    if (this.conversationallyReady || this.completed) return;
+    if (!this.dataChannelReady || !this.providerSessionCreated || !this.remoteAudioReady) return;
+    this.conversationallyReady = true;
+    this.evidence.events.push({ type: "conversation_ready", atMs: Date.now(), itemId: null });
+    this.emit({ connectionState: "ready" });
+    this.log("Philip is ready — speak whenever you like.");
   }
 
   /**
@@ -263,7 +283,9 @@ export class PhilipRealtimeLabSession {
     }
 
     if (type === "session.created") {
+      this.providerSessionCreated = true;
       this.log("Provider session created.");
+      this.maybeMarkConversationallyReady();
       return;
     }
     if (type === "input_audio_buffer.speech_started") {
@@ -419,7 +441,9 @@ export class PhilipRealtimeLabSession {
     this.pc.onconnectionstatechange = () => {
       const state = this.pc?.connectionState || "unknown";
       this.evidence.connection.peerConnectionState = state;
-      this.emit({ connectionState: state });
+      this.emit({
+        connectionState: this.conversationallyReady && state === "connected" ? "ready" : state,
+      });
       this.log(`Peer connection: ${state}`);
       if (!this.completed && (state === "failed" || state === "disconnected")) {
         void this.end("failed", `peer_connection_${state}`);
@@ -443,6 +467,8 @@ export class PhilipRealtimeLabSession {
       this.log("Remote audio track received (single stream).");
       this.evidence.connection.remoteTrackReceived = true;
       this.evidence.connection.remoteAudioTrackId = trackId;
+      this.remoteAudioReady = true;
+      this.maybeMarkConversationallyReady();
       track?.addEventListener?.("mute", () => {
         this.evidence.events.push({ type: "remote_track_muted", atMs: Date.now(), trackId });
       });
@@ -493,7 +519,9 @@ export class PhilipRealtimeLabSession {
     if (this.dc) {
       this.dc.onopen = () => {
         this.evidence.connection.dataChannelOpenedAtMs = Date.now();
+        this.dataChannelReady = true;
         this.log("Realtime data channel open.");
+        this.maybeMarkConversationallyReady();
       };
       this.dc.onclose = () => {
         this.evidence.connection.dataChannelClosedAtMs = Date.now();
@@ -537,7 +565,7 @@ export class PhilipRealtimeLabSession {
     this.evidence.status = "running";
     this.evidence.connection.answerAppliedAtMs = Date.now();
     this.emit({ connectionState: this.pc.connectionState || "connecting", evidence: this.evidence });
-    this.log("Realtime connected. Speak naturally.");
+    this.log("Transport connected. Preparing Philip…");
 
     this.hardStopTimer = setTimeout(() => {
       void this.end("duration_stop", "two_minute_hard_stop");

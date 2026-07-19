@@ -11,6 +11,8 @@
     "test:phase2-manual-prep": "node --test test/phase2-manual-canary-prep.test.mjs",
     "test:phase2b-prep": "node --test test/phase2b-prep.test.mjs",
     "test:iphone-lab-prep": "node --test test/iphone-lab-prep.test.mjs",
+    "test:iphone-lab-polish": "node --test test/iphone-lab-polish.test.mjs",
+    "test:iphone-lab-recovery": "node --test test/iphone-lab-opening-recovery.test.mjs",
     "phase2:auth-check": "node phase2/auth-check.mjs",
     "phase2:validate-local-mic": "node phase2/validate-local-mic.mjs",
     "phase2:manual-server": "node phase2/server.mjs",

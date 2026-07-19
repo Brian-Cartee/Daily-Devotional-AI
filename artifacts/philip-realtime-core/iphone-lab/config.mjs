@@ -48,8 +48,12 @@ export const IPHONE_LAB_REALTIME_SESSION = Object.freeze({
       transcription: {
         model: IPHONE_LAB_LIMITS.transcriptionModel,
         language: "en",
-        prompt:
-          "Philip, Shepherd's Path, Brian, caregiving, Scripture. Preserve natural wording and corrections.",
+        // Neutral guidance only. The previous identity/topic vocabulary
+        // ("Philip, Shepherd's Path, Brian, caregiving, Scripture…") was
+        // echoed verbatim into transcripts of short noisy audio in genuine
+        // session iphone-lab-1784427478402-1, corrupting evidence. Transcripts
+        // are observability-only and never re-enter the conversation.
+        prompt: "Transcribe exactly what is spoken, keeping fillers and self-corrections.",
       },
       turn_detection: {
         type: "semantic_vad",
