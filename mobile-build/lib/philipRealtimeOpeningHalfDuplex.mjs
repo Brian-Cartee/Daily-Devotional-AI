@@ -8,9 +8,11 @@
  * 2) On the first response.created (after that turn), disable local mic
  *    transmission BEFORE assistant audio can begin.
  * 3) Philip speaks one short opening reply without local audio feeding VAD.
- * 4) On first response terminal state (or fail-safe timeout), restore the mic
- *    once, restore interrupt_response:true once, and return to full duplex.
+ * 4) Restore the mic only when the protected response is terminal AND either
+ *    (a) no audio ever started, or (b) output_audio_buffer.stopped has fired.
+ *    response.done alone is NOT sufficient once audio has started.
  *
+ * Fail-safe: OPENING_HALF_DUPLEX_FAILSAFE_MS begins at response.created.
  * Never repeats in the same session. No raw audio.
  */
 
@@ -165,28 +167,84 @@ export function decideHalfDuplexStart(state) {
 }
 
 /**
- * Pure decision: may we restore after a terminal response?
+ * Empty latch for the protected first response.
+ */
+export function emptyOpeningHalfDuplexLatch() {
+  return {
+    firstResponseTerminal: false,
+    firstAudioStarted: false,
+    firstAudioStopped: false,
+    /** @type {string | null} */
+    firstResponseStatus: /** @type {string | null} */ (null),
+    restorationCompleted: false,
+  };
+}
+
+/**
+ * Snapshot latch fields for diagnostics / timeout evidence.
+ * @param {ReturnType<typeof emptyOpeningHalfDuplexLatch> & {
+ *   halfDuplexActive?: boolean,
+ *   halfDuplexResponseId?: string | null,
+ * }} latch
+ */
+export function snapshotOpeningHalfDuplexLatch(latch) {
+  return {
+    firstResponseTerminal: !!latch.firstResponseTerminal,
+    firstAudioStarted: !!latch.firstAudioStarted,
+    firstAudioStopped: !!latch.firstAudioStopped,
+    firstResponseStatus: latch.firstResponseStatus ?? null,
+    restorationCompleted: !!latch.restorationCompleted,
+    halfDuplexActive: !!latch.halfDuplexActive,
+    halfDuplexResponseId: latch.halfDuplexResponseId ?? null,
+  };
+}
+
+/**
+ * Two-condition completion latch.
+ *
+ * Restore only when:
+ * - half-duplex is active and restoration has not completed, AND
+ * - either (terminal && never started audio) OR (terminal && audio started && audio stopped),
+ *   OR an abnormal/cleanup path forces restore.
+ *
+ * Holding mic after response.done while audio is still playing is intentional
+ * (Build 256 defect: restore-on-done alone truncated the opening).
+ *
+ * output_audio_buffer.stopped correlation: OpenAI buffer events are not always
+ * tagged with response id. During opening half-duplex the local mic is disabled,
+ * so the only assistant output in flight is the protected first response. The
+ * first started→stopped pair while halfDuplexActive therefore belongs to that
+ * protected output.
+ *
  * @param {{
  *   halfDuplexActive: boolean,
- *   halfDuplexResponseId: string | null,
- *   terminalResponseId: string | null | undefined,
- *   completed: boolean,
+ *   restorationCompleted: boolean,
+ *   firstResponseTerminal: boolean,
+ *   firstAudioStarted: boolean,
+ *   firstAudioStopped: boolean,
+ *   completed?: boolean,
+ *   clearedWhileDisabled?: boolean,
+ *   forceCleanup?: boolean,
  * }} state
+ * @returns {"noop"|"hold_until_audio_stopped"|"hold_until_terminal"|"restore_no_audio"|"restore_after_playback"|"restore_abnormal_clear"|"restore_cleanup"}
  */
-export function decideHalfDuplexRestore(state) {
+export function decideHalfDuplexRestoreLatch(state) {
+  if (state.restorationCompleted) return "noop";
   if (!state.halfDuplexActive) return "noop";
-  if (state.completed) return "restore_cleanup";
-  // While half-duplex is active the local mic is disabled, so this terminal
-  // event is the opening response (or a failed opening). Restore exactly once.
-  if (state.terminalResponseId) {
-    if (
-      !state.halfDuplexResponseId ||
-      String(state.terminalResponseId) === String(state.halfDuplexResponseId)
-    ) {
-      return "restore_after_terminal";
-    }
-    // Id mismatch is anomalous; still restore so the mic cannot stick muted.
-    return "restore_after_terminal";
+  if (state.forceCleanup || state.completed) return "restore_cleanup";
+  if (state.clearedWhileDisabled) return "restore_abnormal_clear";
+
+  if (state.firstResponseTerminal && !state.firstAudioStarted) {
+    return "restore_no_audio";
+  }
+  if (state.firstResponseTerminal && state.firstAudioStarted && state.firstAudioStopped) {
+    return "restore_after_playback";
+  }
+  if (state.firstResponseTerminal && state.firstAudioStarted && !state.firstAudioStopped) {
+    return "hold_until_audio_stopped";
+  }
+  if (!state.firstResponseTerminal && state.firstAudioStopped) {
+    return "hold_until_terminal";
   }
   return "noop";
 }
@@ -204,6 +262,7 @@ export function buildOpeningHalfDuplexStartedEvent(args) {
     trackBefore: args.trackBefore ?? null,
     trackAfter: args.trackAfter ?? null,
     failsafeMs: args.failsafeMs ?? OPENING_HALF_DUPLEX_FAILSAFE_MS,
+    failsafeStartsAt: "response.created",
     audioRecorded: false,
     audioPersisted: false,
   };
@@ -217,12 +276,13 @@ export function buildOpeningHalfDuplexRestoredEvent(args) {
     type: "opening_half_duplex_restored",
     atMs: args.atMs,
     itemId: null,
-    reason: args.reason || "first_response_terminal",
+    reason: args.reason || "first_response_playback_complete",
     responseId: args.responseId ?? null,
     responseStatus: args.responseStatus ?? null,
     trackAfter: args.trackAfter ?? null,
     elapsedMsFromHalfDuplexStart: args.elapsedMsFromHalfDuplexStart ?? null,
     interruptResponseRestored: !!args.interruptResponseRestored,
+    latch: args.latch ?? null,
     audioRecorded: false,
     audioPersisted: false,
   };
@@ -242,6 +302,8 @@ export function buildOpeningHalfDuplexTimeoutEvent(args) {
     micVerifiedReady: !!args.micVerifiedReady,
     elapsedMsFromHalfDuplexStart: args.elapsedMsFromHalfDuplexStart ?? null,
     failsafeMs: args.failsafeMs ?? OPENING_HALF_DUPLEX_FAILSAFE_MS,
+    failsafeStartsAt: "response.created",
+    latch: args.latch ?? null,
     audioRecorded: false,
     audioPersisted: false,
   };
@@ -258,13 +320,14 @@ export function buildOpeningHalfDuplexFailedEvent(args) {
     reason: args.reason,
     responseId: args.responseId ?? null,
     trackState: args.trackState ?? null,
+    latch: args.latch ?? null,
     audioRecorded: false,
     audioPersisted: false,
   };
 }
 
 /**
- * Protocol ordering: mic must be disabled before first assistant audio in a recorded timeline.
+ * Protocol ordering: mic must be disabled before first assistant audio.
  * @param {string[]} eventTypes
  */
 export function halfDuplexMutePrecedesFirstAudio(eventTypes) {
@@ -276,12 +339,32 @@ export function halfDuplexMutePrecedesFirstAudio(eventTypes) {
 }
 
 /**
- * Protocol ordering: restore must follow first audio (or still valid if no audio).
+ * When audio played, restore must follow output_audio_buffer.stopped
+ * (not merely response.done).
  * @param {string[]} eventTypes
  */
-export function halfDuplexRestoreFollowsTerminal(eventTypes) {
+export function halfDuplexRestoreFollowsPlaybackStop(eventTypes) {
   const started = eventTypes.indexOf("opening_half_duplex_started");
+  const audioStart = eventTypes.indexOf("output_audio_buffer.started");
+  const audioStop = eventTypes.indexOf("output_audio_buffer.stopped");
   const restored = eventTypes.indexOf("opening_half_duplex_restored");
   if (started < 0 || restored < 0) return false;
-  return started < restored;
+  if (audioStart < 0) {
+    return started < restored;
+  }
+  if (audioStop < 0) return false;
+  return audioStop < restored && started < restored;
 }
+
+/**
+ * Build 256 observed order fixture (relative ms from forensic report).
+ * Used by unpaid tests — no provider call.
+ */
+export const BUILD_256_OPENING_ORDER_FIXTURE = Object.freeze([
+  { tRelMs: 5241, type: "response.created" },
+  { tRelMs: 5241, type: "opening_half_duplex_started" },
+  { tRelMs: 6066, type: "output_audio_buffer.started" },
+  { tRelMs: 6506, type: "response.done" },
+  // Defect: Build 256 restored here. Correct latch must HOLD until stopped.
+  { tRelMs: 6760, type: "output_audio_buffer.stopped" },
+]);

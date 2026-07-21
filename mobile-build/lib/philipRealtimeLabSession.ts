@@ -32,12 +32,14 @@ import {
   buildOpeningHalfDuplexTimeoutEvent,
   buildTurnDetectionUpdate,
   canAnnounceConversationReady,
-  decideHalfDuplexRestore,
+  decideHalfDuplexRestoreLatch,
   decideHalfDuplexStart,
+  emptyOpeningHalfDuplexLatch,
   isLocalMicrophoneReadyForConversation,
   isLocalMicrophoneTransmissionDisabled,
   setLocalMicrophoneTransmitting,
   snapshotMicTransmissionState,
+  snapshotOpeningHalfDuplexLatch,
 } from "@/lib/philipRealtimeOpeningHalfDuplex.mjs";
 import { applyInputTranscriptEvent } from "@/lib/philipRealtimeTranscript.mjs";
 import { acceptSingleRemoteAudioTrack } from "@/lib/philipRealtimeTrackPolicy.mjs";
@@ -182,6 +184,11 @@ export class PhilipRealtimeLabSession {
   private halfDuplexStartedAtMs: number | null = null;
   private halfDuplexResponseId: string | null = null;
   private halfDuplexFailSafeTimer: ReturnType<typeof setTimeout> | null = null;
+  private firstResponseTerminal = false;
+  private firstAudioStarted = false;
+  private firstAudioStopped = false;
+  private firstResponseStatus: string | null = null;
+  private halfDuplexRestorationCompleted = false;
   private bargeInRestorationSent = false;
   private listener: Listener;
 
@@ -287,7 +294,54 @@ export class PhilipRealtimeLabSession {
     this.halfDuplexFailed = false;
     this.halfDuplexStartedAtMs = null;
     this.halfDuplexResponseId = null;
+    const latch = emptyOpeningHalfDuplexLatch();
+    this.firstResponseTerminal = latch.firstResponseTerminal;
+    this.firstAudioStarted = latch.firstAudioStarted;
+    this.firstAudioStopped = latch.firstAudioStopped;
+    this.firstResponseStatus = latch.firstResponseStatus as string | null;
+    this.halfDuplexRestorationCompleted = latch.restorationCompleted;
     this.bargeInRestorationSent = false;
+  }
+
+  private latchSnapshot() {
+    return snapshotOpeningHalfDuplexLatch({
+      firstResponseTerminal: this.firstResponseTerminal,
+      firstAudioStarted: this.firstAudioStarted,
+      firstAudioStopped: this.firstAudioStopped,
+      firstResponseStatus: this.firstResponseStatus,
+      restorationCompleted: this.halfDuplexRestorationCompleted,
+      halfDuplexActive: this.halfDuplexActive,
+      halfDuplexResponseId: this.halfDuplexResponseId,
+    });
+  }
+
+  private tryRestoreOpeningHalfDuplexFromLatch(
+    reason: string,
+    extras: { clearedWhileDisabled?: boolean; forceCleanup?: boolean } = {},
+  ) {
+    const decision = decideHalfDuplexRestoreLatch({
+      halfDuplexActive: this.halfDuplexActive,
+      restorationCompleted: this.halfDuplexRestorationCompleted,
+      firstResponseTerminal: this.firstResponseTerminal,
+      firstAudioStarted: this.firstAudioStarted,
+      firstAudioStopped: this.firstAudioStopped,
+      completed: this.completed,
+      clearedWhileDisabled: !!extras.clearedWhileDisabled,
+      forceCleanup: !!extras.forceCleanup,
+    });
+    if (
+      decision === "restore_no_audio" ||
+      decision === "restore_after_playback" ||
+      decision === "restore_abnormal_clear" ||
+      decision === "restore_cleanup"
+    ) {
+      this.restoreOpeningHalfDuplex(
+        reason,
+        this.halfDuplexResponseId,
+        this.firstResponseStatus,
+      );
+    }
+    return decision;
   }
 
   private sendTurnDetectionUpdate(interruptResponse: boolean, createResponse = true) {
@@ -352,6 +406,11 @@ export class PhilipRealtimeLabSession {
     this.halfDuplexConsumed = true;
     this.halfDuplexStartedAtMs = atMs;
     this.halfDuplexResponseId = responseId;
+    this.firstResponseTerminal = false;
+    this.firstAudioStarted = false;
+    this.firstAudioStopped = false;
+    this.firstResponseStatus = null;
+    this.halfDuplexRestorationCompleted = false;
     this.evidence.events.push(
       buildOpeningHalfDuplexStartedEvent({
         atMs,
@@ -370,12 +429,15 @@ export class PhilipRealtimeLabSession {
     });
     this.log("Philip is responding…");
 
+    // Fail-safe starts at response.created so every path is bounded.
     this.clearHalfDuplexFailSafeTimer();
     this.halfDuplexFailSafeTimer = setTimeout(() => {
-      if (!this.halfDuplexActive || this.completed) return;
+      if (this.halfDuplexRestorationCompleted || this.completed) return;
+      if (!this.halfDuplexActive) return;
       const responseId = this.halfDuplexResponseId;
       const startedAt = this.halfDuplexStartedAtMs;
       const atMs = Date.now();
+      const latchAtTimeout = this.latchSnapshot();
       this.clearHalfDuplexFailSafeTimer();
 
       // Restore microphone first; never leave it disabled. Do not create another
@@ -391,6 +453,7 @@ export class PhilipRealtimeLabSession {
       );
       const micVerifiedReady = isLocalMicrophoneReadyForConversation(mic);
       this.halfDuplexActive = false;
+      this.halfDuplexRestorationCompleted = true;
       this.halfDuplexStartedAtMs = null;
       this.emit({ openingHalfDuplex: false, micState: micVerifiedReady ? "open" : "error" });
 
@@ -404,6 +467,7 @@ export class PhilipRealtimeLabSession {
           elapsedMsFromHalfDuplexStart:
             startedAt == null ? null : Math.max(0, atMs - startedAt),
           failsafeMs: OPENING_HALF_DUPLEX_FAILSAFE_MS,
+          latch: latchAtTimeout,
         }),
       );
       this.log(
@@ -425,10 +489,12 @@ export class PhilipRealtimeLabSession {
     responseId: string | null,
     responseStatus: string | null,
   ) {
+    if (this.halfDuplexRestorationCompleted) return;
     if (!this.halfDuplexActive && reason !== "session_cleanup") return;
     this.clearHalfDuplexFailSafeTimer();
     const startedAt = this.halfDuplexStartedAtMs;
     const atMs = Date.now();
+    const latchBefore = this.latchSnapshot();
 
     const result = setLocalMicrophoneTransmitting(
       this.microphoneTrack,
@@ -442,12 +508,14 @@ export class PhilipRealtimeLabSession {
     const micReady = isLocalMicrophoneReadyForConversation(mic);
     if (!result.ok || !micReady) {
       this.halfDuplexActive = false;
+      this.halfDuplexRestorationCompleted = true;
       this.evidence.events.push(
         buildOpeningHalfDuplexFailedEvent({
           atMs,
           reason: `opening_half_duplex_restore_failed:${result.reason || "mic_not_ready"}`,
           responseId,
           trackState: result.after,
+          latch: latchBefore,
         }),
       );
       this.emit({
@@ -466,6 +534,7 @@ export class PhilipRealtimeLabSession {
     }
 
     this.halfDuplexActive = false;
+    this.halfDuplexRestorationCompleted = true;
     this.halfDuplexStartedAtMs = null;
     this.evidence.events.push(
       buildOpeningHalfDuplexRestoredEvent({
@@ -477,6 +546,7 @@ export class PhilipRealtimeLabSession {
         elapsedMsFromHalfDuplexStart:
           startedAt == null ? null : Math.max(0, atMs - startedAt),
         interruptResponseRestored,
+        latch: latchBefore,
       }),
     );
     this.listening = false;
@@ -500,6 +570,7 @@ export class PhilipRealtimeLabSession {
     // Always try to re-enable the mic before failing the session.
     setLocalMicrophoneTransmitting(this.microphoneTrack, true, this.publicationState());
     this.halfDuplexActive = false;
+    this.halfDuplexRestorationCompleted = true;
     this.evidence.events.push(
       buildOpeningHalfDuplexFailedEvent({
         atMs: Date.now(),
@@ -508,6 +579,7 @@ export class PhilipRealtimeLabSession {
         trackState:
           trackState ||
           snapshotMicTransmissionState(this.microphoneTrack, this.publicationState()),
+        latch: this.latchSnapshot(),
       }),
     );
     this.emit({
@@ -826,6 +898,12 @@ export class PhilipRealtimeLabSession {
           );
         }
       }
+      // Protected first output: keep mic disabled; do not restore on later response.done alone.
+      // Correlation: while halfDuplexActive the local mic is muted, so this buffer belongs
+      // to the protected first response (provider buffer events lack reliable response ids).
+      if (this.halfDuplexActive && !this.firstAudioStarted && !this.halfDuplexRestorationCompleted) {
+        this.firstAudioStarted = true;
+      }
       if (!this.firstAssistantAudioDiagnosticsRecorded) {
         this.firstAssistantAudioDiagnosticsRecorded = true;
         const mic = snapshotMicTransmissionState(
@@ -865,25 +943,45 @@ export class PhilipRealtimeLabSession {
       void this.recordAudioRouteDiagnostics(reason, { assistantAudioPlayedMs: playedMs });
       this.assistantAudioStartedAtMs = null;
 
-      // Cleared while local mic is confirmed disabled → not local VAD/mic cause.
-      // Do NOT restore or finish half-duplex on clear alone.
       if (type === "output_audio_buffer.cleared" && this.halfDuplexActive) {
         const mic = snapshotMicTransmissionState(
           this.microphoneTrack,
           this.publicationState(),
         );
+        const micConfirmedDisabled = isLocalMicrophoneTransmissionDisabled(mic);
         this.evidence.events.push({
           type: "opening_cleared_while_mic_disabled",
           atMs,
           itemId: null,
           responseId: this.halfDuplexResponseId,
           micTransmission: mic,
-          micConfirmedDisabled: isLocalMicrophoneTransmissionDisabled(mic),
-          note: "not_local_vad_cause_no_auto_allowance",
+          micConfirmedDisabled,
+          note: "abnormal_opening_failure_no_retry_no_auto_allowance",
+          latch: this.latchSnapshot(),
           audioRecorded: false,
           audioPersisted: false,
         });
-        this.log("Opening audio cleared while local mic disabled — not finishing half-duplex on clear.");
+        if (micConfirmedDisabled) {
+          // Cleared is not successful playback completion. Restore mic and end cleanly.
+          this.tryRestoreOpeningHalfDuplexFromLatch("opening_cleared_while_mic_disabled", {
+            clearedWhileDisabled: true,
+          });
+          if (!this.completed) {
+            void this.end("failed", "opening_cleared_while_mic_disabled");
+          }
+        }
+        return;
+      }
+
+      if (
+        type === "output_audio_buffer.stopped" &&
+        this.halfDuplexActive &&
+        this.firstAudioStarted &&
+        !this.firstAudioStopped &&
+        !this.halfDuplexRestorationCompleted
+      ) {
+        this.firstAudioStopped = true;
+        this.tryRestoreOpeningHalfDuplexFromLatch("first_response_playback_stopped");
       }
       return;
     }
@@ -939,20 +1037,40 @@ export class PhilipRealtimeLabSession {
       if (transcript) this.log(`Philip: ${transcript}`);
       this.currentResponse = null;
 
-      const restoreDecision = decideHalfDuplexRestore({
-        halfDuplexActive: this.halfDuplexActive,
-        halfDuplexResponseId: this.halfDuplexResponseId,
-        terminalResponseId: responseId,
-        completed: this.completed,
-      });
-      if (restoreDecision === "restore_after_terminal" || restoreDecision === "restore_cleanup") {
-        this.restoreOpeningHalfDuplex(
+      // Matching protected first response: latch terminal; do NOT restore on done alone
+      // once audio has started (Build 256 defect).
+      const matchesProtected =
+        this.halfDuplexActive &&
+        !this.halfDuplexRestorationCompleted &&
+        (!this.halfDuplexResponseId ||
+          !responseId ||
+          String(responseId) === String(this.halfDuplexResponseId));
+      if (matchesProtected && !this.firstResponseTerminal) {
+        this.firstResponseTerminal = true;
+        this.firstResponseStatus = status;
+        const restoreReason =
           status === "cancelled" || status === "incomplete"
             ? `first_response_terminal:${status}`
-            : "first_response_terminal",
-          responseId,
-          status,
-        );
+            : !this.firstAudioStarted
+              ? "first_response_terminal_no_audio"
+              : this.firstAudioStopped
+                ? "first_response_playback_complete"
+                : "first_response_terminal_hold_for_playback";
+        const decision = this.tryRestoreOpeningHalfDuplexFromLatch(restoreReason);
+        if (decision === "hold_until_audio_stopped") {
+          this.evidence.events.push({
+            type: "opening_half_duplex_hold_for_playback",
+            atMs,
+            itemId: null,
+            responseId,
+            responseStatus: status,
+            latch: this.latchSnapshot(),
+            note: "response_done_is_not_playback_complete",
+            audioRecorded: false,
+            audioPersisted: false,
+          });
+          // Keep UI on "Philip is responding…" — do not emit Listening yet.
+        }
       }
       return;
     }
@@ -966,11 +1084,10 @@ export class PhilipRealtimeLabSession {
       });
       this.emit({ error: String(err.message || err.code || "provider_error") });
       this.log(`Provider error: ${err.code || err.type || "unknown"}`);
-      if (this.halfDuplexActive) {
-        this.restoreOpeningHalfDuplex(
+      if (this.halfDuplexActive && !this.halfDuplexRestorationCompleted) {
+        this.tryRestoreOpeningHalfDuplexFromLatch(
           `provider_error:${String(err.code || err.type || "unknown")}`,
-          this.halfDuplexResponseId,
-          null,
+          { forceCleanup: true },
         );
       }
     }

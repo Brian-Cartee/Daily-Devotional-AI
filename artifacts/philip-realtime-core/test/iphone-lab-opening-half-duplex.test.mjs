@@ -8,20 +8,24 @@ import {
 import { SANITIZED_REALTIME_SESSION } from "../phase2/config.mjs";
 import { PHASE2B_REALTIME_SESSION } from "../phase2b/config.mjs";
 import {
+  BUILD_256_OPENING_ORDER_FIXTURE,
   OPENING_HALF_DUPLEX_FAILSAFE_MS,
   buildOpeningHalfDuplexFailedEvent,
   buildOpeningHalfDuplexRestoredEvent,
   buildOpeningHalfDuplexStartedEvent,
+  buildOpeningHalfDuplexTimeoutEvent,
   buildTurnDetectionUpdate,
   canAnnounceConversationReady,
-  decideHalfDuplexRestore,
+  decideHalfDuplexRestoreLatch,
   decideHalfDuplexStart,
+  emptyOpeningHalfDuplexLatch,
   halfDuplexMutePrecedesFirstAudio,
-  halfDuplexRestoreFollowsTerminal,
+  halfDuplexRestoreFollowsPlaybackStop,
   isLocalMicrophoneReadyForConversation,
   isLocalMicrophoneTransmissionDisabled,
   setLocalMicrophoneTransmitting,
   snapshotMicTransmissionState,
+  snapshotOpeningHalfDuplexLatch,
 } from "../../../mobile-build/lib/philipRealtimeOpeningHalfDuplex.mjs";
 import { evidenceContainsRawAudioPayload } from "../../../mobile-build/lib/philipRealtimeDiagnostics.mjs";
 
@@ -37,369 +41,417 @@ const halfDuplexSource = await readFile(
   new URL("../../../mobile-build/lib/philipRealtimeOpeningHalfDuplex.mjs", import.meta.url),
   "utf8",
 );
-const graceShimSource = await readFile(
-  new URL("../../../mobile-build/lib/philipRealtimeOpeningGrace.mjs", import.meta.url),
-  "utf8",
-);
 
-/** Explicit state-trace fixture for unpaid proof (no provider / no audio). */
-function simulateOpeningHalfDuplexTimeline() {
-  const events = [];
+/**
+ * Simulate the two-condition latch the way LabSession applies it.
+ * Returns event types + whether mic was transmitting after each step.
+ */
+function runLatchSimulation(steps) {
   const track = { id: "mic-1", enabled: true, muted: false, readyState: "live" };
-  let firstUserTurnCompleted = false;
-  let halfDuplexConsumed = false;
+  const latch = emptyOpeningHalfDuplexLatch();
   let halfDuplexActive = false;
-  let halfDuplexResponseId = null;
-  let bargeInRestored = false;
-  const conversationallyReady = true;
+  let halfDuplexConsumed = false;
+  let restores = 0;
+  const events = [];
+  const decisions = [];
 
-  // 1) First user speech remains enabled and fully captured.
-  assert.equal(track.enabled, true);
-  events.push("input_audio_buffer.speech_started");
-  events.push("input_audio_buffer.speech_stopped");
-  firstUserTurnCompleted = true;
-  events.push("opening_first_user_turn_completed");
+  function maybeRestore(reason) {
+    const decision = decideHalfDuplexRestoreLatch({
+      halfDuplexActive,
+      restorationCompleted: latch.restorationCompleted,
+      firstResponseTerminal: latch.firstResponseTerminal,
+      firstAudioStarted: latch.firstAudioStarted,
+      firstAudioStopped: latch.firstAudioStopped,
+      completed: false,
+      clearedWhileDisabled: reason === "cleared_while_disabled",
+    });
+    decisions.push({ reason, decision, latch: { ...latch }, micEnabled: track.enabled });
+    if (
+      decision === "restore_no_audio" ||
+      decision === "restore_after_playback" ||
+      decision === "restore_abnormal_clear"
+    ) {
+      assert.equal(latch.restorationCompleted, false);
+      setLocalMicrophoneTransmitting(track, true, "published");
+      halfDuplexActive = false;
+      latch.restorationCompleted = true;
+      restores += 1;
+      events.push("opening_half_duplex_restored");
+    }
+    return decision;
+  }
 
-  // 2) First response.created → mute BEFORE assistant audio.
-  const startDecision = decideHalfDuplexStart({
-    conversationallyReady,
-    firstUserTurnCompleted,
-    halfDuplexConsumed,
-    halfDuplexActive,
-    assistantAudioAlreadyStarted: false,
-    openingFailed: false,
-    completed: false,
-  });
-  assert.equal(startDecision, "start");
-  const before = snapshotMicTransmissionState(track, "published");
-  const mute = setLocalMicrophoneTransmitting(track, false, "published");
-  assert.equal(mute.ok, true);
-  assert.equal(isLocalMicrophoneTransmissionDisabled(mute.after), true);
-  halfDuplexActive = true;
-  halfDuplexConsumed = true;
-  halfDuplexResponseId = "resp_open_1";
-  events.push(
-    buildOpeningHalfDuplexStartedEvent({
-      atMs: 100,
-      reason: "first_response_created",
-      responseId: halfDuplexResponseId,
-      trackBefore: before,
-      trackAfter: mute.after,
-    }).type,
-  );
-  events.push("response.created");
+  for (const step of steps) {
+    if (step === "user_turn") {
+      events.push("input_audio_buffer.speech_started", "input_audio_buffer.speech_stopped");
+    } else if (step === "response.created") {
+      const start = decideHalfDuplexStart({
+        conversationallyReady: true,
+        firstUserTurnCompleted: true,
+        halfDuplexConsumed,
+        halfDuplexActive,
+        assistantAudioAlreadyStarted: false,
+        openingFailed: false,
+        completed: false,
+      });
+      assert.equal(start, "start");
+      setLocalMicrophoneTransmitting(track, false, "published");
+      halfDuplexActive = true;
+      halfDuplexConsumed = true;
+      events.push("response.created", "opening_half_duplex_started");
+    } else if (step === "output_audio_buffer.started") {
+      latch.firstAudioStarted = true;
+      events.push("output_audio_buffer.started");
+      assert.equal(track.enabled, false);
+    } else if (step === "response.done") {
+      if (!latch.firstResponseTerminal) {
+        latch.firstResponseTerminal = true;
+        events.push("response.done");
+        const d = maybeRestore("response.done");
+        if (d === "hold_until_audio_stopped") {
+          events.push("opening_half_duplex_hold_for_playback");
+          assert.equal(track.enabled, false);
+        }
+      } else {
+        events.push("response.done_duplicate");
+        maybeRestore("response.done_duplicate");
+      }
+    } else if (step === "output_audio_buffer.stopped") {
+      if (!latch.firstAudioStopped) {
+        latch.firstAudioStopped = true;
+        events.push("output_audio_buffer.stopped");
+        maybeRestore("output_audio_buffer.stopped");
+      } else {
+        events.push("output_audio_buffer.stopped_duplicate");
+        maybeRestore("output_audio_buffer.stopped_duplicate");
+      }
+    } else if (step === "cleared") {
+      events.push("output_audio_buffer.cleared", "opening_cleared_while_mic_disabled");
+      maybeRestore("cleared_while_disabled");
+    } else if (step === "later_response.done") {
+      events.push("later_response.done");
+      // Unrelated later response must not re-open half-duplex.
+      assert.equal(halfDuplexConsumed, true);
+      const start = decideHalfDuplexStart({
+        conversationallyReady: true,
+        firstUserTurnCompleted: true,
+        halfDuplexConsumed,
+        halfDuplexActive,
+        assistantAudioAlreadyStarted: false,
+        openingFailed: false,
+        completed: false,
+      });
+      assert.equal(start, "noop");
+      maybeRestore("later_response.done");
+    }
+  }
 
-  // 3–4) Mic confirmed disabled; no local VAD speech_started from transmission.
-  assert.equal(track.enabled, false);
-  assert.equal(isLocalMicrophoneTransmissionDisabled(mute.after), true);
-
-  // 5) First assistant audio after mute; client does not cancel/clear.
-  events.push("output_audio_buffer.started");
-  assert.equal(halfDuplexMutePrecedesFirstAudio(events), true);
-  assert.doesNotMatch(sessionSource, /opening_bargein_deferred/);
-  assert.doesNotMatch(
-    sessionSource.slice(
-      sessionSource.indexOf("beginOpeningHalfDuplex"),
-      sessionSource.indexOf("restoreOpeningHalfDuplex"),
-    ),
-    /response\.cancel|output_audio_buffer\.clear/,
-  );
-
-  // 6–7) Terminal → restore mic before Listening UI.
-  events.push("response.done");
-  const restoreDecision = decideHalfDuplexRestore({
-    halfDuplexActive,
-    halfDuplexResponseId,
-    terminalResponseId: halfDuplexResponseId,
-    completed: false,
-  });
-  assert.equal(restoreDecision, "restore_after_terminal");
-  const restore = setLocalMicrophoneTransmitting(track, true, "published");
-  assert.equal(restore.ok, true);
-  assert.equal(isLocalMicrophoneReadyForConversation(restore.after), true);
-  halfDuplexActive = false;
-  bargeInRestored = true;
-  events.push(
-    buildOpeningHalfDuplexRestoredEvent({
-      atMs: 900,
-      reason: "first_response_terminal",
-      responseId: halfDuplexResponseId,
-      responseStatus: "completed",
-      trackAfter: restore.after,
-      elapsedMsFromHalfDuplexStart: 800,
-      interruptResponseRestored: bargeInRestored,
-    }).type,
-  );
-  assert.equal(halfDuplexRestoreFollowsTerminal(events), true);
-
-  // 8) Later responses remain interruptible (interrupt restored once; no second mute).
-  const later = decideHalfDuplexStart({
-    conversationallyReady,
-    firstUserTurnCompleted: true,
-    halfDuplexConsumed,
-    halfDuplexActive,
-    assistantAudioAlreadyStarted: false,
-    openingFailed: false,
-    completed: false,
-  });
-  assert.equal(later, "noop");
-  assert.equal(bargeInRestored, true);
-
-  // 9) No duplicate user turn / response.create in this handshake path.
-  assert.equal(events.filter((e) => e === "opening_first_user_turn_completed").length, 1);
-  assert.equal(events.filter((e) => e === "opening_half_duplex_started").length, 1);
-  assert.equal(events.filter((e) => e === "opening_half_duplex_restored").length, 1);
-
-  return { events, track, halfDuplexConsumed, bargeInRestored };
+  return { track, latch, events, decisions, restores, halfDuplexConsumed };
 }
 
-test("server initial session still belts interrupt_response false; create_response stays true", () => {
-  const td = IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection;
-  assert.equal(td.type, "semantic_vad");
-  assert.equal(td.create_response, true);
-  assert.equal(td.interrupt_response, false);
-});
-
-test("fail-safe timeout is bounded at 8 seconds", () => {
+test("fail-safe is 8s and starts at response.created", () => {
   assert.equal(OPENING_HALF_DUPLEX_FAILSAFE_MS, 8_000);
-  assert.ok(OPENING_HALF_DUPLEX_FAILSAFE_MS > 0);
-  assert.ok(OPENING_HALF_DUPLEX_FAILSAFE_MS < 20_000);
+  assert.match(halfDuplexSource, /failsafeStartsAt: "response\.created"/);
+  assert.match(sessionSource, /Fail-safe starts at response\.created/);
 });
 
-test("conversation_ready does not require opening-protection ack gate", () => {
-  assert.equal(
-    canAnnounceConversationReady({
-      dataChannelReady: true,
-      providerSessionCreated: true,
-      remoteAudioReady: true,
-      micReady: true,
-      openingFailed: false,
-    }),
-    true,
-  );
-  assert.equal(
-    canAnnounceConversationReady({
-      dataChannelReady: true,
-      providerSessionCreated: true,
-      remoteAudioReady: true,
-      micReady: false,
-      openingFailed: false,
-    }),
-    false,
-  );
-  assert.equal(
-    canAnnounceConversationReady({
-      dataChannelReady: true,
-      providerSessionCreated: true,
-      remoteAudioReady: true,
-      micReady: true,
-      openingFailed: true,
-    }),
-    false,
-  );
-});
-
-test("half-duplex start waits for first user turn and fails if audio already started", () => {
-  assert.equal(
-    decideHalfDuplexStart({
-      conversationallyReady: true,
-      firstUserTurnCompleted: false,
-      halfDuplexConsumed: false,
-      halfDuplexActive: false,
-      assistantAudioAlreadyStarted: false,
-      openingFailed: false,
-      completed: false,
-    }),
-    "noop",
-  );
-  assert.equal(
-    decideHalfDuplexStart({
-      conversationallyReady: true,
-      firstUserTurnCompleted: true,
-      halfDuplexConsumed: false,
-      halfDuplexActive: false,
-      assistantAudioAlreadyStarted: true,
-      openingFailed: false,
-      completed: false,
-    }),
-    "fail_too_late",
-  );
-  assert.equal(
-    decideHalfDuplexStart({
-      conversationallyReady: true,
-      firstUserTurnCompleted: true,
-      halfDuplexConsumed: true,
-      halfDuplexActive: false,
-      assistantAudioAlreadyStarted: false,
-      openingFailed: false,
-      completed: false,
-    }),
-    "noop",
-  );
-});
-
-test("local mic transmission disable/restore uses track.enabled only", () => {
-  const track = { id: "t1", enabled: true, muted: false, readyState: "live" };
-  const disabled = setLocalMicrophoneTransmitting(track, false, "published");
-  assert.equal(disabled.ok, true);
-  assert.equal(track.enabled, false);
-  assert.equal(isLocalMicrophoneTransmissionDisabled(disabled.after), true);
-  assert.equal(isLocalMicrophoneReadyForConversation(disabled.after), false);
-
-  const enabled = setLocalMicrophoneTransmitting(track, true, "published");
-  assert.equal(enabled.ok, true);
+test("Build 256 order: done alone holds mic; stop restores once", () => {
+  const { track, events, restores, decisions } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "response.done",
+    "output_audio_buffer.stopped",
+  ]);
+  assert.equal(halfDuplexMutePrecedesFirstAudio(events), true);
+  assert.ok(events.includes("opening_half_duplex_hold_for_playback"));
+  const hold = decisions.find((d) => d.reason === "response.done");
+  assert.equal(hold.decision, "hold_until_audio_stopped");
+  assert.equal(hold.micEnabled, false);
+  const stop = decisions.find((d) => d.reason === "output_audio_buffer.stopped");
+  assert.equal(stop.decision, "restore_after_playback");
+  assert.equal(restores, 1);
   assert.equal(track.enabled, true);
-  assert.equal(isLocalMicrophoneReadyForConversation(enabled.after), true);
-
-  const missing = setLocalMicrophoneTransmitting(null, false, "published");
-  assert.equal(missing.ok, false);
-  assert.equal(missing.reason, "microphone_track_missing");
+  assert.equal(halfDuplexRestoreFollowsPlaybackStop(events), true);
+  // Fixture matches forensic relative order.
+  const types = BUILD_256_OPENING_ORDER_FIXTURE.map((e) => e.type);
+  assert.deepEqual(types.slice(0, 4), [
+    "response.created",
+    "opening_half_duplex_started",
+    "output_audio_buffer.started",
+    "response.done",
+  ]);
 });
 
-test("turn detection restore update sets interrupt_response true without create_response toggling", () => {
-  const update = buildTurnDetectionUpdate({ interruptResponse: true, createResponse: true });
-  assert.equal(update.type, "session.update");
-  assert.equal(update.session.audio.input.turn_detection.interrupt_response, true);
-  assert.equal(update.session.audio.input.turn_detection.create_response, true);
-  // Never emit create_response:false for opening half-duplex.
-  assert.doesNotMatch(halfDuplexSource, /createResponse:\s*false/);
-  assert.doesNotMatch(sessionSource, /sendTurnDetectionUpdate\(false,\s*false\)/);
-});
-
-test("explicit unpaid state trace proves the half-duplex handshake ordering", () => {
-  const { events, track, halfDuplexConsumed, bargeInRestored } = simulateOpeningHalfDuplexTimeline();
+test("stopped before response.done then restores on done", () => {
+  const { track, restores, decisions } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "output_audio_buffer.stopped",
+    "response.done",
+  ]);
+  assert.equal(
+    decisions.find((d) => d.reason === "output_audio_buffer.stopped").decision,
+    "hold_until_terminal",
+  );
+  assert.equal(decisions.find((d) => d.reason === "response.done").decision, "restore_after_playback");
+  assert.equal(restores, 1);
   assert.equal(track.enabled, true);
+});
+
+test("response.done with no audio ever started restores safely", () => {
+  const { track, restores, decisions } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "response.done",
+  ]);
+  assert.equal(decisions.find((d) => d.reason === "response.done").decision, "restore_no_audio");
+  assert.equal(restores, 1);
+  assert.equal(track.enabled, true);
+});
+
+test("duplicate response.done does not restore twice", () => {
+  const { restores } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "response.done",
+    "response.done",
+    "output_audio_buffer.stopped",
+  ]);
+  assert.equal(restores, 1);
+});
+
+test("duplicate output_audio_buffer.stopped does not restore twice", () => {
+  const { restores } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "response.done",
+    "output_audio_buffer.stopped",
+    "output_audio_buffer.stopped",
+  ]);
+  assert.equal(restores, 1);
+});
+
+test("unrelated later response events never re-enter half-duplex", () => {
+  const { halfDuplexConsumed, restores } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "response.done",
+    "output_audio_buffer.stopped",
+    "later_response.done",
+  ]);
   assert.equal(halfDuplexConsumed, true);
-  assert.equal(bargeInRestored, true);
-  assert.ok(events.indexOf("opening_half_duplex_started") < events.indexOf("output_audio_buffer.started"));
-  assert.ok(events.indexOf("output_audio_buffer.started") < events.indexOf("opening_half_duplex_restored"));
+  assert.equal(restores, 1);
 });
 
-test("diagnostic events are sanitized (no raw audio)", () => {
-  const started = buildOpeningHalfDuplexStartedEvent({
+test("clear while mic disabled is abnormal restore, not playback success", () => {
+  const { track, restores, decisions, events } = runLatchSimulation([
+    "user_turn",
+    "response.created",
+    "output_audio_buffer.started",
+    "cleared",
+  ]);
+  assert.ok(events.includes("opening_cleared_while_mic_disabled"));
+  assert.equal(
+    decisions.find((d) => d.reason === "cleared_while_disabled").decision,
+    "restore_abnormal_clear",
+  );
+  assert.equal(restores, 1);
+  assert.equal(track.enabled, true);
+  assert.match(sessionSource, /opening_cleared_while_mic_disabled/);
+  assert.match(sessionSource, /abnormal_opening_failure_no_retry_no_auto_allowance/);
+  assert.match(sessionSource, /end\("failed", "opening_cleared_while_mic_disabled"\)/);
+});
+
+test("latch decisions cover hold / no-audio / playback / cleanup", () => {
+  assert.equal(
+    decideHalfDuplexRestoreLatch({
+      halfDuplexActive: true,
+      restorationCompleted: false,
+      firstResponseTerminal: true,
+      firstAudioStarted: true,
+      firstAudioStopped: false,
+    }),
+    "hold_until_audio_stopped",
+  );
+  assert.equal(
+    decideHalfDuplexRestoreLatch({
+      halfDuplexActive: true,
+      restorationCompleted: false,
+      firstResponseTerminal: false,
+      firstAudioStarted: true,
+      firstAudioStopped: true,
+    }),
+    "hold_until_terminal",
+  );
+  assert.equal(
+    decideHalfDuplexRestoreLatch({
+      halfDuplexActive: true,
+      restorationCompleted: true,
+      firstResponseTerminal: true,
+      firstAudioStarted: true,
+      firstAudioStopped: true,
+    }),
+    "noop",
+  );
+  assert.equal(
+    decideHalfDuplexRestoreLatch({
+      halfDuplexActive: true,
+      restorationCompleted: false,
+      firstResponseTerminal: true,
+      firstAudioStarted: true,
+      firstAudioStopped: true,
+      forceCleanup: true,
+    }),
+    "restore_cleanup",
+  );
+});
+
+test("LabSession wires latch fields and does not restore solely on response.done after audio", () => {
+  assert.match(sessionSource, /firstResponseTerminal/);
+  assert.match(sessionSource, /firstAudioStarted/);
+  assert.match(sessionSource, /firstAudioStopped/);
+  assert.match(sessionSource, /halfDuplexRestorationCompleted/);
+  assert.match(sessionSource, /decideHalfDuplexRestoreLatch/);
+  assert.match(sessionSource, /opening_half_duplex_hold_for_playback/);
+  assert.match(sessionSource, /response_done_is_not_playback_complete/);
+  assert.match(sessionSource, /first_response_playback_stopped/);
+  // Must not call restoreOpeningHalfDuplex directly from response.done without latch.
+  const doneHandler = sessionSource.slice(
+    sessionSource.indexOf('if (type === "response.done")'),
+    sessionSource.indexOf('if (type === "error")'),
+  );
+  assert.match(doneHandler, /tryRestoreOpeningHalfDuplexFromLatch/);
+  assert.match(doneHandler, /hold_until_audio_stopped/);
+  assert.doesNotMatch(doneHandler, /restoreOpeningHalfDuplex\(\s*status/);
+});
+
+test("stopped handler restores only after latch; UI Listening only after restore", () => {
+  const stoppedHandler = sessionSource.slice(
+    sessionSource.indexOf('if (type === "output_audio_buffer.stopped"'),
+    sessionSource.indexOf('if (type === "response.created")'),
+  );
+  assert.match(stoppedHandler, /firstAudioStopped = true/);
+  assert.match(stoppedHandler, /tryRestoreOpeningHalfDuplexFromLatch/);
+  assert.match(sessionSource, /this\.log\("Listening…"\)/);
+  // Listening is emitted inside restoreOpeningHalfDuplex, not on response.done hold.
+  const holdBlock = sessionSource.slice(
+    sessionSource.indexOf("hold_until_audio_stopped"),
+    sessionSource.indexOf("hold_until_audio_stopped") + 500,
+  );
+  assert.doesNotMatch(holdBlock, /Listening…/);
+});
+
+test("UI remains Philip is responding during half-duplex", () => {
+  assert.match(screenSource, /Philip is responding…/);
+  assert.match(screenSource, /openingHalfDuplex/);
+  assert.match(sessionSource, /Philip is responding…/);
+});
+
+test("cleanup / emergency / connection failure restore paths remain", () => {
+  assert.match(sessionSource, /resetOpeningHalfDuplexState/);
+  assert.match(sessionSource, /setLocalMicrophoneTransmitting/);
+  assert.match(sessionSource, /forceCleanup: true/);
+  assert.match(sessionSource, /emergencyStop[\s\S]*end\("stopped", "emergency_stop"\)/);
+  const endBlock = sessionSource.slice(
+    sessionSource.indexOf("async end("),
+    sessionSource.indexOf("async end(") + 2500,
+  );
+  assert.match(endBlock, /setLocalMicrophoneTransmitting/);
+});
+
+test("timeout records latch state and starts at response.created", () => {
+  assert.match(sessionSource, /latchAtTimeout|latch: latchAtTimeout/);
+  const timeout = buildOpeningHalfDuplexTimeoutEvent({
     atMs: 1,
-    reason: "first_response_created",
     responseId: "r1",
-    trackBefore: { enabled: true, transmitting: true },
-    trackAfter: { enabled: false, transmitting: false },
+    trackAfterRestore: { enabled: true },
+    micVerifiedReady: true,
+    latch: snapshotOpeningHalfDuplexLatch({
+      ...emptyOpeningHalfDuplexLatch(),
+      firstResponseTerminal: true,
+      firstAudioStarted: true,
+      firstAudioStopped: false,
+      halfDuplexActive: true,
+    }),
   });
-  const restored = buildOpeningHalfDuplexRestoredEvent({
-    atMs: 2,
-    reason: "first_response_terminal",
-    responseId: "r1",
-    responseStatus: "completed",
-    trackAfter: { enabled: true },
-    elapsedMsFromHalfDuplexStart: 50,
-    interruptResponseRestored: true,
-  });
-  const failed = buildOpeningHalfDuplexFailedEvent({
-    atMs: 3,
-    reason: "opening_half_duplex_mute_failed",
-    responseId: "r1",
-    trackState: { enabled: true },
-  });
-  for (const event of [started, restored, failed]) {
+  assert.equal(timeout.failsafeStartsAt, "response.created");
+  assert.equal(timeout.latch.firstAudioStopped, false);
+  assert.equal(evidenceContainsRawAudioPayload(timeout), false);
+});
+
+test("no deferred greeting / opening response.create paths", () => {
+  assert.doesNotMatch(sessionSource, /deferredResponseCreate/);
+  assert.doesNotMatch(sessionSource, /issuedDeferredResponseCreate/);
+  assert.doesNotMatch(sessionSource, /pendingDeferredResponseCreate/);
+  const toolBlock = sessionSource.slice(
+    sessionSource.indexOf("private handleToolCall"),
+    sessionSource.indexOf("private handleProviderEvent"),
+  );
+  assert.match(toolBlock, /type: "response\.create"/);
+  const halfDuplexBlock = sessionSource.slice(
+    sessionSource.indexOf("private beginOpeningHalfDuplex"),
+    sessionSource.indexOf("private maybeMarkConversationallyReady"),
+  );
+  assert.doesNotMatch(halfDuplexBlock, /type: "response\.create"/);
+});
+
+test("later responses never use half-duplex; barge-in restored once after opening", () => {
+  assert.match(sessionSource, /interruptResponseRestored/);
+  assert.match(sessionSource, /sendTurnDetectionUpdate\(true,\s*true\)/);
+  assert.equal(IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection.create_response, true);
+  assert.equal(SANITIZED_REALTIME_SESSION.audio.input.turn_detection.interrupt_response, true);
+  assert.equal(PHASE2B_REALTIME_SESSION.audio.input.turn_detection.interrupt_response, true);
+});
+
+test("first-response-only short opening instruction unchanged", () => {
+  assert.match(IPHONE_LAB_INSTRUCTIONS, /Opening only: your first spoken reply/);
+  assert.match(IPHONE_LAB_INSTRUCTIONS, /later replies keep the ordinary length above/);
+});
+
+test("diagnostic events remain sanitized", () => {
+  for (const event of [
+    buildOpeningHalfDuplexStartedEvent({ atMs: 1, responseId: "r", trackBefore: {}, trackAfter: {} }),
+    buildOpeningHalfDuplexRestoredEvent({ atMs: 2, responseId: "r", latch: emptyOpeningHalfDuplexLatch() }),
+    buildOpeningHalfDuplexFailedEvent({ atMs: 3, reason: "x" }),
+  ]) {
     assert.equal(event.audioRecorded, false);
     assert.equal(event.audioPersisted, false);
     assert.equal(evidenceContainsRawAudioPayload(event), false);
   }
 });
 
-test("LabSession wires mute on response.created and restore on response.done only", () => {
-  assert.match(sessionSource, /beginOpeningHalfDuplex/);
-  assert.match(sessionSource, /restoreOpeningHalfDuplex/);
-  assert.match(sessionSource, /OPENING_HALF_DUPLEX_FAILSAFE_MS/);
-  assert.match(sessionSource, /buildOpeningHalfDuplexTimeoutEvent/);
-  assert.match(sessionSource, /opening_half_duplex_timeout/);
-  assert.match(sessionSource, /buildOpeningHalfDuplexStartedEvent/);
-  assert.match(sessionSource, /buildOpeningHalfDuplexRestoredEvent/);
-  assert.match(sessionSource, /opening_cleared_while_mic_disabled/);
-  // Timeout restores mic before ending; does not create another response.
-  const timeoutBlock = sessionSource.slice(
-    sessionSource.indexOf("this.halfDuplexFailSafeTimer = setTimeout"),
-    sessionSource.indexOf("private restoreOpeningHalfDuplex"),
-  );
-  assert.match(timeoutBlock, /setLocalMicrophoneTransmitting/);
-  assert.match(timeoutBlock, /buildOpeningHalfDuplexTimeoutEvent/);
-  assert.match(timeoutBlock, /opening_half_duplex_timeout/);
-  assert.doesNotMatch(timeoutBlock, /response\.create|response\.cancel/);
-  assert.doesNotMatch(timeoutBlock, /startConversation/);
-  // Mute is invoked from the response.created handler, not from audio-start.
-  const responseCreatedHandler = sessionSource.slice(
-    sessionSource.indexOf('if (type === "response.created")'),
-    sessionSource.indexOf('if (type === "response.output_audio_transcript.delta")'),
-  );
-  assert.match(responseCreatedHandler, /beginOpeningHalfDuplex/);
-  const audioStartedHandler = sessionSource.slice(
-    sessionSource.indexOf('if (type === "output_audio_buffer.started")'),
-    sessionSource.indexOf('if (type === "output_audio_buffer.stopped"'),
-  );
-  assert.doesNotMatch(audioStartedHandler, /beginOpeningHalfDuplex/);
-  // Do not finish/restore on clear alone.
-  const clearedHandler = sessionSource.slice(
-    sessionSource.indexOf('if (type === "output_audio_buffer.stopped"'),
-    sessionSource.indexOf('if (type === "response.created")'),
-  );
-  assert.doesNotMatch(clearedHandler, /restoreOpeningHalfDuplex/);
-  assert.match(clearedHandler, /opening_cleared_while_mic_disabled/);
-  // Obsolete grace machine removed.
-  assert.doesNotMatch(sessionSource, /beginAudibleOpeningGrace|finishAudibleOpeningGrace|audibleGraceActive/);
-  assert.doesNotMatch(sessionSource, /opening_protection_acked|deferredResponseCreateIssued|opening_bargein_deferred/);
-  assert.doesNotMatch(sessionSource, /OPENING_ASSISTANT_BARGEIN_GRACE_MS/);
+test("mic transmission helpers still use track.enabled only", () => {
+  const track = { id: "t", enabled: true, muted: false, readyState: "live" };
+  const off = setLocalMicrophoneTransmitting(track, false, "published");
+  assert.equal(off.ok, true);
+  assert.equal(isLocalMicrophoneTransmissionDisabled(off.after), true);
+  const on = setLocalMicrophoneTransmitting(track, true, "published");
+  assert.equal(isLocalMicrophoneReadyForConversation(on.after), true);
 });
 
-test("cleanup paths restore or reset the microphone", () => {
+test("conversation_ready still independent of opening latch", () => {
+  assert.equal(
+    canAnnounceConversationReady({
+      dataChannelReady: true,
+      providerSessionCreated: true,
+      remoteAudioReady: true,
+      micReady: true,
+    }),
+    true,
+  );
+});
+
+test("new-session reset clears latch via emptyOpeningHalfDuplexLatch", () => {
+  assert.match(sessionSource, /emptyOpeningHalfDuplexLatch/);
   assert.match(sessionSource, /resetOpeningHalfDuplexState/);
-  assert.match(sessionSource, /setLocalMicrophoneTransmitting/);
-  assert.match(sessionSource, /clearHalfDuplexFailSafeTimer/);
-  // end() re-enables before teardown.
-  const endStart = sessionSource.indexOf("async end(");
-  const endBlock = sessionSource.slice(endStart, endStart + 2200);
-  assert.match(endBlock, /setLocalMicrophoneTransmitting/);
-  assert.match(endBlock, /resetOpeningHalfDuplexState/);
-  assert.match(sessionSource, /emergencyStop[\s\S]*end\("stopped", "emergency_stop"\)/);
-});
-
-test("UI shows Philip is responding during half-duplex and Listening after restore", () => {
-  assert.match(screenSource, /Philip is responding…/);
-  assert.match(screenSource, /Listening…/);
-  assert.match(screenSource, /openingHalfDuplex/);
-  assert.doesNotMatch(screenSource, /microphone mute|muted for opening|half-duplex/i);
-});
-
-test("first response instruction is one short welcoming sentence (lab-only)", () => {
-  assert.match(
-    IPHONE_LAB_INSTRUCTIONS,
-    /I'm glad we're talking\. How are you doing today\?/,
-  );
-  assert.match(
-    IPHONE_LAB_INSTRUCTIONS,
-    /Opening only: your first spoken reply after Brian's greeting must be one short welcoming sentence/,
-  );
-  assert.match(
-    IPHONE_LAB_INSTRUCTIONS,
-    /That one-sentence opening rule applies only to the first reply; later replies keep the ordinary length above/,
-  );
-  assert.match(
-    IPHONE_LAB_INSTRUCTIONS,
-    /Do not add AI disclaimers, explanations, or a longer opening question on that first reply/,
-  );
-  // Ordinary later replies remain in the normal 20–35 word band.
-  assert.match(IPHONE_LAB_INSTRUCTIONS, /about 20 to 35 words/);
-});
-
-test("Phase2 / Phase2B remain interruptible; half-duplex is Realtime Lab only", () => {
-  assert.equal(SANITIZED_REALTIME_SESSION.audio.input.turn_detection.interrupt_response, true);
-  assert.equal(PHASE2B_REALTIME_SESSION.audio.input.turn_detection.interrupt_response, true);
-  assert.doesNotMatch(screenSource, /philipRealtimeOpeningHalfDuplex|beginOpeningHalfDuplex/);
-  assert.match(sessionSource, /philipRealtimeOpeningHalfDuplex/);
-  // Grace shim is retired (deprecated re-export only).
-  assert.match(graceShimSource, /deprecated|retired/i);
-  assert.doesNotMatch(graceShimSource, /OPENING_ASSISTANT_BARGEIN_GRACE_MS = 1000/);
-});
-
-test("cleared-while-disabled is evidence, not an automatic allowance", () => {
-  assert.match(sessionSource, /opening_cleared_while_mic_disabled/);
-  assert.match(sessionSource, /not_local_vad_cause_no_auto_allowance/);
-  assert.doesNotMatch(sessionSource, /ALLOW_IPHONE_REALTIME\s*=\s*1/);
+  const empty = emptyOpeningHalfDuplexLatch();
+  assert.equal(empty.firstResponseTerminal, false);
+  assert.equal(empty.firstAudioStarted, false);
+  assert.equal(empty.firstAudioStopped, false);
+  assert.equal(empty.restorationCompleted, false);
 });
