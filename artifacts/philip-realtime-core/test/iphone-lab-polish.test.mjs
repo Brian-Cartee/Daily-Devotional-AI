@@ -132,9 +132,9 @@ test("client wiring sends the closing notice without forcing or cancelling a res
   assert.match(session, /two_minute_hard_stop/);
 });
 
-test("barge-in opens protected then client restores after first-audio grace", () => {
-  // Server default is opening protection; client restores interrupt_response:true
-  // after 1s of first audible playback (philipRealtimeOpeningGrace.mjs).
+test("barge-in opens protected then client restores after opening half-duplex", () => {
+  // Server default belts interrupt_response:false; client restores true after the
+  // first assistant response terminal state (philipRealtimeOpeningHalfDuplex.mjs).
   assert.equal(IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection.interrupt_response, false);
   assert.equal(IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection.type, "semantic_vad");
 });

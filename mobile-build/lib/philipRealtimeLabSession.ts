@@ -25,19 +25,20 @@ import {
   snapshotReadinessFlags,
 } from "@/lib/philipRealtimeDiagnostics.mjs";
 import {
-  OPENING_ASSISTANT_BARGEIN_GRACE_MS,
-  OPENING_PROTECTION_ACK_TIMEOUT_MS,
-  buildOpeningBargeInDeferredEvent,
-  buildOpeningBargeInGraceEndedEvent,
-  buildOpeningProtectionAckDiagnostic,
+  OPENING_HALF_DUPLEX_FAILSAFE_MS,
+  buildOpeningHalfDuplexFailedEvent,
+  buildOpeningHalfDuplexRestoredEvent,
+  buildOpeningHalfDuplexStartedEvent,
+  buildOpeningHalfDuplexTimeoutEvent,
   buildTurnDetectionUpdate,
   canAnnounceConversationReady,
-  evaluateOpeningProtectionAcknowledgment,
-  extractTurnDetectionFromSessionUpdated,
-  isBargeInRestorationAcknowledged,
+  decideHalfDuplexRestore,
+  decideHalfDuplexStart,
   isLocalMicrophoneReadyForConversation,
-  isWithinOpeningBargeInGrace,
-} from "@/lib/philipRealtimeOpeningGrace.mjs";
+  isLocalMicrophoneTransmissionDisabled,
+  setLocalMicrophoneTransmitting,
+  snapshotMicTransmissionState,
+} from "@/lib/philipRealtimeOpeningHalfDuplex.mjs";
 import { applyInputTranscriptEvent } from "@/lib/philipRealtimeTranscript.mjs";
 import { acceptSingleRemoteAudioTrack } from "@/lib/philipRealtimeTrackPolicy.mjs";
 import {
@@ -72,6 +73,15 @@ export type RealtimeLabEvidence = {
   estimatedCostUsd: number;
 };
 
+type LocalMicTrack = {
+  id?: string;
+  enabled?: boolean;
+  muted?: boolean;
+  readyState?: string;
+  addEventListener?: (type: string, listener: () => void) => void;
+  stop?: () => void;
+};
+
 type Listener = (patch: {
   connectionState?: string;
   iceState?: string;
@@ -82,6 +92,8 @@ type Listener = (patch: {
   logLine?: string;
   error?: string | null;
   evidence?: RealtimeLabEvidence;
+  /** True while opening half-duplex mute is active (UI: Philip is responding…). */
+  openingHalfDuplex?: boolean;
 }) => void;
 
 const PRICING = {
@@ -158,27 +170,19 @@ export class PhilipRealtimeLabSession {
   private lastSpeechStoppedAtMs: number | null = null;
   private runtimeToken: string | null = null;
   private remoteAudioTrackId: string | null = null;
-  private microphoneTrack: { id?: string; enabled?: boolean; muted?: boolean; readyState?: string } | null =
-    null;
+  private microphoneTrack: LocalMicTrack | null = null;
   private microphonePublished = false;
   private assistantAudioStartedAtMs: number | null = null;
   private firstAssistantAudioDiagnosticsRecorded = false;
-  /** Opening protection: interrupt_response false until after first-audio grace. */
-  private openingProtectionAcked = false;
-  private openingProtectionFailed = false;
-  private openingProtectionRequestSent = false;
-  private openingProtectionRequestedAtMs: number | null = null;
-  private openingProtectionAckTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Audible 1s window after first output_audio_buffer.started. */
-  private audibleGraceActive = false;
-  private audibleGraceStartedAtMs: number | null = null;
-  private audibleGraceTimer: ReturnType<typeof setTimeout> | null = null;
-  private audibleGraceConsumed = false;
-  private deferredSpeechDuringAudibleGrace = false;
-  private deferredSpeechCompletedDuringAudibleGrace = false;
+  /** Opening half-duplex: mute local mic for first assistant response only. */
+  private firstUserTurnCompleted = false;
+  private halfDuplexActive = false;
+  private halfDuplexConsumed = false;
+  private halfDuplexFailed = false;
+  private halfDuplexStartedAtMs: number | null = null;
+  private halfDuplexResponseId: string | null = null;
+  private halfDuplexFailSafeTimer: ReturnType<typeof setTimeout> | null = null;
   private bargeInRestorationSent = false;
-  private bargeInRestorationAcked = false;
-  private deferredResponseCreateIssued = false;
   private listener: Listener;
 
   constructor(listener: Listener) {
@@ -268,38 +272,25 @@ export class PhilipRealtimeLabSession {
     return route;
   }
 
-  private clearOpeningProtectionAckTimer() {
-    if (this.openingProtectionAckTimer) {
-      clearTimeout(this.openingProtectionAckTimer);
-      this.openingProtectionAckTimer = null;
+  private clearHalfDuplexFailSafeTimer() {
+    if (this.halfDuplexFailSafeTimer) {
+      clearTimeout(this.halfDuplexFailSafeTimer);
+      this.halfDuplexFailSafeTimer = null;
     }
   }
 
-  private clearAudibleGraceTimer() {
-    if (this.audibleGraceTimer) {
-      clearTimeout(this.audibleGraceTimer);
-      this.audibleGraceTimer = null;
-    }
-  }
-
-  private resetOpeningGraceState() {
-    this.clearOpeningProtectionAckTimer();
-    this.clearAudibleGraceTimer();
-    this.openingProtectionAcked = false;
-    this.openingProtectionFailed = false;
-    this.openingProtectionRequestSent = false;
-    this.openingProtectionRequestedAtMs = null;
-    this.audibleGraceActive = false;
-    this.audibleGraceStartedAtMs = null;
-    this.audibleGraceConsumed = false;
-    this.deferredSpeechDuringAudibleGrace = false;
-    this.deferredSpeechCompletedDuringAudibleGrace = false;
+  private resetOpeningHalfDuplexState() {
+    this.clearHalfDuplexFailSafeTimer();
+    this.firstUserTurnCompleted = false;
+    this.halfDuplexActive = false;
+    this.halfDuplexConsumed = false;
+    this.halfDuplexFailed = false;
+    this.halfDuplexStartedAtMs = null;
+    this.halfDuplexResponseId = null;
     this.bargeInRestorationSent = false;
-    this.bargeInRestorationAcked = false;
-    this.deferredResponseCreateIssued = false;
   }
 
-  private sendTurnDetectionUpdate(interruptResponse: boolean, createResponse: boolean) {
+  private sendTurnDetectionUpdate(interruptResponse: boolean, createResponse = true) {
     if (!this.dc || this.dc.readyState !== "open") return false;
     try {
       this.send(
@@ -312,198 +303,230 @@ export class PhilipRealtimeLabSession {
     } catch (error) {
       this.evidence.providerErrors.push({
         atMs: Date.now(),
-        type: "opening_grace_session_update",
+        type: "opening_half_duplex_session_update",
         message: String((error as Error)?.message || error).slice(0, 200),
       });
       return false;
     }
   }
 
+  private publicationState(): "published" | "not_published" {
+    return this.microphonePublished ? "published" : "not_published";
+  }
+
   /**
-   * Request opening protection before conversation_ready. Must be acknowledged
-   * via session.updated (interrupt_response:false) before the ready banner.
+   * First assistant response.created after the first completed user turn:
+   * disable local mic transmission before any assistant audio can start.
    */
-  private requestOpeningProtection() {
-    if (this.completed || this.openingProtectionAcked || this.openingProtectionFailed) return;
-    if (!this.dataChannelReady) return;
-    const sent = this.sendTurnDetectionUpdate(false, true);
-    if (!sent) {
-      this.failOpeningProtection("opening_protection_send_failed");
+  private beginOpeningHalfDuplex(atMs: number, responseId: string | null) {
+    const decision = decideHalfDuplexStart({
+      conversationallyReady: this.conversationallyReady,
+      firstUserTurnCompleted: this.firstUserTurnCompleted,
+      halfDuplexConsumed: this.halfDuplexConsumed,
+      halfDuplexActive: this.halfDuplexActive,
+      assistantAudioAlreadyStarted: this.speaking || this.assistantAudioStartedAtMs != null,
+      openingFailed: this.halfDuplexFailed,
+      completed: this.completed,
+    });
+    if (decision === "noop") return;
+    if (decision === "fail_too_late") {
+      this.failOpeningHalfDuplex("opening_half_duplex_too_late_audio_already_started", responseId);
       return;
     }
-    this.openingProtectionRequestSent = true;
-    this.openingProtectionRequestedAtMs = Date.now();
-    this.evidence.events.push({
-      type: "opening_protection_requested",
-      atMs: this.openingProtectionRequestedAtMs,
-      itemId: null,
-      interrupt_response: false,
-      create_response: true,
-      audioRecorded: false,
-      audioPersisted: false,
-    });
-    this.clearOpeningProtectionAckTimer();
-    this.openingProtectionAckTimer = setTimeout(() => {
-      if (!this.openingProtectionAcked && !this.completed) {
-        this.failOpeningProtection("opening_protection_ack_timeout");
-      }
-    }, OPENING_PROTECTION_ACK_TIMEOUT_MS);
-  }
 
-  private acknowledgeOpeningProtection(
-    atMs: number,
-    evaluation: ReturnType<typeof evaluateOpeningProtectionAcknowledgment>,
-  ) {
-    if (this.openingProtectionAcked || this.completed || this.openingProtectionFailed) return;
-    this.openingProtectionAcked = true;
-    this.clearOpeningProtectionAckTimer();
-    this.evidence.events.push({
-      type: "opening_protection_acked",
-      atMs,
-      itemId: null,
-      interrupt_response: false,
-      verificationPath: evaluation.verificationPath,
-      confirmedValue: false,
-      elapsedMsFromUpdateSent: evaluation.elapsedMsFromUpdateSent,
-      audioRecorded: false,
-      audioPersisted: false,
-    });
-    this.log(
-      `Opening protection acknowledged (path=${evaluation.verificationPath}, value=false, elapsedMs=${evaluation.elapsedMsFromUpdateSent}).`,
+    const result = setLocalMicrophoneTransmitting(
+      this.microphoneTrack,
+      false,
+      this.publicationState(),
     );
-    this.maybeMarkConversationallyReady();
+    if (!result.ok || !isLocalMicrophoneTransmissionDisabled(result.after)) {
+      this.failOpeningHalfDuplex(
+        result.reason || "opening_half_duplex_mute_failed",
+        responseId,
+        result.after,
+      );
+      return;
+    }
+
+    this.halfDuplexActive = true;
+    this.halfDuplexConsumed = true;
+    this.halfDuplexStartedAtMs = atMs;
+    this.halfDuplexResponseId = responseId;
+    this.evidence.events.push(
+      buildOpeningHalfDuplexStartedEvent({
+        atMs,
+        reason: "first_response_created",
+        responseId,
+        trackBefore: result.before,
+        trackAfter: result.after,
+        failsafeMs: OPENING_HALF_DUPLEX_FAILSAFE_MS,
+      }),
+    );
+    this.emit({
+      openingHalfDuplex: true,
+      micState: "opening_response",
+      listening: false,
+      speaking: false,
+    });
+    this.log("Philip is responding…");
+
+    this.clearHalfDuplexFailSafeTimer();
+    this.halfDuplexFailSafeTimer = setTimeout(() => {
+      if (!this.halfDuplexActive || this.completed) return;
+      const responseId = this.halfDuplexResponseId;
+      const startedAt = this.halfDuplexStartedAtMs;
+      const atMs = Date.now();
+      this.clearHalfDuplexFailSafeTimer();
+
+      // Restore microphone first; never leave it disabled. Do not create another
+      // response or session — only re-enable the local track, then end cleanly.
+      const restore = setLocalMicrophoneTransmitting(
+        this.microphoneTrack,
+        true,
+        this.publicationState(),
+      );
+      const mic = snapshotLocalMicrophoneTrack(
+        this.microphoneTrack,
+        this.publicationState(),
+      );
+      const micVerifiedReady = isLocalMicrophoneReadyForConversation(mic);
+      this.halfDuplexActive = false;
+      this.halfDuplexStartedAtMs = null;
+      this.emit({ openingHalfDuplex: false, micState: micVerifiedReady ? "open" : "error" });
+
+      this.evidence.events.push(
+        buildOpeningHalfDuplexTimeoutEvent({
+          atMs,
+          reason: "failsafe_timeout",
+          responseId,
+          trackAfterRestore: restore.after,
+          micVerifiedReady,
+          elapsedMsFromHalfDuplexStart:
+            startedAt == null ? null : Math.max(0, atMs - startedAt),
+          failsafeMs: OPENING_HALF_DUPLEX_FAILSAFE_MS,
+        }),
+      );
+      this.log(
+        micVerifiedReady
+          ? "Opening half-duplex timed out — microphone restored."
+          : "Opening half-duplex timed out — microphone restore incomplete.",
+      );
+      if (!this.completed) {
+        void this.end(
+          micVerifiedReady ? "stopped" : "failed",
+          "opening_half_duplex_timeout",
+        );
+      }
+    }, OPENING_HALF_DUPLEX_FAILSAFE_MS);
   }
 
-  private failOpeningProtection(reason: string) {
-    if (this.openingProtectionFailed || this.conversationallyReady) return;
-    this.openingProtectionFailed = true;
-    this.clearOpeningProtectionAckTimer();
+  private restoreOpeningHalfDuplex(
+    reason: string,
+    responseId: string | null,
+    responseStatus: string | null,
+  ) {
+    if (!this.halfDuplexActive && reason !== "session_cleanup") return;
+    this.clearHalfDuplexFailSafeTimer();
+    const startedAt = this.halfDuplexStartedAtMs;
     const atMs = Date.now();
-    const elapsedMsFromUpdateSent =
-      this.openingProtectionRequestedAtMs == null
-        ? null
-        : Math.max(0, atMs - this.openingProtectionRequestedAtMs);
-    this.evidence.events.push({
-      type: "opening_protection_failed",
-      atMs,
-      itemId: null,
-      reason,
-      acknowledgmentEventReceived: false,
-      verificationPath: null,
-      confirmedValue: null,
-      elapsedMsFromUpdateSent,
-      failureReason: reason,
-      audioRecorded: false,
-      audioPersisted: false,
+
+    const result = setLocalMicrophoneTransmitting(
+      this.microphoneTrack,
+      true,
+      this.publicationState(),
+    );
+    const mic = snapshotLocalMicrophoneTrack(
+      this.microphoneTrack,
+      this.publicationState(),
+    );
+    const micReady = isLocalMicrophoneReadyForConversation(mic);
+    if (!result.ok || !micReady) {
+      this.halfDuplexActive = false;
+      this.evidence.events.push(
+        buildOpeningHalfDuplexFailedEvent({
+          atMs,
+          reason: `opening_half_duplex_restore_failed:${result.reason || "mic_not_ready"}`,
+          responseId,
+          trackState: result.after,
+        }),
+      );
+      this.emit({
+        openingHalfDuplex: false,
+        micState: "error",
+        error: "realtime_opening_half_duplex_restore_failed",
+      });
+      if (!this.completed) void this.end("failed", "opening_half_duplex_restore_failed");
+      return;
+    }
+
+    let interruptResponseRestored = false;
+    if (!this.bargeInRestorationSent && this.dc?.readyState === "open") {
+      this.bargeInRestorationSent = true;
+      interruptResponseRestored = this.sendTurnDetectionUpdate(true, true);
+    }
+
+    this.halfDuplexActive = false;
+    this.halfDuplexStartedAtMs = null;
+    this.evidence.events.push(
+      buildOpeningHalfDuplexRestoredEvent({
+        atMs,
+        reason,
+        responseId,
+        responseStatus,
+        trackAfter: result.after,
+        elapsedMsFromHalfDuplexStart:
+          startedAt == null ? null : Math.max(0, atMs - startedAt),
+        interruptResponseRestored,
+      }),
+    );
+    this.listening = false;
+    this.emit({
+      openingHalfDuplex: false,
+      micState: "open",
+      listening: true,
+      speaking: false,
     });
+    this.log("Listening…");
+  }
+
+  private failOpeningHalfDuplex(
+    reason: string,
+    responseId: string | null = null,
+    trackState: Record<string, unknown> | null = null,
+  ) {
+    if (this.halfDuplexFailed || this.completed) return;
+    this.halfDuplexFailed = true;
+    this.clearHalfDuplexFailSafeTimer();
+    // Always try to re-enable the mic before failing the session.
+    setLocalMicrophoneTransmitting(this.microphoneTrack, true, this.publicationState());
+    this.halfDuplexActive = false;
+    this.evidence.events.push(
+      buildOpeningHalfDuplexFailedEvent({
+        atMs: Date.now(),
+        reason,
+        responseId,
+        trackState:
+          trackState ||
+          snapshotMicTransmissionState(this.microphoneTrack, this.publicationState()),
+      }),
+    );
     this.emit({
       connectionState: "failed",
-      error: `realtime_opening_protection_failed:${reason}`,
+      openingHalfDuplex: false,
+      micState: "error",
+      error: `realtime_opening_half_duplex_failed:${reason}`,
     });
-    this.log(
-      `Opening protection failed (${reason}, elapsedMs=${elapsedMsFromUpdateSent}) — not announcing ready.`,
-    );
+    this.log(`Opening half-duplex failed (${reason}).`);
     void this.end("failed", reason);
   }
 
   /**
-   * First assistant audible playback: start the 1s runway timer and disable
-   * create_response so provider auto-create cannot overlap the first reply.
-   * interrupt_response is already false from pre-ready protection.
-   */
-  private beginAudibleOpeningGrace(atMs: number) {
-    if (this.audibleGraceConsumed || this.completed) return;
-    this.audibleGraceConsumed = true;
-    this.audibleGraceActive = true;
-    this.audibleGraceStartedAtMs = atMs;
-    this.deferredSpeechDuringAudibleGrace = false;
-    this.deferredSpeechCompletedDuringAudibleGrace = false;
-    // Keep interrupt false; suppress automatic second responses during runway.
-    this.sendTurnDetectionUpdate(false, false);
-    this.evidence.events.push({
-      type: "opening_bargein_grace_started",
-      atMs,
-      itemId: null,
-      graceMs: OPENING_ASSISTANT_BARGEIN_GRACE_MS,
-      create_response: false,
-      interrupt_response: false,
-      audioRecorded: false,
-      audioPersisted: false,
-    });
-    this.clearAudibleGraceTimer();
-    this.audibleGraceTimer = setTimeout(() => {
-      this.finishAudibleOpeningGrace("timer");
-    }, OPENING_ASSISTANT_BARGEIN_GRACE_MS);
-  }
-
-  private finishAudibleOpeningGrace(reason: "timer" | "audio_ended" | "session_end") {
-    if (!this.audibleGraceActive && reason !== "session_end") return;
-    this.clearAudibleGraceTimer();
-    const wasActive = this.audibleGraceActive;
-    this.audibleGraceActive = false;
-    this.audibleGraceStartedAtMs = null;
-    if (!wasActive) return;
-    if (this.bargeInRestorationSent) return;
-
-    const userStillSpeaking = this.listening;
-    let cancelledBecauseSpeaking = false;
-    let issuedDeferredResponseCreate = false;
-
-    // Restore normal barge-in permanently for the rest of the session.
-    this.bargeInRestorationSent = true;
-    this.sendTurnDetectionUpdate(true, true);
-
-    if (reason === "timer" && userStillSpeaking && this.dc?.readyState === "open") {
-      try {
-        this.send({ type: "response.cancel" });
-        this.send({ type: "output_audio_buffer.clear" });
-        cancelledBecauseSpeaking = true;
-        this.log("Opening grace ended: user still speaking — cancelled Philip.");
-      } catch (error) {
-        this.evidence.providerErrors.push({
-          atMs: Date.now(),
-          type: "opening_grace_expiry_cancel",
-          message: String((error as Error)?.message || error).slice(0, 200),
-        });
-      }
-    } else if (
-      reason !== "session_end" &&
-      !userStillSpeaking &&
-      this.deferredSpeechCompletedDuringAudibleGrace &&
-      !this.deferredResponseCreateIssued &&
-      this.dc?.readyState === "open"
-    ) {
-      try {
-        this.send({ type: "response.create" });
-        this.deferredResponseCreateIssued = true;
-        issuedDeferredResponseCreate = true;
-        this.log("Opening grace ended: one deferred response.create for preserved user turn.");
-      } catch (error) {
-        this.evidence.providerErrors.push({
-          atMs: Date.now(),
-          type: "opening_grace_deferred_response_create",
-          message: String((error as Error)?.message || error).slice(0, 200),
-        });
-      }
-    }
-
-    this.evidence.events.push(
-      buildOpeningBargeInGraceEndedEvent({
-        atMs: Date.now(),
-        userStillSpeaking,
-        cancelledBecauseSpeaking,
-        issuedDeferredResponseCreate,
-      }),
-    );
-  }
-
-  /**
    * Conversational readiness requires transport, provider session, remote audio,
-   * acknowledged opening protection (interrupt_response:false), and a live
-   * published unmuted microphone. No artificial delay after readiness.
+   * and a live published unmuted microphone. Opening half-duplex begins later,
+   * on the first response.created after the first user turn.
    */
   private maybeMarkConversationallyReady() {
-    if (this.conversationallyReady || this.completed || this.openingProtectionFailed) return;
+    if (this.conversationallyReady || this.completed || this.halfDuplexFailed) return;
     const mic = snapshotLocalMicrophoneTrack(
       this.microphoneTrack,
       this.microphonePublished ? "published" : "not_published",
@@ -514,16 +537,14 @@ export class PhilipRealtimeLabSession {
         dataChannelReady: this.dataChannelReady,
         providerSessionCreated: this.providerSessionCreated,
         remoteAudioReady: this.remoteAudioReady,
-        openingProtectionAcked: this.openingProtectionAcked,
-        openingProtectionFailed: this.openingProtectionFailed,
         micReady,
+        openingFailed: this.halfDuplexFailed,
       })
     ) {
       if (
         this.dataChannelReady &&
         this.providerSessionCreated &&
         this.remoteAudioReady &&
-        this.openingProtectionAcked &&
         !micReady
       ) {
         this.evidence.events.push({
@@ -540,7 +561,7 @@ export class PhilipRealtimeLabSession {
     this.conversationallyReady = true;
     const atMs = Date.now();
     this.evidence.events.push({ type: "conversation_ready", atMs, itemId: null });
-    this.emit({ connectionState: "ready" });
+    this.emit({ connectionState: "ready", listening: true, micState: "open" });
     this.log("Philip is ready — speak whenever you like.");
     void this.recordConversationReadyDiagnostics(atMs);
   }
@@ -661,45 +682,40 @@ export class PhilipRealtimeLabSession {
     if (type === "session.created") {
       this.providerSessionCreated = true;
       this.log("Provider session created.");
-      this.requestOpeningProtection();
       this.maybeMarkConversationallyReady();
       return;
     }
     if (type === "session.updated") {
-      const evaluation = evaluateOpeningProtectionAcknowledgment(event, {
-        requestedAtMs: this.openingProtectionRequestedAtMs,
-        nowMs: atMs,
-        alreadyAcked: this.openingProtectionAcked,
-        timedOutOrFailed: this.openingProtectionFailed,
-        completed: this.completed,
-      });
-      // Always record a sanitized diagnostic for every session.updated while
-      // protection is outstanding (or just acknowledged), never the raw session.
-      if (this.openingProtectionRequestSent && !this.conversationallyReady) {
-        this.evidence.events.push(buildOpeningProtectionAckDiagnostic(evaluation, atMs));
-        this.log(
-          `session.updated ack check: received=${evaluation.acknowledgmentEventReceived} path=${evaluation.verificationPath} value=${evaluation.confirmedValue} elapsedMs=${evaluation.elapsedMsFromUpdateSent} ok=${evaluation.acknowledged} reason=${evaluation.failureReason}`,
-        );
-      }
-      if (evaluation.acknowledged) {
-        this.acknowledgeOpeningProtection(atMs, evaluation);
-      }
-      const td = extractTurnDetectionFromSessionUpdated(event);
-      if (this.bargeInRestorationSent && isBargeInRestorationAcknowledged(td)) {
-        this.bargeInRestorationAcked = true;
-        this.evidence.events.push({
-          type: "opening_bargein_restoration_acked",
-          atMs,
-          itemId: null,
-          interrupt_response: true,
-          create_response: true,
-          audioRecorded: false,
-          audioPersisted: false,
-        });
-      }
+      // No opening-protection ack gate; half-duplex starts later on response.created.
       return;
     }
     if (type === "input_audio_buffer.speech_started") {
+      // Local mic is disabled during opening half-duplex; any speech_started here
+      // cannot come from our transmitted track and must not cancel Philip or flip UI.
+      if (this.halfDuplexActive) {
+        const turn = {
+          turnNumber: this.evidence.turns.length + 1,
+          speechStartedAtMs: atMs,
+          itemId: event.item_id || null,
+        };
+        this.evidence.turns.push(turn);
+        const mic = snapshotMicTransmissionState(
+          this.microphoneTrack,
+          this.publicationState(),
+        );
+        this.evidence.events.push({
+          type: "speech_started_during_opening_half_duplex",
+          atMs,
+          itemId: event.item_id || null,
+          micTransmission: mic,
+          note: "ignored_for_bargein_local_mic_disabled",
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+        this.log(`VAD speech_started during opening half-duplex · turn ${turn.turnNumber} (ignored).`);
+        return;
+      }
+
       this.listening = true;
       this.emit({ listening: true });
       const turn = {
@@ -708,40 +724,8 @@ export class PhilipRealtimeLabSession {
         itemId: event.item_id || null,
       };
       this.evidence.turns.push(turn);
+
       const duringAssistantAudio = this.speaking;
-      const withinAudibleGrace =
-        this.audibleGraceActive &&
-        isWithinOpeningBargeInGrace(this.audibleGraceStartedAtMs, atMs) &&
-        duringAssistantAudio;
-
-      if (withinAudibleGrace) {
-        this.deferredSpeechDuringAudibleGrace = true;
-        const playedMs = assistantAudioPlayedMs(this.assistantAudioStartedAtMs, atMs);
-        this.evidence.events.push(
-          buildOpeningBargeInDeferredEvent({
-            atMs,
-            itemId: event.item_id || null,
-            assistantAudioPlayedMs: playedMs,
-          }),
-        );
-        this.evidence.events.push({
-          type: "speech_started_diagnostics",
-          atMs,
-          itemId: event.item_id || null,
-          duringAssistantAudio: true,
-          openingBargeInDeferred: true,
-          assistantAudioPlayedBeforeInterruptMs: playedMs,
-          audioRoute: null,
-          audioRecorded: false,
-          audioPersisted: false,
-        });
-        this.log(
-          `Opening grace: speech_started at ${playedMs ?? "?"}ms — cancellation deferred.`,
-        );
-        this.log(`VAD speech_started · turn ${turn.turnNumber}`);
-        return;
-      }
-
       void (async () => {
         let audioRoute: Record<string, unknown> | null = null;
         try {
@@ -793,15 +777,13 @@ export class PhilipRealtimeLabSession {
       this.emit({ listening: false });
       const turn = this.evidence.turns[this.evidence.turns.length - 1];
       if (turn) turn.speechStoppedAtMs = atMs;
-      if (this.audibleGraceActive && this.deferredSpeechDuringAudibleGrace) {
-        // create_response is false during audible grace; mark completed turn for
-        // exactly one deferred response.create after restoration.
-        this.deferredSpeechCompletedDuringAudibleGrace = true;
+      // First completed user turn unlocks half-duplex on the next response.created.
+      if (this.conversationallyReady && !this.firstUserTurnCompleted && !this.halfDuplexConsumed) {
+        this.firstUserTurnCompleted = true;
         this.evidence.events.push({
-          type: "opening_grace_user_speech_completed",
+          type: "opening_first_user_turn_completed",
           atMs,
           itemId: turn?.itemId || null,
-          pendingDeferredResponseCreate: true,
           audioRecorded: false,
           audioPersisted: false,
         });
@@ -817,6 +799,21 @@ export class PhilipRealtimeLabSession {
       return;
     }
     if (type === "output_audio_buffer.started") {
+      // If mute did not run before first audio, fail safely — do not pretend protection.
+      if (
+        this.firstUserTurnCompleted &&
+        !this.halfDuplexConsumed &&
+        !this.halfDuplexFailed &&
+        !this.completed
+      ) {
+        this.failOpeningHalfDuplex(
+          "opening_half_duplex_missed_before_audio",
+          typeof this.currentResponse?.responseId === "string"
+            ? this.currentResponse.responseId
+            : null,
+        );
+        return;
+      }
       this.speaking = true;
       this.assistantAudioStartedAtMs = atMs;
       this.emit({ speaking: true });
@@ -831,11 +828,20 @@ export class PhilipRealtimeLabSession {
       }
       if (!this.firstAssistantAudioDiagnosticsRecorded) {
         this.firstAssistantAudioDiagnosticsRecorded = true;
+        const mic = snapshotMicTransmissionState(
+          this.microphoneTrack,
+          this.publicationState(),
+        );
+        this.evidence.events.push({
+          type: "first_assistant_audio_with_mic_state",
+          atMs,
+          itemId: null,
+          halfDuplexActive: this.halfDuplexActive,
+          micTransmission: mic,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
         void this.recordAudioRouteDiagnostics("first_assistant_audio");
-      }
-      // Audible 1s runway; interrupt_response is already false from pre-ready protection.
-      if (!this.audibleGraceConsumed) {
-        this.beginAudibleOpeningGrace(atMs);
       }
       return;
     }
@@ -858,17 +864,39 @@ export class PhilipRealtimeLabSession {
       const reason = type === "output_audio_buffer.cleared" ? "output_cleared" : "output_stopped";
       void this.recordAudioRouteDiagnostics(reason, { assistantAudioPlayedMs: playedMs });
       this.assistantAudioStartedAtMs = null;
-      if (this.audibleGraceActive) {
-        this.finishAudibleOpeningGrace("audio_ended");
+
+      // Cleared while local mic is confirmed disabled → not local VAD/mic cause.
+      // Do NOT restore or finish half-duplex on clear alone.
+      if (type === "output_audio_buffer.cleared" && this.halfDuplexActive) {
+        const mic = snapshotMicTransmissionState(
+          this.microphoneTrack,
+          this.publicationState(),
+        );
+        this.evidence.events.push({
+          type: "opening_cleared_while_mic_disabled",
+          atMs,
+          itemId: null,
+          responseId: this.halfDuplexResponseId,
+          micTransmission: mic,
+          micConfirmedDisabled: isLocalMicrophoneTransmissionDisabled(mic),
+          note: "not_local_vad_cause_no_auto_allowance",
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+        this.log("Opening audio cleared while local mic disabled — not finishing half-duplex on clear.");
       }
       return;
     }
     if (type === "response.created") {
+      const responseId =
+        (event.response as { id?: string } | undefined)?.id ||
+        (typeof event.response_id === "string" ? event.response_id : null);
       this.currentResponse = {
-        responseId: (event.response as { id?: string } | undefined)?.id || null,
+        responseId,
         createdAtMs: atMs,
         transcriptDeltas: "",
       };
+      this.beginOpeningHalfDuplex(atMs, responseId);
       return;
     }
     if (type === "response.output_audio_transcript.delta") {
@@ -892,35 +920,39 @@ export class PhilipRealtimeLabSession {
           .map((content) => content.transcript || content.text || "")
           .join("")
           .trim() || String(this.currentResponse?.transcriptDeltas || "");
+      const responseId =
+        typeof response.id === "string"
+          ? response.id
+          : typeof this.currentResponse?.responseId === "string"
+            ? this.currentResponse.responseId
+            : null;
+      const status = typeof response.status === "string" ? response.status : null;
       const done = {
         ...(this.currentResponse || {}),
-        responseId: response.id || this.currentResponse?.responseId,
+        responseId,
         doneAtMs: atMs,
-        status: response.status,
+        status,
         transcript,
         usage: response.usage || null,
       };
       this.evidence.responses.push(done);
       if (transcript) this.log(`Philip: ${transcript}`);
       this.currentResponse = null;
-      // If the first response finished without any audible start, restore barge-in
-      // so the session is not stuck with interrupt_response:false forever.
-      if (
-        !this.audibleGraceConsumed &&
-        this.openingProtectionAcked &&
-        !this.bargeInRestorationSent &&
-        this.dc?.readyState === "open"
-      ) {
-        this.bargeInRestorationSent = true;
-        this.sendTurnDetectionUpdate(true, true);
-        this.evidence.events.push({
-          type: "opening_protection_restored_without_audio",
-          atMs,
-          itemId: null,
-          audioRecorded: false,
-          audioPersisted: false,
-        });
-        this.log("First response ended without audible start — restored barge-in.");
+
+      const restoreDecision = decideHalfDuplexRestore({
+        halfDuplexActive: this.halfDuplexActive,
+        halfDuplexResponseId: this.halfDuplexResponseId,
+        terminalResponseId: responseId,
+        completed: this.completed,
+      });
+      if (restoreDecision === "restore_after_terminal" || restoreDecision === "restore_cleanup") {
+        this.restoreOpeningHalfDuplex(
+          status === "cancelled" || status === "incomplete"
+            ? `first_response_terminal:${status}`
+            : "first_response_terminal",
+          responseId,
+          status,
+        );
       }
       return;
     }
@@ -934,12 +966,12 @@ export class PhilipRealtimeLabSession {
       });
       this.emit({ error: String(err.message || err.code || "provider_error") });
       this.log(`Provider error: ${err.code || err.type || "unknown"}`);
-      if (
-        this.openingProtectionRequestSent &&
-        !this.openingProtectionAcked &&
-        !this.conversationallyReady
-      ) {
-        this.failOpeningProtection(`provider_error_during_protection:${String(err.code || err.type || "unknown")}`);
+      if (this.halfDuplexActive) {
+        this.restoreOpeningHalfDuplex(
+          `provider_error:${String(err.code || err.type || "unknown")}`,
+          this.halfDuplexResponseId,
+          null,
+        );
       }
     }
   }
@@ -963,7 +995,7 @@ export class PhilipRealtimeLabSession {
     this.microphonePublished = false;
     this.assistantAudioStartedAtMs = null;
     this.firstAssistantAudioDiagnosticsRecorded = false;
-    this.resetOpeningGraceState();
+    this.resetOpeningHalfDuplexState();
     this.remoteAudioTrackId = null;
     this.runtimeToken = runtimeToken;
     this.emit({ micState: "requesting", error: null, evidence: this.evidence });
@@ -1077,7 +1109,6 @@ export class PhilipRealtimeLabSession {
         this.evidence.connection.dataChannelOpenedAtMs = Date.now();
         this.dataChannelReady = true;
         this.log("Realtime data channel open.");
-        this.requestOpeningProtection();
         this.maybeMarkConversationallyReady();
       };
       this.dc.onclose = () => {
@@ -1153,8 +1184,17 @@ export class PhilipRealtimeLabSession {
     if (this.hardStopTimer) clearTimeout(this.hardStopTimer);
     if (this.closingNoticeTimer) clearTimeout(this.closingNoticeTimer);
     if (this.elapsedTimer) clearInterval(this.elapsedTimer);
-    this.finishAudibleOpeningGrace("session_end");
-    this.resetOpeningGraceState();
+    // Always restore mic transmission before tearing down tracks.
+    if (this.halfDuplexActive || this.microphoneTrack) {
+      setLocalMicrophoneTransmitting(
+        this.microphoneTrack,
+        true,
+        this.publicationState(),
+      );
+    }
+    this.clearHalfDuplexFailSafeTimer();
+    this.halfDuplexActive = false;
+    this.resetOpeningHalfDuplexState();
     try {
       if (this.dc?.readyState === "open") {
         this.send({ type: "response.cancel" });
@@ -1170,6 +1210,8 @@ export class PhilipRealtimeLabSession {
     if (this.localStream) {
       for (const track of this.localStream.getTracks()) track.stop();
     }
+    this.microphoneTrack = null;
+    this.microphonePublished = false;
     this.pc = null;
     this.dc = null;
     this.localStream = null;
@@ -1191,6 +1233,7 @@ export class PhilipRealtimeLabSession {
       micState: "closed",
       speaking: false,
       listening: false,
+      openingHalfDuplex: false,
       evidence: this.evidence,
     });
 

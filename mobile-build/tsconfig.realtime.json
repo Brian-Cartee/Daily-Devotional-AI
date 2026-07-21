@@ -5,6 +5,7 @@
     "app/philip-realtime-lab.tsx",
     "lib/philipRealtimeAudioSession.ts",
     "lib/philipRealtimeDiagnostics.mjs",
+    "lib/philipRealtimeOpeningHalfDuplex.mjs",
     "lib/philipRealtimeOpeningGrace.mjs",
     "lib/philipRealtimeLabApi.ts",
     "lib/philipRealtimeLabConfig.ts",

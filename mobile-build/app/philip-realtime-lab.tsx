@@ -54,6 +54,7 @@ export default function PhilipRealtimeLabScreen() {
   const [connectionState, setConnectionState] = useState("idle");
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [openingHalfDuplex, setOpeningHalfDuplex] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +187,9 @@ export default function PhilipRealtimeLabScreen() {
         if (patch.connectionState) setConnectionState(patch.connectionState);
         if (typeof patch.listening === "boolean") setListening(patch.listening);
         if (typeof patch.speaking === "boolean") setSpeaking(patch.speaking);
+        if (typeof patch.openingHalfDuplex === "boolean") {
+          setOpeningHalfDuplex(patch.openingHalfDuplex);
+        }
         if (typeof patch.elapsedMs === "number") setElapsedMs(patch.elapsedMs);
         if (patch.logLine) appendLog(patch.logLine);
         if (patch.error !== undefined) setError(patch.error);
@@ -294,9 +298,17 @@ export default function PhilipRealtimeLabScreen() {
 
         <Text style={styles.elapsed}>{formatElapsed(elapsedMs)}</Text>
 
-        {connectionState === "ready" ? (
+        {connectionState === "ready" && !openingHalfDuplex ? (
           <View style={styles.readyBox}>
-            <Text style={styles.readyText}>Philip is ready — speak whenever you like.</Text>
+            <Text style={styles.readyText}>
+              {listening ? "Listening…" : "Philip is ready — speak whenever you like."}
+            </Text>
+          </View>
+        ) : null}
+
+        {openingHalfDuplex ? (
+          <View style={styles.readyBox}>
+            <Text style={styles.readyText}>Philip is responding…</Text>
           </View>
         ) : null}
 

@@ -122,7 +122,8 @@ test("turn detection uses semantic VAD with opening protection (interrupt starts
   assert.equal(td.type, "semantic_vad");
   assert.equal(td.eagerness, "auto");
   assert.equal(td.create_response, true);
-  // Opening protection is the server default; client restores true after first-audio grace.
+  // Opening protection is the server default belt; client half-duplex restores
+  // interrupt_response:true after the first assistant response terminates.
   assert.equal(td.interrupt_response, false);
   assert.equal("silence_duration_ms" in td, false);
 });

@@ -25,6 +25,7 @@
     "phase2:session3": "node phase2/run-session.mjs 3",
     "check": "node --check src/index.mjs && node --check src/session.mjs && node --check src/transport/mockProvider.mjs && node --check fixtures/scenarios.mjs && node --check test/run-phase1-suite.mjs && node --check test/cost-model.mjs && node --check phase2/config.mjs && node --check phase2/scenarios.mjs && node --check phase2/server.mjs && node --check phase2/run-session.mjs && node --check phase2/public/app.mjs && node --check phase2/loadCredential.mjs && node --check phase2/auth-check.mjs && node --check phase2/localVad.mjs && node --check phase2/public/manual-canary.mjs && node --check phase2/validate-local-mic.mjs && node --check phase2b/config.mjs && node --check phase2b/server.mjs && node --check phase2b/public/app.mjs && node --check test/phase2b-prep.test.mjs && node --check iphone-lab/config.mjs && node --check iphone-lab/server.mjs && node --check iphone-lab/webrtcCapability.mjs && node --check test/iphone-lab-prep.test.mjs",
     "test:iphone-lab-diagnostics": "node --test test/iphone-lab-diagnostics.test.mjs",
-    "test:iphone-lab-opening-grace": "node --test test/iphone-lab-opening-grace.test.mjs"
+    "test:iphone-lab-opening-half-duplex": "node --test test/iphone-lab-opening-half-duplex.test.mjs",
+    "test:iphone-lab-opening-grace": "node --test test/iphone-lab-opening-half-duplex.test.mjs"
   }
 }
