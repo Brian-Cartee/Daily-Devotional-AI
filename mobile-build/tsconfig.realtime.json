@@ -4,6 +4,7 @@
   "include": [
     "app/philip-realtime-lab.tsx",
     "lib/philipRealtimeAudioSession.ts",
+    "lib/philipRealtimeDiagnostics.mjs",
     "lib/philipRealtimeLabApi.ts",
     "lib/philipRealtimeLabConfig.ts",
     "lib/philipRealtimeLabSession.ts",
