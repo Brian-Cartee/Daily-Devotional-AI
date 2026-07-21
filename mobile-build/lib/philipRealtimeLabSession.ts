@@ -7,11 +7,37 @@ import {
   assertIsolatedRealtimeLabUrl,
   philipRealtimeLabBaseUrl,
 } from "@/lib/philipRealtimeLabConfig";
-import { releaseRealtimeAudioSession } from "@/lib/philipRealtimeAudioSession";
+import {
+  captureRealtimeAudioRouteSnapshot,
+  releaseRealtimeAudioSession,
+} from "@/lib/philipRealtimeAudioSession";
 import {
   buildClosingNoticeEvent,
   closingNoticeDelayMs,
 } from "@/lib/philipRealtimeClosingNotice.mjs";
+import {
+  assistantAudioPlayedMs,
+  buildAudioRouteDiagnosticsEvent,
+  buildConversationReadyDiagnosticsEvent,
+  buildInterruptionDiagnostics,
+  sanitizeAudioRouteSnapshot,
+  snapshotLocalMicrophoneTrack,
+  snapshotReadinessFlags,
+} from "@/lib/philipRealtimeDiagnostics.mjs";
+import {
+  OPENING_ASSISTANT_BARGEIN_GRACE_MS,
+  OPENING_PROTECTION_ACK_TIMEOUT_MS,
+  buildOpeningBargeInDeferredEvent,
+  buildOpeningBargeInGraceEndedEvent,
+  buildOpeningProtectionAckDiagnostic,
+  buildTurnDetectionUpdate,
+  canAnnounceConversationReady,
+  evaluateOpeningProtectionAcknowledgment,
+  extractTurnDetectionFromSessionUpdated,
+  isBargeInRestorationAcknowledged,
+  isLocalMicrophoneReadyForConversation,
+  isWithinOpeningBargeInGrace,
+} from "@/lib/philipRealtimeOpeningGrace.mjs";
 import { applyInputTranscriptEvent } from "@/lib/philipRealtimeTranscript.mjs";
 import { acceptSingleRemoteAudioTrack } from "@/lib/philipRealtimeTrackPolicy.mjs";
 import {
@@ -132,6 +158,27 @@ export class PhilipRealtimeLabSession {
   private lastSpeechStoppedAtMs: number | null = null;
   private runtimeToken: string | null = null;
   private remoteAudioTrackId: string | null = null;
+  private microphoneTrack: { id?: string; enabled?: boolean; muted?: boolean; readyState?: string } | null =
+    null;
+  private microphonePublished = false;
+  private assistantAudioStartedAtMs: number | null = null;
+  private firstAssistantAudioDiagnosticsRecorded = false;
+  /** Opening protection: interrupt_response false until after first-audio grace. */
+  private openingProtectionAcked = false;
+  private openingProtectionFailed = false;
+  private openingProtectionRequestSent = false;
+  private openingProtectionRequestedAtMs: number | null = null;
+  private openingProtectionAckTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Audible 1s window after first output_audio_buffer.started. */
+  private audibleGraceActive = false;
+  private audibleGraceStartedAtMs: number | null = null;
+  private audibleGraceTimer: ReturnType<typeof setTimeout> | null = null;
+  private audibleGraceConsumed = false;
+  private deferredSpeechDuringAudibleGrace = false;
+  private deferredSpeechCompletedDuringAudibleGrace = false;
+  private bargeInRestorationSent = false;
+  private bargeInRestorationAcked = false;
+  private deferredResponseCreateIssued = false;
   private listener: Listener;
 
   constructor(listener: Listener) {
@@ -191,20 +238,349 @@ export class PhilipRealtimeLabSession {
     this.dc.send(JSON.stringify(event));
   }
 
+  private async recordAudioRouteDiagnostics(
+    reason:
+      | "readiness"
+      | "first_assistant_audio"
+      | "output_cleared"
+      | "output_stopped"
+      | "interruption",
+    extra: { assistantAudioPlayedMs?: number | null } = {},
+  ) {
+    const atMs = Date.now();
+    let route: Record<string, unknown>;
+    try {
+      route = sanitizeAudioRouteSnapshot(await captureRealtimeAudioRouteSnapshot(reason));
+    } catch (error) {
+      route = sanitizeAudioRouteSnapshot({
+        available: false,
+        note: `capture_failed:${String((error as Error)?.message || error).slice(0, 120)}`,
+      });
+    }
+    this.evidence.events.push(
+      buildAudioRouteDiagnosticsEvent({
+        atMs,
+        reason,
+        audioRoute: route,
+        assistantAudioPlayedMs: extra.assistantAudioPlayedMs,
+      }),
+    );
+    return route;
+  }
+
+  private clearOpeningProtectionAckTimer() {
+    if (this.openingProtectionAckTimer) {
+      clearTimeout(this.openingProtectionAckTimer);
+      this.openingProtectionAckTimer = null;
+    }
+  }
+
+  private clearAudibleGraceTimer() {
+    if (this.audibleGraceTimer) {
+      clearTimeout(this.audibleGraceTimer);
+      this.audibleGraceTimer = null;
+    }
+  }
+
+  private resetOpeningGraceState() {
+    this.clearOpeningProtectionAckTimer();
+    this.clearAudibleGraceTimer();
+    this.openingProtectionAcked = false;
+    this.openingProtectionFailed = false;
+    this.openingProtectionRequestSent = false;
+    this.openingProtectionRequestedAtMs = null;
+    this.audibleGraceActive = false;
+    this.audibleGraceStartedAtMs = null;
+    this.audibleGraceConsumed = false;
+    this.deferredSpeechDuringAudibleGrace = false;
+    this.deferredSpeechCompletedDuringAudibleGrace = false;
+    this.bargeInRestorationSent = false;
+    this.bargeInRestorationAcked = false;
+    this.deferredResponseCreateIssued = false;
+  }
+
+  private sendTurnDetectionUpdate(interruptResponse: boolean, createResponse: boolean) {
+    if (!this.dc || this.dc.readyState !== "open") return false;
+    try {
+      this.send(
+        buildTurnDetectionUpdate({
+          interruptResponse,
+          createResponse,
+        }),
+      );
+      return true;
+    } catch (error) {
+      this.evidence.providerErrors.push({
+        atMs: Date.now(),
+        type: "opening_grace_session_update",
+        message: String((error as Error)?.message || error).slice(0, 200),
+      });
+      return false;
+    }
+  }
+
   /**
-   * Conversational readiness requires the data channel, the provider session,
-   * and the remote audio path together. Genuine session
-   * iphone-lab-1784427478402-1 showed the "speak" invitation landing before
-   * the data channel opened, so the invitation now waits for all three.
-   * No artificial delay is added after readiness.
+   * Request opening protection before conversation_ready. Must be acknowledged
+   * via session.updated (interrupt_response:false) before the ready banner.
+   */
+  private requestOpeningProtection() {
+    if (this.completed || this.openingProtectionAcked || this.openingProtectionFailed) return;
+    if (!this.dataChannelReady) return;
+    const sent = this.sendTurnDetectionUpdate(false, true);
+    if (!sent) {
+      this.failOpeningProtection("opening_protection_send_failed");
+      return;
+    }
+    this.openingProtectionRequestSent = true;
+    this.openingProtectionRequestedAtMs = Date.now();
+    this.evidence.events.push({
+      type: "opening_protection_requested",
+      atMs: this.openingProtectionRequestedAtMs,
+      itemId: null,
+      interrupt_response: false,
+      create_response: true,
+      audioRecorded: false,
+      audioPersisted: false,
+    });
+    this.clearOpeningProtectionAckTimer();
+    this.openingProtectionAckTimer = setTimeout(() => {
+      if (!this.openingProtectionAcked && !this.completed) {
+        this.failOpeningProtection("opening_protection_ack_timeout");
+      }
+    }, OPENING_PROTECTION_ACK_TIMEOUT_MS);
+  }
+
+  private acknowledgeOpeningProtection(
+    atMs: number,
+    evaluation: ReturnType<typeof evaluateOpeningProtectionAcknowledgment>,
+  ) {
+    if (this.openingProtectionAcked || this.completed || this.openingProtectionFailed) return;
+    this.openingProtectionAcked = true;
+    this.clearOpeningProtectionAckTimer();
+    this.evidence.events.push({
+      type: "opening_protection_acked",
+      atMs,
+      itemId: null,
+      interrupt_response: false,
+      verificationPath: evaluation.verificationPath,
+      confirmedValue: false,
+      elapsedMsFromUpdateSent: evaluation.elapsedMsFromUpdateSent,
+      audioRecorded: false,
+      audioPersisted: false,
+    });
+    this.log(
+      `Opening protection acknowledged (path=${evaluation.verificationPath}, value=false, elapsedMs=${evaluation.elapsedMsFromUpdateSent}).`,
+    );
+    this.maybeMarkConversationallyReady();
+  }
+
+  private failOpeningProtection(reason: string) {
+    if (this.openingProtectionFailed || this.conversationallyReady) return;
+    this.openingProtectionFailed = true;
+    this.clearOpeningProtectionAckTimer();
+    const atMs = Date.now();
+    const elapsedMsFromUpdateSent =
+      this.openingProtectionRequestedAtMs == null
+        ? null
+        : Math.max(0, atMs - this.openingProtectionRequestedAtMs);
+    this.evidence.events.push({
+      type: "opening_protection_failed",
+      atMs,
+      itemId: null,
+      reason,
+      acknowledgmentEventReceived: false,
+      verificationPath: null,
+      confirmedValue: null,
+      elapsedMsFromUpdateSent,
+      failureReason: reason,
+      audioRecorded: false,
+      audioPersisted: false,
+    });
+    this.emit({
+      connectionState: "failed",
+      error: `realtime_opening_protection_failed:${reason}`,
+    });
+    this.log(
+      `Opening protection failed (${reason}, elapsedMs=${elapsedMsFromUpdateSent}) — not announcing ready.`,
+    );
+    void this.end("failed", reason);
+  }
+
+  /**
+   * First assistant audible playback: start the 1s runway timer and disable
+   * create_response so provider auto-create cannot overlap the first reply.
+   * interrupt_response is already false from pre-ready protection.
+   */
+  private beginAudibleOpeningGrace(atMs: number) {
+    if (this.audibleGraceConsumed || this.completed) return;
+    this.audibleGraceConsumed = true;
+    this.audibleGraceActive = true;
+    this.audibleGraceStartedAtMs = atMs;
+    this.deferredSpeechDuringAudibleGrace = false;
+    this.deferredSpeechCompletedDuringAudibleGrace = false;
+    // Keep interrupt false; suppress automatic second responses during runway.
+    this.sendTurnDetectionUpdate(false, false);
+    this.evidence.events.push({
+      type: "opening_bargein_grace_started",
+      atMs,
+      itemId: null,
+      graceMs: OPENING_ASSISTANT_BARGEIN_GRACE_MS,
+      create_response: false,
+      interrupt_response: false,
+      audioRecorded: false,
+      audioPersisted: false,
+    });
+    this.clearAudibleGraceTimer();
+    this.audibleGraceTimer = setTimeout(() => {
+      this.finishAudibleOpeningGrace("timer");
+    }, OPENING_ASSISTANT_BARGEIN_GRACE_MS);
+  }
+
+  private finishAudibleOpeningGrace(reason: "timer" | "audio_ended" | "session_end") {
+    if (!this.audibleGraceActive && reason !== "session_end") return;
+    this.clearAudibleGraceTimer();
+    const wasActive = this.audibleGraceActive;
+    this.audibleGraceActive = false;
+    this.audibleGraceStartedAtMs = null;
+    if (!wasActive) return;
+    if (this.bargeInRestorationSent) return;
+
+    const userStillSpeaking = this.listening;
+    let cancelledBecauseSpeaking = false;
+    let issuedDeferredResponseCreate = false;
+
+    // Restore normal barge-in permanently for the rest of the session.
+    this.bargeInRestorationSent = true;
+    this.sendTurnDetectionUpdate(true, true);
+
+    if (reason === "timer" && userStillSpeaking && this.dc?.readyState === "open") {
+      try {
+        this.send({ type: "response.cancel" });
+        this.send({ type: "output_audio_buffer.clear" });
+        cancelledBecauseSpeaking = true;
+        this.log("Opening grace ended: user still speaking — cancelled Philip.");
+      } catch (error) {
+        this.evidence.providerErrors.push({
+          atMs: Date.now(),
+          type: "opening_grace_expiry_cancel",
+          message: String((error as Error)?.message || error).slice(0, 200),
+        });
+      }
+    } else if (
+      reason !== "session_end" &&
+      !userStillSpeaking &&
+      this.deferredSpeechCompletedDuringAudibleGrace &&
+      !this.deferredResponseCreateIssued &&
+      this.dc?.readyState === "open"
+    ) {
+      try {
+        this.send({ type: "response.create" });
+        this.deferredResponseCreateIssued = true;
+        issuedDeferredResponseCreate = true;
+        this.log("Opening grace ended: one deferred response.create for preserved user turn.");
+      } catch (error) {
+        this.evidence.providerErrors.push({
+          atMs: Date.now(),
+          type: "opening_grace_deferred_response_create",
+          message: String((error as Error)?.message || error).slice(0, 200),
+        });
+      }
+    }
+
+    this.evidence.events.push(
+      buildOpeningBargeInGraceEndedEvent({
+        atMs: Date.now(),
+        userStillSpeaking,
+        cancelledBecauseSpeaking,
+        issuedDeferredResponseCreate,
+      }),
+    );
+  }
+
+  /**
+   * Conversational readiness requires transport, provider session, remote audio,
+   * acknowledged opening protection (interrupt_response:false), and a live
+   * published unmuted microphone. No artificial delay after readiness.
    */
   private maybeMarkConversationallyReady() {
-    if (this.conversationallyReady || this.completed) return;
-    if (!this.dataChannelReady || !this.providerSessionCreated || !this.remoteAudioReady) return;
+    if (this.conversationallyReady || this.completed || this.openingProtectionFailed) return;
+    const mic = snapshotLocalMicrophoneTrack(
+      this.microphoneTrack,
+      this.microphonePublished ? "published" : "not_published",
+    );
+    const micReady = isLocalMicrophoneReadyForConversation(mic);
+    if (
+      !canAnnounceConversationReady({
+        dataChannelReady: this.dataChannelReady,
+        providerSessionCreated: this.providerSessionCreated,
+        remoteAudioReady: this.remoteAudioReady,
+        openingProtectionAcked: this.openingProtectionAcked,
+        openingProtectionFailed: this.openingProtectionFailed,
+        micReady,
+      })
+    ) {
+      if (
+        this.dataChannelReady &&
+        this.providerSessionCreated &&
+        this.remoteAudioReady &&
+        this.openingProtectionAcked &&
+        !micReady
+      ) {
+        this.evidence.events.push({
+          type: "conversation_ready_blocked_mic",
+          atMs: Date.now(),
+          itemId: null,
+          microphone: mic,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+      }
+      return;
+    }
     this.conversationallyReady = true;
-    this.evidence.events.push({ type: "conversation_ready", atMs: Date.now(), itemId: null });
+    const atMs = Date.now();
+    this.evidence.events.push({ type: "conversation_ready", atMs, itemId: null });
     this.emit({ connectionState: "ready" });
     this.log("Philip is ready — speak whenever you like.");
+    void this.recordConversationReadyDiagnostics(atMs);
+  }
+
+  private async recordConversationReadyDiagnostics(atMs: number) {
+    const mic = snapshotLocalMicrophoneTrack(
+      this.microphoneTrack,
+      this.microphonePublished ? "published" : "not_published",
+    );
+    const readinessFlags = snapshotReadinessFlags({
+      dataChannelReady: this.dataChannelReady,
+      providerSessionCreated: this.providerSessionCreated,
+      remoteAudioReady: this.remoteAudioReady,
+      conversationallyReady: this.conversationallyReady,
+    });
+    let audioRoute: Record<string, unknown>;
+    try {
+      audioRoute = sanitizeAudioRouteSnapshot(await captureRealtimeAudioRouteSnapshot("readiness"));
+    } catch (error) {
+      audioRoute = sanitizeAudioRouteSnapshot({
+        available: false,
+        note: `capture_failed:${String((error as Error)?.message || error).slice(0, 120)}`,
+      });
+    }
+    this.evidence.events.push(
+      buildConversationReadyDiagnosticsEvent({
+        atMs,
+        mic,
+        readinessFlags,
+        audioRoute,
+      }),
+    );
+    // Also emit the shared route event so readiness/first-audio/clear share one schema.
+    this.evidence.events.push(
+      buildAudioRouteDiagnosticsEvent({
+        atMs,
+        reason: "readiness",
+        audioRoute,
+      }),
+    );
   }
 
   /**
@@ -285,7 +661,42 @@ export class PhilipRealtimeLabSession {
     if (type === "session.created") {
       this.providerSessionCreated = true;
       this.log("Provider session created.");
+      this.requestOpeningProtection();
       this.maybeMarkConversationallyReady();
+      return;
+    }
+    if (type === "session.updated") {
+      const evaluation = evaluateOpeningProtectionAcknowledgment(event, {
+        requestedAtMs: this.openingProtectionRequestedAtMs,
+        nowMs: atMs,
+        alreadyAcked: this.openingProtectionAcked,
+        timedOutOrFailed: this.openingProtectionFailed,
+        completed: this.completed,
+      });
+      // Always record a sanitized diagnostic for every session.updated while
+      // protection is outstanding (or just acknowledged), never the raw session.
+      if (this.openingProtectionRequestSent && !this.conversationallyReady) {
+        this.evidence.events.push(buildOpeningProtectionAckDiagnostic(evaluation, atMs));
+        this.log(
+          `session.updated ack check: received=${evaluation.acknowledgmentEventReceived} path=${evaluation.verificationPath} value=${evaluation.confirmedValue} elapsedMs=${evaluation.elapsedMsFromUpdateSent} ok=${evaluation.acknowledged} reason=${evaluation.failureReason}`,
+        );
+      }
+      if (evaluation.acknowledged) {
+        this.acknowledgeOpeningProtection(atMs, evaluation);
+      }
+      const td = extractTurnDetectionFromSessionUpdated(event);
+      if (this.bargeInRestorationSent && isBargeInRestorationAcknowledged(td)) {
+        this.bargeInRestorationAcked = true;
+        this.evidence.events.push({
+          type: "opening_bargein_restoration_acked",
+          atMs,
+          itemId: null,
+          interrupt_response: true,
+          create_response: true,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+      }
       return;
     }
     if (type === "input_audio_buffer.speech_started") {
@@ -297,13 +708,82 @@ export class PhilipRealtimeLabSession {
         itemId: event.item_id || null,
       };
       this.evidence.turns.push(turn);
-      if (this.speaking) {
-        this.evidence.interruptions.push({
-          detectedAtMs: atMs,
-          assistantWasAudible: true,
+      const duringAssistantAudio = this.speaking;
+      const withinAudibleGrace =
+        this.audibleGraceActive &&
+        isWithinOpeningBargeInGrace(this.audibleGraceStartedAtMs, atMs) &&
+        duringAssistantAudio;
+
+      if (withinAudibleGrace) {
+        this.deferredSpeechDuringAudibleGrace = true;
+        const playedMs = assistantAudioPlayedMs(this.assistantAudioStartedAtMs, atMs);
+        this.evidence.events.push(
+          buildOpeningBargeInDeferredEvent({
+            atMs,
+            itemId: event.item_id || null,
+            assistantAudioPlayedMs: playedMs,
+          }),
+        );
+        this.evidence.events.push({
+          type: "speech_started_diagnostics",
+          atMs,
+          itemId: event.item_id || null,
+          duringAssistantAudio: true,
+          openingBargeInDeferred: true,
+          assistantAudioPlayedBeforeInterruptMs: playedMs,
+          audioRoute: null,
+          audioRecorded: false,
+          audioPersisted: false,
         });
-        this.log("Barge-in: speech while Philip audible.");
+        this.log(
+          `Opening grace: speech_started at ${playedMs ?? "?"}ms — cancellation deferred.`,
+        );
+        this.log(`VAD speech_started · turn ${turn.turnNumber}`);
+        return;
       }
+
+      void (async () => {
+        let audioRoute: Record<string, unknown> | null = null;
+        try {
+          audioRoute = sanitizeAudioRouteSnapshot(
+            await captureRealtimeAudioRouteSnapshot("interruption"),
+          );
+        } catch {
+          audioRoute = sanitizeAudioRouteSnapshot({
+            available: false,
+            note: "speech_started_route_failed",
+          });
+        }
+        const tagged = buildInterruptionDiagnostics({
+          detectedAtMs: atMs,
+          duringAssistantAudio,
+          assistantAudioStartedAtMs: this.assistantAudioStartedAtMs,
+          audioRoute,
+        });
+        this.evidence.events.push({
+          type: "speech_started_diagnostics",
+          atMs,
+          itemId: event.item_id || null,
+          duringAssistantAudio: tagged.duringAssistantAudio,
+          openingBargeInDeferred: false,
+          assistantAudioPlayedBeforeInterruptMs: tagged.assistantAudioPlayedBeforeInterruptMs,
+          audioRoute: tagged.audioRoute,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+        if (duringAssistantAudio) {
+          this.evidence.interruptions.push(tagged);
+          this.evidence.events.push(
+            buildAudioRouteDiagnosticsEvent({
+              atMs,
+              reason: "interruption",
+              audioRoute,
+              assistantAudioPlayedMs: tagged.assistantAudioPlayedBeforeInterruptMs,
+            }),
+          );
+          this.log("Barge-in: speech while Philip audible.");
+        }
+      })();
       this.log(`VAD speech_started · turn ${turn.turnNumber}`);
       return;
     }
@@ -313,6 +793,19 @@ export class PhilipRealtimeLabSession {
       this.emit({ listening: false });
       const turn = this.evidence.turns[this.evidence.turns.length - 1];
       if (turn) turn.speechStoppedAtMs = atMs;
+      if (this.audibleGraceActive && this.deferredSpeechDuringAudibleGrace) {
+        // create_response is false during audible grace; mark completed turn for
+        // exactly one deferred response.create after restoration.
+        this.deferredSpeechCompletedDuringAudibleGrace = true;
+        this.evidence.events.push({
+          type: "opening_grace_user_speech_completed",
+          atMs,
+          itemId: turn?.itemId || null,
+          pendingDeferredResponseCreate: true,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+      }
       this.log("VAD speech_stopped");
       return;
     }
@@ -325,6 +818,7 @@ export class PhilipRealtimeLabSession {
     }
     if (type === "output_audio_buffer.started") {
       this.speaking = true;
+      this.assistantAudioStartedAtMs = atMs;
       this.emit({ speaking: true });
       if (this.currentResponse && this.currentResponse.audioStartAtMs == null) {
         this.currentResponse.audioStartAtMs = atMs;
@@ -335,19 +829,37 @@ export class PhilipRealtimeLabSession {
           );
         }
       }
+      if (!this.firstAssistantAudioDiagnosticsRecorded) {
+        this.firstAssistantAudioDiagnosticsRecorded = true;
+        void this.recordAudioRouteDiagnostics("first_assistant_audio");
+      }
+      // Audible 1s runway; interrupt_response is already false from pre-ready protection.
+      if (!this.audibleGraceConsumed) {
+        this.beginAudibleOpeningGrace(atMs);
+      }
       return;
     }
     if (type === "output_audio_buffer.stopped" || type === "output_audio_buffer.cleared") {
+      const playedMs = assistantAudioPlayedMs(this.assistantAudioStartedAtMs, atMs);
       this.speaking = false;
       this.emit({ speaking: false });
       const interruption = this.evidence.interruptions[this.evidence.interruptions.length - 1];
-      if (interruption && interruption.assistantStoppedAtMs == null) {
+      if (interruption && interruption.assistantStoppedAtMs == null && interruption.duringAssistantAudio) {
         interruption.assistantStoppedAtMs = atMs;
         interruption.interruptionToAudioStoppedMs = Math.max(
           0,
           atMs - Number(interruption.detectedAtMs || atMs),
         );
+        if (interruption.assistantAudioPlayedBeforeInterruptMs == null && playedMs != null) {
+          interruption.assistantAudioPlayedBeforeInterruptMs = playedMs;
+        }
         this.log(`Barge-in audio stop: ${interruption.interruptionToAudioStoppedMs}ms`);
+      }
+      const reason = type === "output_audio_buffer.cleared" ? "output_cleared" : "output_stopped";
+      void this.recordAudioRouteDiagnostics(reason, { assistantAudioPlayedMs: playedMs });
+      this.assistantAudioStartedAtMs = null;
+      if (this.audibleGraceActive) {
+        this.finishAudibleOpeningGrace("audio_ended");
       }
       return;
     }
@@ -391,6 +903,25 @@ export class PhilipRealtimeLabSession {
       this.evidence.responses.push(done);
       if (transcript) this.log(`Philip: ${transcript}`);
       this.currentResponse = null;
+      // If the first response finished without any audible start, restore barge-in
+      // so the session is not stuck with interrupt_response:false forever.
+      if (
+        !this.audibleGraceConsumed &&
+        this.openingProtectionAcked &&
+        !this.bargeInRestorationSent &&
+        this.dc?.readyState === "open"
+      ) {
+        this.bargeInRestorationSent = true;
+        this.sendTurnDetectionUpdate(true, true);
+        this.evidence.events.push({
+          type: "opening_protection_restored_without_audio",
+          atMs,
+          itemId: null,
+          audioRecorded: false,
+          audioPersisted: false,
+        });
+        this.log("First response ended without audible start — restored barge-in.");
+      }
       return;
     }
     if (type === "error") {
@@ -403,6 +934,13 @@ export class PhilipRealtimeLabSession {
       });
       this.emit({ error: String(err.message || err.code || "provider_error") });
       this.log(`Provider error: ${err.code || err.type || "unknown"}`);
+      if (
+        this.openingProtectionRequestSent &&
+        !this.openingProtectionAcked &&
+        !this.conversationallyReady
+      ) {
+        this.failOpeningProtection(`provider_error_during_protection:${String(err.code || err.type || "unknown")}`);
+      }
     }
   }
 
@@ -417,6 +955,16 @@ export class PhilipRealtimeLabSession {
     this.evidence.status = "connecting";
     this.evidence.startedAt = new Date().toISOString();
     this.startedAtMs = Date.now();
+    this.dataChannelReady = false;
+    this.providerSessionCreated = false;
+    this.remoteAudioReady = false;
+    this.conversationallyReady = false;
+    this.microphoneTrack = null;
+    this.microphonePublished = false;
+    this.assistantAudioStartedAtMs = null;
+    this.firstAssistantAudioDiagnosticsRecorded = false;
+    this.resetOpeningGraceState();
+    this.remoteAudioTrackId = null;
     this.runtimeToken = runtimeToken;
     this.emit({ micState: "requesting", error: null, evidence: this.evidence });
 
@@ -486,18 +1034,17 @@ export class PhilipRealtimeLabSession {
       throw new Error(`expected_one_microphone_track_received_${localAudioTracks.length}`);
     }
     const microphoneTrack = localAudioTracks[0];
+    this.microphoneTrack = microphoneTrack;
     this.pc.addTrack(microphoneTrack, this.localStream);
+    this.microphonePublished = true;
     this.evidence.connection.localMicrophoneTrackCount = 1;
     this.evidence.connection.localMicrophoneTrackId = microphoneTrack.id || null;
     this.evidence.connection.localMicrophoneTrackState = microphoneTrack.readyState || "live";
-    microphoneTrack.addEventListener?.("mute", () => {
-      this.evidence.events.push({
-        type: "microphone_track_muted",
-        atMs: Date.now(),
-        trackId: microphoneTrack.id || null,
-      });
-      this.emit({ micState: "muted" });
-    });
+    this.evidence.connection.localMicrophoneTrackEnabled =
+      typeof microphoneTrack.enabled === "boolean" ? microphoneTrack.enabled : null;
+    this.evidence.connection.localMicrophoneTrackMuted =
+      typeof microphoneTrack.muted === "boolean" ? microphoneTrack.muted : null;
+    this.evidence.connection.localMicrophonePublished = true;
     microphoneTrack.addEventListener?.("unmute", () => {
       this.evidence.events.push({
         type: "microphone_track_unmuted",
@@ -505,6 +1052,15 @@ export class PhilipRealtimeLabSession {
         trackId: microphoneTrack.id || null,
       });
       this.emit({ micState: "open" });
+      this.maybeMarkConversationallyReady();
+    });
+    microphoneTrack.addEventListener?.("mute", () => {
+      this.evidence.events.push({
+        type: "microphone_track_muted",
+        atMs: Date.now(),
+        trackId: microphoneTrack.id || null,
+      });
+      this.emit({ micState: "muted" });
     });
     microphoneTrack.addEventListener?.("ended", () => {
       this.evidence.events.push({
@@ -521,6 +1077,7 @@ export class PhilipRealtimeLabSession {
         this.evidence.connection.dataChannelOpenedAtMs = Date.now();
         this.dataChannelReady = true;
         this.log("Realtime data channel open.");
+        this.requestOpeningProtection();
         this.maybeMarkConversationallyReady();
       };
       this.dc.onclose = () => {
@@ -596,6 +1153,8 @@ export class PhilipRealtimeLabSession {
     if (this.hardStopTimer) clearTimeout(this.hardStopTimer);
     if (this.closingNoticeTimer) clearTimeout(this.closingNoticeTimer);
     if (this.elapsedTimer) clearInterval(this.elapsedTimer);
+    this.finishAudibleOpeningGrace("session_end");
+    this.resetOpeningGraceState();
     try {
       if (this.dc?.readyState === "open") {
         this.send({ type: "response.cancel" });

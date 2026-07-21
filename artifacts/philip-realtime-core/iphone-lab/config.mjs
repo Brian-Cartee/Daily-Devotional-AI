@@ -59,7 +59,10 @@ export const IPHONE_LAB_REALTIME_SESSION = Object.freeze({
         type: "semantic_vad",
         eagerness: "auto",
         create_response: true,
-        interrupt_response: true,
+        // Opening protection: first reply must not be auto-cancelled. The iPhone
+        // client restores interrupt_response:true after 1s of first audible
+        // playback (see philipRealtimeOpeningGrace.mjs).
+        interrupt_response: false,
       },
     },
     output: {

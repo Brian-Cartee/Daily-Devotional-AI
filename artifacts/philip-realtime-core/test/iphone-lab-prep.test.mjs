@@ -25,7 +25,7 @@ test("pins cedar voice and gpt-realtime-2.1 for the iPhone lab", () => {
   );
   assert.equal(
     IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection.interrupt_response,
-    true,
+    false,
   );
   assert.equal(IPHONE_LAB_LIMITS.bundleIdentifier, "com.shepherdspath.app.philip-lab");
   assert.equal(IPHONE_LAB_LIMITS.profile, "philip-lab");

@@ -117,12 +117,13 @@ test("UI shows an unmistakable ready state and Start cannot re-fire mid-session"
   assert.match(screenSource, /connectionState !== "connected"/);
 });
 
-test("turn detection is unchanged: semantic VAD, instant barge-in, no fixed silence", () => {
+test("turn detection uses semantic VAD with opening protection (interrupt starts false)", () => {
   const td = IPHONE_LAB_REALTIME_SESSION.audio.input.turn_detection;
   assert.equal(td.type, "semantic_vad");
   assert.equal(td.eagerness, "auto");
   assert.equal(td.create_response, true);
-  assert.equal(td.interrupt_response, true);
+  // Opening protection is the server default; client restores true after first-audio grace.
+  assert.equal(td.interrupt_response, false);
   assert.equal("silence_duration_ms" in td, false);
 });
 

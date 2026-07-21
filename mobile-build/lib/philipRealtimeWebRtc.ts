@@ -32,6 +32,7 @@ export type WebRtcPrimitives = {
         kind: string;
         id?: string;
         enabled?: boolean;
+        muted?: boolean;
         readyState?: string;
         addEventListener?: (type: string, listener: () => void) => void;
       }>;
@@ -40,6 +41,7 @@ export type WebRtcPrimitives = {
         kind: string;
         id?: string;
         enabled?: boolean;
+        muted?: boolean;
         readyState?: string;
         addEventListener?: (type: string, listener: () => void) => void;
       }>;
