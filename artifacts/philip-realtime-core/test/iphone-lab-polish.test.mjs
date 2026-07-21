@@ -39,11 +39,20 @@ test("'How about yourself?' fixture keeps warmth and returns attention", () => {
 test("disclaimers are reserved for direct questions about Philip's nature", () => {
   assert.match(
     IPHONE_LAB_INSTRUCTIONS,
-    /Do not volunteer disclaimers like 'I don't have feelings,' 'I don't have a personal day,' or 'I'm not a person' unless directly asked/,
+    /Do not volunteer disclaimers like 'I don't have feelings,' 'I don't have a personal day,' 'I don't have a day like you do,' 'I don't have a day the way you do,' or 'I'm not a person' unless directly asked/,
   );
   // Direct question about feelings still gets an honest answer.
   assert.match(IPHONE_LAB_INSTRUCTIONS, /User: 'Do you actually have feelings\?'/);
   assert.match(IPHONE_LAB_INSTRUCTIONS, /Honestly, no—not the way you do\./);
+});
+
+test("prepared disclaimer correction forbids the Build-255 opening phrasing", () => {
+  // Local-only preparation from session iphone-lab-1784588725583-1.
+  // Not deployed until separately approved.
+  assert.match(
+    IPHONE_LAB_INSTRUCTIONS,
+    /Also bad: 'I'm glad we're talking\. I don't have a day like you do, but I'm present\.'/,
+  );
 });
 
 test("truthfulness is preserved: no invented human experience", () => {
